@@ -14,6 +14,8 @@ export default function SchoolManagement({ schools }) {
     address: '',
   });
 
+  const isEditingDeletedSchool = editingId !== null && !schools.some((school) => school.id === editingId);
+
   const startEdit = (school) => {
     clearErrors();
     setEditingId(school.id);
@@ -41,6 +43,10 @@ export default function SchoolManagement({ schools }) {
       patch(route('operator.school.update', { school: editingId }), {
         preserveScroll: true,
         onSuccess: () => cancelEdit(),
+        onError: () => {
+          cancelEdit();
+          window.alert('This school has been deleted or no longer exists. Please refresh the page.');
+        },
       });
 
       return;
@@ -131,6 +137,12 @@ export default function SchoolManagement({ schools }) {
                 {editingId && (
                   <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
                     Editing School ID: {editingId}
+                  </p>
+                )}
+
+                {isEditingDeletedSchool && (
+                  <p className="text-sm font-medium text-red-600">
+                    This school has been deleted or no longer exists.
                   </p>
                 )}
 
