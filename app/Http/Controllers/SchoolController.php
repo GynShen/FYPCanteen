@@ -12,7 +12,21 @@ class SchoolController extends Controller
         abort_unless($request->user()->hasRole('operator'), 403);
 
         return inertia('Operator/SchoolManagement', [
-            'schools' => School::all(),
+            'schools' => School::latest()->get(),
         ]);
+    }
+
+    public function store(Request $request)
+    {
+        abort_unless($request->user()->hasRole('operator'), 403);
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'address' => 'required|string|max:255',
+        ]);
+
+        School::create($validated);
+
+        return redirect()->route('operator.school');
     }
 }
