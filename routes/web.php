@@ -27,6 +27,7 @@ Route::middleware('auth')->group(function () {
     // Manage schools
     Route::get('/operator/school', [SchoolController::class, 'index'])->name('operator.school');
     Route::post('/operator/school', [SchoolController::class, 'store'])->name('operator.school.store');
+    Route::patch('/operator/school/{school}', [SchoolController::class, 'update'])->name('operator.school.update');
 });
 
 require __DIR__.'/auth.php';

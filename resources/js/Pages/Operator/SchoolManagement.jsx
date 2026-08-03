@@ -4,16 +4,43 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, useForm } from '@inertiajs/react';
+import { useState } from 'react';
 
 export default function SchoolManagement({ schools }) {
-  const { data, setData, post, processing, errors, reset, clearErrors } = useForm({
+  const [editingId, setEditingId] = useState(null);
+
+  const { data, setData, post, patch, processing, errors, reset, clearErrors } = useForm({
     name: '',
     address: '',
   });
 
+  const startEdit = (school) => {
+    clearErrors();
+    setEditingId(school.id);
+    setData({
+      name: school.name,
+      address: school.address,
+    });
+  };
+
+  const cancelEdit = () => {
+    clearErrors();
+    setEditingId(null);
+    reset();
+  };
+
   const submit = (e) => {
     e.preventDefault();
     clearErrors();
+
+    if (editingId) {
+      patch(route('operator.school.update', { school: editingId }), {
+        preserveScroll: true,
+        onSuccess: () => cancelEdit(),
+      });
+
+      return;
+    }
 
     post(route('operator.school.store'), {
       preserveScroll: true,
@@ -39,32 +66,44 @@ export default function SchoolManagement({ schools }) {
           <div className="overflow-hidden bg-white shadow sm:rounded-lg">
             <div className="bg-white p-4 shadow sm:rounded-lg sm:p-8">
               <form onSubmit={submit} className="space-y-4 ">
-                <div >
-                  <InputLabel htmlFor="name" value="School Name" className="text-gray-900" />
+                <div>
+                  <InputLabel htmlFor="name" value="School Name" className="text-gray-900 dark:text-gray-900" />
                   <TextInput
                     id="name"
                     value={data.name}
                     onChange={(e) => setData('name', e.target.value)}
-                    className="mt-1 block w-full "
+                    className="mt-1 block w-full text-gray-900"
                     required
                   />
                   <InputError message={errors.name} className="mt-2" />
                 </div>
 
                 <div>
-                  <InputLabel htmlFor="address" value="Address" />
+                  <InputLabel htmlFor="address" value="Address" className="text-gray-900 dark:text-gray-900" />
                   <TextInput
                     id="address"
                     value={data.address}
                     onChange={(e) => setData('address', e.target.value)}
-                    className="mt-1 block w-full"
+                    className="mt-1 block w-full text-gray-900"
                     required
                   />
                   <InputError message={errors.address} className="mt-2" />
                 </div>
 
                 <div className="flex items-center gap-4">
-                  <PrimaryButton disabled={processing}>Add School</PrimaryButton>
+                  <PrimaryButton disabled={processing}>
+                    {editingId ? 'Update School' : 'Add School'}
+                  </PrimaryButton>
+
+                  {editingId && (
+                    <button
+                      type="button"
+                      onClick={cancelEdit}
+                      className="text-sm text-gray-600 rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-red-700"
+                    >
+                      Cancel
+                    </button>
+                  )}
                 </div>
               </form>
             </div>
@@ -87,6 +126,9 @@ export default function SchoolManagement({ schools }) {
                     <th className="px-6 py-3 text-xs font-semibold uppercase tracking-wider text-gray-600">
                       Updated At
                     </th>
+                    <th className="px-6 py-3 text-xs font-semibold uppercase tracking-wider text-gray-600">
+                      Operation
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 bg-white">
@@ -104,6 +146,17 @@ export default function SchoolManagement({ schools }) {
                       <td className="px-6 py-4 text-sm text-gray-900">
                         {new Date(school.updated_at).toLocaleString('en-SG')}
                       </td>
+                      <td className="px-6 py-4">
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => startEdit(school)}
+                              className="rounded-md bg-gray-100 px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-200"
+                            >
+                              Edit
+                            </button>
+                          </div>
+                        </td>
                     </tr>
                   ))}
                 </tbody>

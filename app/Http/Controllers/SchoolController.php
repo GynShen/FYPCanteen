@@ -29,4 +29,18 @@ class SchoolController extends Controller
 
         return redirect()->route('operator.school');
     }
+
+    public function update(Request $request, School $school) 
+    {
+        abort_unless($request->user()->hasRole('operator'), 403);
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'address' => 'required|string|max:255',
+        ]);
+
+        $school->update($validated);
+
+        return redirect()->route('operator.school');
+    }
 }
