@@ -14,7 +14,7 @@ class MenuController extends Controller
 
         return inertia('Operator/MenuManagement', [
             'menuItems' => MenuItem::with('menuCategory')->get(),
-            'categories ' => MenuCategory::orderBy('name')->get(),
+            'categories' => MenuCategory::orderBy('name')->get(),
         ]);
     }
 }

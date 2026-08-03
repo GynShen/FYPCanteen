@@ -30,6 +30,24 @@ export default function AuthenticatedLayout({ header, children }) {
                                 >
                                     Dashboard
                                 </NavLink>
+                                <NavLink
+                                    href={route('operator.school')}
+                                    active={route().current('operator.school')}
+                                >
+                                    School Management
+                                </NavLink>
+                                <NavLink
+                                    href={route('operator.menuCategory')}
+                                    active={route().current('operator.menuCategory')}
+                                >
+                                    Menu Category Management
+                                </NavLink>
+                                <NavLink
+                                    href={route('operator.menu')}
+                                    active={route().current('operator.menu')}
+                                >
+                                    Menu Management
+                                </NavLink>
                             </div>
                         </div>
 
@@ -65,16 +83,6 @@ export default function AuthenticatedLayout({ header, children }) {
                                             href={route('profile.edit')}
                                         >
                                             Profile
-                                        </Dropdown.Link>
-                                        <Dropdown.Link
-                                            href={route('operator.school')}
-                                        >
-                                            School Management
-                                        </Dropdown.Link>
-                                        <Dropdown.Link
-                                            href={route('operator.menu')}
-                                        >
-                                            Menu Management
                                         </Dropdown.Link>
                                         <Dropdown.Link
                                             href={route('logout')}

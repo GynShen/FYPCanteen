@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\SchoolController;
+use App\Http\Controllers\MenuCategoryController;
 use App\Http\Controllers\MenuController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Foundation\Application;
@@ -30,6 +31,12 @@ Route::middleware('auth')->group(function () {
     Route::post('/operator/school', [SchoolController::class, 'store'])->name('operator.school.store');
     Route::patch('/operator/school/{school}', [SchoolController::class, 'update'])->name('operator.school.update');
     Route::delete('/operator/school/{school}', [SchoolController::class, 'destroy'])->name('operator.school.destroy');
+
+    // Manage menu category
+    Route::get('/operator/menuCategory', [MenuCategoryController::class, 'index'])->name('operator.menuCategory');
+    Route::post('/operator/menuCategory', [MenuCategoryController::class, 'store'])->name('operator.menuCategory.store');
+    Route::patch('/operator/menuCategory/{menuCategory}', [MenuCategoryController::class, 'update'])->name('operator.menuCategory.update');
+    Route::delete('/operator/menuCategory/{menuCategory}', [MenuCategoryController::class, 'destroy'])->name('operator.menuCategory.destroy');
 
     // Manage menu
     Route::get('/operator/menu', [MenuController::class, 'index'])->name('operator.menu');
