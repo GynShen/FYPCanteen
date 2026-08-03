@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('menu_category_id')
                 ->constrained('menu_categories')->cascadeOnDelete();
-            $table->string('menu_item_name');
+            $table->string('name');
             $table->text('description')->nullable();
             $table->enum('day_of_week', ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']);
             $table->decimal('price', 10, 2);

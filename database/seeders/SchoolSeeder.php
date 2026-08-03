@@ -15,16 +15,16 @@ class SchoolSeeder extends Seeder
     {
         $schools = [
             [
-                'school_name' => 'School A',
-                'school_address' => '123 Main St',
+                'name' => 'School A',
+                'address' => '123 Main St',
             ],
             [
-                'school_name' => 'School B',
-                'school_address' => '456 Elm St',
+                'name' => 'School B',
+                'address' => '456 Elm St',
             ],
             [
-                'school_name' => 'School C',
-                'school_address' => '789 Oak St',
+                'name' => 'School C',
+                'address' => '789 Oak St',
             ],
         ];
 

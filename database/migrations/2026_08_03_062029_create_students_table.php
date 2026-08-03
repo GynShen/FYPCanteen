@@ -15,8 +15,8 @@ return new class extends Migration
             $table->id();
             $table->foreignId('school_id')
                 ->constrained('schools')->cascadeOnDelete();
-            $table->string('student_name')->required();
-            $table->string('class_name')->required();
+            $table->string('name')->required();
+            $table->string('class')->required();
             $table->string('qr_code')->unique()->required();
             $table->timestamps();
         });

@@ -19,8 +19,8 @@ return new class extends Migration
                 ->constrained('users');
             $table->decimal('amount', 10, 2);
             $table->dateTime('payment_date');
-            $table->string('payment_method');
-            $table->string('payment_status');
+            $table->string('method');
+            $table->string('status');
             $table->timestamps();
         });
     }
