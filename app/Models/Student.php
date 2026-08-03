@@ -14,8 +14,8 @@ class Student extends Model
 
   protected $fillable = [
     'school_id',
-    'student_name',
-    'class_name',
+    'name',
+    'class',
     'qr_code',
   ];
 

@@ -13,7 +13,7 @@ class MenuItem extends Model
 
   protected $fillable = [
     'menu_category_id',
-    'menu_item_name',
+    'name',
     'description',
     'day_of_week',
     'price',

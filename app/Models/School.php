@@ -11,8 +11,8 @@ class School extends Model
   use HasFactory;
 
   protected $fillable = [
-    'school_name',
-    'school_address',
+    'name',
+    'address',
   ];
 
   public function students(): HasMany

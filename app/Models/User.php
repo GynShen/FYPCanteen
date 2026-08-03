@@ -21,9 +21,9 @@ class User extends Authenticatable
      * @var list<string>
      */
     protected $fillable = [
+        'name',
         'email',
         'password',
-        'name',
         'phone_number',
         'role',
     ];
@@ -54,7 +54,7 @@ class User extends Authenticatable
     {
         return $this->role === $role;
     }
-    
+
     public function cart(): HasOne
     {
         return $this->hasOne(Cart::class);
