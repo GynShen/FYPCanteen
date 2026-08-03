@@ -21,8 +21,8 @@ class SchoolController extends Controller
         abort_unless($request->user()->hasRole('operator'), 403);
 
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'address' => 'required|string|max:255',
+            'name' => 'required|string|max:255|unique:schools,name',
+            'address' => 'required|string|max:255|unique:schools,address',
         ]);
 
         School::create($validated);
@@ -35,8 +35,8 @@ class SchoolController extends Controller
         abort_unless($request->user()->hasRole('operator'), 403);
 
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'address' => 'required|string|max:255',
+            'name' => 'required|string|max:255|unique:schools,name,' . $school->id,
+            'address' => 'required|string|max:255|unique:schools,address,' . $school->id,
         ]);
 
         $school->update($validated);

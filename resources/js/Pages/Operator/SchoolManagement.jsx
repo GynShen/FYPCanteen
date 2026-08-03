@@ -29,6 +29,10 @@ export default function SchoolManagement({ schools }) {
     reset();
   };
 
+  const clearField = (field) => {
+    setData(field, '');
+  };
+
   const submit = (e) => {
     e.preventDefault();
     clearErrors();
@@ -80,42 +84,72 @@ export default function SchoolManagement({ schools }) {
               <form onSubmit={submit} className="space-y-4 ">
                 <div>
                   <InputLabel htmlFor="name" value="School Name" className="text-gray-900 dark:text-gray-900" />
-                  <TextInput
-                    id="name"
-                    value={data.name}
-                    onChange={(e) => setData('name', e.target.value)}
-                    className="mt-1 block w-full text-gray-900"
-                    required
-                  />
+                  <div className="relative mt-1">
+                    <TextInput
+                      id="name"
+                      value={data.name}
+                      onChange={(e) => setData('name', e.target.value)}
+                      className="mt-1 block w-full text-gray-900 pr-10"
+                      required
+                    />
+                    {data.name && (
+                      <button
+                        type="button"
+                        onClick={() => clearField('name')}
+                        className="absolute inset-y-0 right-2 flex items-center text-sm text-gray-500 hover:text-gray-700"
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
                   <InputError message={errors.name} className="mt-2" />
                 </div>
 
                 <div>
                   <InputLabel htmlFor="address" value="Address" className="text-gray-900 dark:text-gray-900" />
-                  <TextInput
-                    id="address"
-                    value={data.address}
-                    onChange={(e) => setData('address', e.target.value)}
-                    className="mt-1 block w-full text-gray-900"
-                    required
-                  />
+                  <div className="relative mt-1">
+                    <TextInput
+                      id="address"
+                      value={data.address}
+                      onChange={(e) => setData('address', e.target.value)}
+                      className="mt-1 block w-full text-gray-900 pr-10"
+                      required
+                    />
+                    {data.address && (
+                      <button
+                        type="button"
+                        onClick={() => clearField('address')}
+                        className="absolute inset-y-0 right-2 flex items-center text-sm text-gray-500 hover:text-gray-700"
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
                   <InputError message={errors.address} className="mt-2" />
                 </div>
 
-                <div className="flex items-center gap-4">
-                  <PrimaryButton disabled={processing}>
-                    {editingId ? 'Update School' : 'Add School'}
-                  </PrimaryButton>
-
+                <div className="space-y-3">
                   {editingId && (
-                    <button
-                      type="button"
-                      onClick={cancelEdit}
-                      className="text-sm text-gray-600 rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-red-700"
-                    >
-                      Cancel
-                    </button>
+                    <p className="text-sm font-medium text-gray-900">
+                      Editing School ID: {editingId}
+                    </p>
                   )}
+
+                  <div className="flex items-center gap-4">
+                    <PrimaryButton disabled={processing}>
+                      {editingId ? 'Update School' : 'Add School'}
+                    </PrimaryButton>
+
+                    {editingId && (
+                      <button
+                        type="button"
+                        onClick={cancelEdit}
+                        className="text-sm text-gray-600 rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-red-700"
+                      >
+                        Cancel
+                      </button>
+                    )}
+                  </div>
                 </div>
               </form>
             </div>
@@ -126,6 +160,9 @@ export default function SchoolManagement({ schools }) {
               <table className="min-w-full divide-y divide-gray-200 text-left">
                 <thead className="bg-gray-50">
                   <tr>
+                    <th className="px-6 py-3 text-xs font-semibold uppercase tracking-wider text-gray-600">
+                      ID
+                    </th>
                     <th className="px-6 py-3 text-xs font-semibold uppercase tracking-wider text-gray-600">
                       Name
                     </th>
@@ -146,6 +183,9 @@ export default function SchoolManagement({ schools }) {
                 <tbody className="divide-y divide-gray-200 bg-white">
                   {schools.map((school) => (
                     <tr key={school.id}>
+                      <td className="px-6 py-4 text-sm text-gray-900">
+                        {school.id}
+                      </td>
                       <td className="px-6 py-4 text-sm text-gray-900">
                         {school.name}
                       </td>
