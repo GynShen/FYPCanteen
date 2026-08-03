@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\SchoolController;
+use App\Http\Controllers\MenuController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -29,6 +30,12 @@ Route::middleware('auth')->group(function () {
     Route::post('/operator/school', [SchoolController::class, 'store'])->name('operator.school.store');
     Route::patch('/operator/school/{school}', [SchoolController::class, 'update'])->name('operator.school.update');
     Route::delete('/operator/school/{school}', [SchoolController::class, 'destroy'])->name('operator.school.destroy');
+
+    // Manage menu
+    Route::get('/operator/menu', [MenuController::class, 'index'])->name('operator.menu');
+    Route::post('/operator/menu', [MenuController::class, 'store'])->name('operator.menu.store');
+    Route::patch('/operator/menu/{menu}', [MenuController::class, 'update'])->name('operator.menu.update');
+    Route::delete('/operator/menu/{menu}', [MenuController::class, 'destroy'])->name('operator.menu.destroy');
 });
 
 require __DIR__.'/auth.php';

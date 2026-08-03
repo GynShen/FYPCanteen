@@ -72,6 +72,11 @@ export default function AuthenticatedLayout({ header, children }) {
                                             School Management
                                         </Dropdown.Link>
                                         <Dropdown.Link
+                                            href={route('operator.menu')}
+                                        >
+                                            Menu Management
+                                        </Dropdown.Link>
+                                        <Dropdown.Link
                                             href={route('logout')}
                                             method="post"
                                             as="button"
