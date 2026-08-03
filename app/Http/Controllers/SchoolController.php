@@ -30,7 +30,7 @@ class SchoolController extends Controller
         return redirect()->route('operator.school');
     }
 
-    public function update(Request $request, School $school) 
+    public function update(Request $request, School $school)
     {
         abort_unless($request->user()->hasRole('operator'), 403);
 
@@ -40,6 +40,15 @@ class SchoolController extends Controller
         ]);
 
         $school->update($validated);
+
+        return redirect()->route('operator.school');
+    }
+
+    public function destroy(Request $request, School $school)
+    {
+        abort_unless($request->user()->hasRole('operator'), 403);
+
+        $school->delete();
 
         return redirect()->route('operator.school');
     }

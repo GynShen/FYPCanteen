@@ -9,7 +9,7 @@ import { useState } from 'react';
 export default function SchoolManagement({ schools }) {
   const [editingId, setEditingId] = useState(null);
 
-  const { data, setData, post, patch, processing, errors, reset, clearErrors } = useForm({
+  const { data, setData, post, patch, delete: destroy, processing, errors, reset, clearErrors } = useForm({
     name: '',
     address: '',
   });
@@ -48,6 +48,18 @@ export default function SchoolManagement({ schools }) {
         clearErrors();
         reset();
       },
+    });
+  };
+
+  const remove = (id) => {
+    const confirmed = window.confirm('Are you sure you want to delete this school?');
+
+    if (!confirmed) {
+      return;
+    }
+
+    destroy(route('operator.school.destroy', { school: id }), {
+      preserveScroll: true,
     });
   };
 
@@ -147,16 +159,23 @@ export default function SchoolManagement({ schools }) {
                         {new Date(school.updated_at).toLocaleString('en-SG')}
                       </td>
                       <td className="px-6 py-4">
-                          <div className="flex items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => startEdit(school)}
-                              className="rounded-md bg-gray-100 px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-200"
-                            >
-                              Edit
-                            </button>
-                          </div>
-                        </td>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => startEdit(school)}
+                            className="rounded-md bg-gray-100 px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-200"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => remove(school.id)}
+                            className="rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-red-700"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
