@@ -13,8 +13,6 @@ return new class extends Migration
     {
         Schema::create('menu_items', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('menu_category_id')
-                ->constrained('menu_categories')->cascadeOnDelete();
             $table->string('name');
             $table->text('description')->nullable();
             $table->enum('day_of_week', ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']);

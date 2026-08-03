@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class MenuItem extends Model
@@ -12,7 +12,6 @@ class MenuItem extends Model
   use HasFactory;
 
   protected $fillable = [
-    'menu_category_id',
     'name',
     'description',
     'day_of_week',
@@ -36,8 +35,8 @@ class MenuItem extends Model
     return $this->hasMany(SchoolMenuItem::class);
   }
 
-  public function menuCategory(): BelongsTo
+  public function menuCategories(): BelongsToMany
   {
-    return $this->belongsTo(MenuCategory::class);
+    return $this->belongsToMany(MenuCategory::class, 'menu_category_menu_items');
   }
 }
