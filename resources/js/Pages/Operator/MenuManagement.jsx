@@ -34,7 +34,7 @@ export default function MenuManagement({ menuItems, categories }) {
         menu_category_id: categories[0]?.id ?? '',
         name: '',
         description: '',
-        day_of_week: '',
+        days: [],
         price: '',
         image: null,
         is_available: true,
@@ -57,7 +57,7 @@ export default function MenuManagement({ menuItems, categories }) {
             menu_category_id: item.menu_categories[0]?.id ?? '',
             name: item.name,
             description: item.description ?? '',
-            day_of_week: item.day_of_week,
+            days: item.days.map((day) => day.day_of_week),
             price: item.price,
             image: null,
             is_available: Boolean(item.is_available),
@@ -85,6 +85,15 @@ export default function MenuManagement({ menuItems, categories }) {
                 preserveScroll: true,
                 onSuccess: clearForm,
             },
+        );
+    };
+
+    const toggleDay = (day) => {
+        setData(
+            'days',
+            data.days.includes(day)
+                ? data.days.filter((selectedDay) => selectedDay !== day)
+                : [...data.days, day],
         );
     };
 
@@ -185,32 +194,27 @@ export default function MenuManagement({ menuItems, categories }) {
                             </div>
 
                             <div>
-                                <InputLabel
-                                    htmlFor="day_of_week"
-                                    value="Day of Week"
-                                />
-                                <select
-                                    id="day_of_week"
-                                    value={data.day_of_week}
-                                    onChange={(event) =>
-                                        setData(
-                                            'day_of_week',
-                                            event.target.value,
-                                        )
-                                    }
-                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                    required
-                                >
-                                    <option value="">Select a day</option>
+                                <InputLabel value="Available Days" />
+                                <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
                                     {days.map((day) => (
-                                        <option key={day} value={day}>
-                                            {day.charAt(0).toUpperCase() +
-                                                day.slice(1)}
-                                        </option>
+                                        <label
+                                            key={day}
+                                            className="inline-flex items-center gap-2 rounded-md border border-gray-200 px-3 py-2 text-sm capitalize text-gray-700 dark:text-gray-200"
+                                        >
+                                            <input
+                                                type="checkbox"
+                                                checked={data.days.includes(
+                                                    day,
+                                                )}
+                                                onChange={() => toggleDay(day)}
+                                                className="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500"
+                                            />
+                                            {day}
+                                        </label>
                                     ))}
-                                </select>
+                                </div>
                                 <InputError
-                                    message={errors.day_of_week}
+                                    message={errors.days}
                                     className="mt-2"
                                 />
                             </div>
@@ -391,7 +395,12 @@ export default function MenuManagement({ menuItems, categories }) {
                                                     .join(', ') || '—'}
                                             </td>
                                             <td className="px-4 py-3 text-center text-sm capitalize text-gray-900">
-                                                {item.day_of_week}
+                                                {item.days
+                                                    .map(
+                                                        (day) =>
+                                                            day.day_of_week,
+                                                    )
+                                                    .join(', ')}
                                             </td>
                                             <td className="px-4 py-3 text-center text-sm text-gray-900">
                                                 RM{' '}

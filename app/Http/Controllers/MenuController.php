@@ -21,7 +21,7 @@ class MenuController extends Controller
         $this->authorizeOperator($request);
 
         return inertia('Operator/MenuManagement', [
-            'menuItems' => MenuItem::with('menuCategories')->latest()->get(),
+            'menuItems' => MenuItem::with(['menuCategories', 'days'])->latest()->get(),
             'categories' => MenuCategory::orderBy('name')->get(),
         ]);
     }
@@ -42,6 +42,7 @@ class MenuController extends Controller
                 ]);
 
                 $menuItem->menuCategories()->sync([$validated['menu_category_id']]);
+                $menuItem->days()->createMany($this->dayRecords($validated['days']));
             });
         } catch (Throwable $exception) {
             $this->deleteDriveImageQuietly($driveImage['id']);
@@ -70,6 +71,8 @@ class MenuController extends Controller
 
                 $menu->update($attributes);
                 $menu->menuCategories()->sync([$validated['menu_category_id']]);
+                $menu->days()->delete();
+                $menu->days()->createMany($this->dayRecords($validated['days']));
             });
         } catch (Throwable $exception) {
             $this->deleteDriveImageQuietly($newDriveImage['id'] ?? null);
@@ -108,7 +111,8 @@ class MenuController extends Controller
             'menu_category_id' => ['required', 'integer', Rule::exists('menu_categories', 'id')],
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
-            'day_of_week' => ['required', Rule::in([
+            'days' => ['required', 'array', 'min:1'],
+            'days.*' => ['required', 'distinct', Rule::in([
                 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday',
             ])],
             'price' => ['required', 'numeric', 'min:0', 'max:99999999.99'],
@@ -126,10 +130,21 @@ class MenuController extends Controller
         return [
             'name' => $validated['name'],
             'description' => $validated['description'] ?? null,
-            'day_of_week' => $validated['day_of_week'],
             'price' => $validated['price'],
             'is_available' => $validated['is_available'],
         ];
+    }
+
+    /**
+     * @param  list<string>  $days
+     * @return list<array{day_of_week: string}>
+     */
+    private function dayRecords(array $days): array
+    {
+        return array_map(
+            fn (string $day): array => ['day_of_week' => $day],
+            $days,
+        );
     }
 
     /**

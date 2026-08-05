@@ -14,7 +14,6 @@ class MenuItem extends Model
     protected $fillable = [
         'name',
         'description',
-        'day_of_week',
         'price',
         'image_drive_id',
         'image_url',
@@ -47,5 +46,10 @@ class MenuItem extends Model
     public function menuCategories(): BelongsToMany
     {
         return $this->belongsToMany(MenuCategory::class, 'menu_category_menu_items');
+    }
+
+    public function days(): HasMany
+    {
+        return $this->hasMany(MenuItemDay::class);
     }
 }
