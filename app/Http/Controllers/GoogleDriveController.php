@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers;
 
 use App\Models\DriveFile;
@@ -28,7 +29,10 @@ class GoogleDriveController extends Controller
      */
     public function uploadFileToDrive(Request $request)
     {
-
+        $request->validate([
+            'file' => ['required', 'file', 'max:10240'],
+        ]);
+        
         $file = $request->file('file');
 
         $fileName = $file->getClientOriginalName();

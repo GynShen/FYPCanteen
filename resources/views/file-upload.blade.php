@@ -96,8 +96,16 @@
                                                 target="_blank" class="bg-sky-500 text-white px-2 py-1 rounded">View</a>
                                             <a href="{{ route('drive.download', $file->id) }}"
                                                 class="bg-green-500 text-white px-2 py-1 mx-1 rounded">Download</a>
-                                            <a href="{{ route('drive.delete', $file->id) }}"
-                                                class="bg-red-500 text-white px-2 py-1 rounded">Delete</a>
+                                            <form action="{{ route('drive.delete', $file->id) }}" method="POST"
+                                                class="inline"
+                                                onsubmit="return confirm('Are you sure you want to delete this file?')">
+                                                @csrf
+                                                @method('DELETE')
+
+                                                <button type="submit" class="rounded bg-red-500 px-2 py-1 text-white">
+                                                    Delete
+                                                </button>
+                                                </form>
                                         </td>
                                     </tr>
                                 @endforeach

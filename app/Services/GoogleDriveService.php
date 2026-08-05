@@ -27,16 +27,24 @@ class GoogleDriveService
     /**
      * Function: getAccessToken
      */
-    public function getAccessToken()
-    {
-        $token = $this->client->getAccessToken();
+    public function getAccessToken(): string
+{
+    $token = $this->client->fetchAccessTokenWithRefreshToken(
+        config('filesystems.disks.google.refreshToken')
+    );
 
-        if ($this->client->isAccessTokenExpired()) {
-            $token = $this->client->fetchAccessTokenWithRefreshToken(config('filesystems.disks.google.refreshToken'));
-        }
-
-        return $token['access_token'];
+    if (isset($token['error'])) {
+        throw new \RuntimeException(
+            $token['error_description'] ?? $token['error']
+        );
     }
+
+    if (empty($token['access_token'])) {
+        throw new \RuntimeException('Google did not return an access token.');
+    }
+
+    return $token['access_token'];
+}
 
     /**
      * Function: makeFileToPublic

@@ -22,13 +22,17 @@ Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
-Route::controller(GoogleDriveController::class)->group(function () {
-    Route::get('file-upload', 'index');
-    Route::post('upload-file', 'uploadFileToDrive')->name('upload-file');
-
-    Route::get('drive/download/{id}', 'downloadFile')->name('drive.download');
-    Route::get('drive/delete/{id}', 'deleteFile')->name('drive.delete');
-});
+Route::controller(GoogleDriveController::class)
+    ->middleware('auth')
+    ->group(function () {
+        Route::get('/file-upload', 'index');
+        Route::post('/upload-file', 'uploadFileToDrive')
+            ->name('upload-file');
+        Route::get('/drive/download/{id}', 'downloadFile')
+            ->name('drive.download');
+        Route::delete('/drive/{id}', [GoogleDriveController::class, 'deleteFile'])
+            ->name('drive.delete');
+    });
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -54,4 +58,4 @@ Route::middleware('auth')->group(function () {
     Route::delete('/operator/menu/{menu}', [MenuController::class, 'destroy'])->name('operator.menu.destroy');
 });
 
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';
