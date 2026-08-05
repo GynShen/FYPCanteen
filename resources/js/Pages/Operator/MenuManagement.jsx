@@ -4,172 +4,448 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, useForm } from '@inertiajs/react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+
+const days = [
+    'monday',
+    'tuesday',
+    'wednesday',
+    'thursday',
+    'friday',
+    'saturday',
+    'sunday',
+];
 
 export default function MenuManagement({ menuItems, categories }) {
-  const [editingId, setEditingId] = useState(null);
+    const [editingId, setEditingId] = useState(null);
+    const fileInput = useRef(null);
 
-  const { data, setData, post, patch, delete: destroy, processing, errors, reset, clearErrors } = useForm({
-    menu_category_id: categories[0]?.id ?? '',
-    name: '',
-    description: '',
-    day_of_week: '',
-    price: '',
-    image_url: null,
-    is_available: true,
-  });
-
-  const isEditingDeletedMenuItem = editingId !== null && !menuItems.some((item) => item.id === editingId);
-
-  const startEdit = (item) => {
-    clearErrors();
-    setEditingId(item.id);
-    setData({
-      name: item.name,
-      description: item.description,
-      day_of_week: item.day_of_week,
-      price: item.price,
-      image_url: item.image_url,
-      is_available: item.is_available,
+    const {
+        data,
+        setData,
+        post,
+        delete: destroy,
+        processing,
+        errors,
+        reset,
+        clearErrors,
+        transform,
+    } = useForm({
+        menu_category_id: categories[0]?.id ?? '',
+        name: '',
+        description: '',
+        day_of_week: '',
+        price: '',
+        image: null,
+        is_available: true,
     });
-  };
 
-  const cancelEdit = () => {
-    clearErrors();
-    setEditingId(null);
-    reset();
-  };
-
-  const clearField = (field) => {
-    setData(field, '');
-  };
-
-  const submit = (e) => {
-    e.preventDefault();
-    clearErrors();
-
-    if (editingId) {
-      patch(route('operator.menu.update', { menuItem: editingId }), {
-        preserveScroll: true,
-        onSuccess: () => cancelEdit(),
-        onError: () => {
-          cancelEdit();
-          window.alert('This menu item has been deleted or no longer exists. Please refresh the page.');
-        },
-      });
-
-      return;
-    }
-
-    post(route('operator.menu.store'), {
-      preserveScroll: true,
-      onSuccess: () => {
-        clearErrors();
+    const clearForm = () => {
+        setEditingId(null);
         reset();
-      },
-    });
-  };
+        clearErrors();
 
-  const remove = (id) => {
-    const confirmed = window.confirm('Are you sure you want to delete this menu item?');
+        if (fileInput.current) {
+            fileInput.current.value = '';
+        }
+    };
 
-    if (!confirmed) {
-      return;
-    }
+    const startEdit = (item) => {
+        clearErrors();
+        setEditingId(item.id);
+        setData({
+            menu_category_id: item.menu_categories[0]?.id ?? '',
+            name: item.name,
+            description: item.description ?? '',
+            day_of_week: item.day_of_week,
+            price: item.price,
+            image: null,
+            is_available: Boolean(item.is_available),
+        });
 
-    destroy(route('operator.menu.destroy', { menu: id }), {
-      preserveScroll: true,
-    });
-  };
+        if (fileInput.current) {
+            fileInput.current.value = '';
+        }
+    };
 
-  return (
-    <AuthenticatedLayout
-      header={
-        <h2 className="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
-          Menu Management
-        </h2>
-      }
-    >
-      <Head title="Menu Management" />
+    const submit = (event) => {
+        event.preventDefault();
+        clearErrors();
 
-      <div className="py-12">
-        <div className="mx-auto max-w-7xl space-y-6 sm:px-6 lg:px-8">
-          <div className="bg-white p-4 shadow sm:rounded-lg sm:p-8 dark:bg-gray-800">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200 text-left">
-                <thead className="bg-slate-100">
-                  <tr>
-                    <th className="px-6 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-700">
-                      ID
-                    </th>
-                    <th className="px-6 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-700">
-                      Name
-                    </th>
-                    <th className="px-6 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-700">
-                      Description
-                    </th>
-                    <th className="px-6 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-700">
-                      Day of Week
-                    </th>
-                    <th className="px-6 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-700">
-                      Price
-                    </th>
-                    <th className="px-6 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-700">
-                      Operation
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200 bg-white">
-                  {menuItems.map((item) => (
-                    <tr key={item.id}>
-                      <td className="px-6 py-4 text-center text-sm text-gray-900">
-                        {item.id}
-                      </td>
-                      <td className="px-6 py-4 text-center text-sm text-gray-900">
-                        {item.image_url && (
-                          <img
-                            src={`/storage/app/public/${item.image_url}`}
-                            alt={item.name}
-                            className="h-20 w-20 rounded object-cover"
-                          />
+        transform((formData) =>
+            editingId ? { ...formData, _method: 'patch' } : formData,
+        );
+
+        post(
+            editingId
+                ? route('operator.menu.update', { menu: editingId })
+                : route('operator.menu.store'),
+            {
+                forceFormData: true,
+                preserveScroll: true,
+                onSuccess: clearForm,
+            },
+        );
+    };
+
+    const remove = (item) => {
+        if (
+            !window.confirm(
+                `Delete ${item.name}? Its Google Drive image will also be deleted.`,
+            )
+        ) {
+            return;
+        }
+
+        destroy(route('operator.menu.destroy', { menu: item.id }), {
+            preserveScroll: true,
+            onSuccess: () => {
+                if (editingId === item.id) {
+                    clearForm();
+                }
+            },
+        });
+    };
+
+    return (
+        <AuthenticatedLayout
+            header={
+                <h2 className="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
+                    Menu Management
+                </h2>
+            }
+        >
+            <Head title="Menu Management" />
+
+            <div className="py-12">
+                <div className="mx-auto max-w-7xl space-y-6 sm:px-6 lg:px-8">
+                    <div className="bg-white p-4 shadow sm:rounded-lg sm:p-8 dark:bg-gray-800">
+                        <h3 className="mb-6 text-lg font-medium text-gray-900 dark:text-gray-100">
+                            {editingId ? 'Edit Meal' : 'Add Meal'}
+                        </h3>
+
+                        {categories.length === 0 && (
+                            <p className="mb-4 rounded-md bg-amber-50 p-3 text-sm text-amber-800">
+                                Create a menu category before adding a meal.
+                            </p>
                         )}
-                        <p>{item.name}</p>
-                      </td>
-                      <td className="px-6 py-4 text-center text-sm text-gray-900">
-                        {item.description}
-                      </td>
-                      <td className="px-6 py-4 text-center text-sm text-gray-900">
-                        {item.day_of_week}
-                      </td>
-                      <td className="px-6 py-4 text-center text-sm text-gray-900">
-                        {item.price}
-                      </td>
-                      <td className="px-6 py-4 text-center">
-                        <div className="flex items-center justify-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => startEdit(item)}
-                            className="rounded-md bg-gray-100 px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-200"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => remove(item.id)}
-                            className="rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-red-700"
-                          >
-                            Delete
-                          </button>
+
+                        <form
+                            onSubmit={submit}
+                            className="grid gap-5 md:grid-cols-2"
+                        >
+                            <div>
+                                <InputLabel htmlFor="name" value="Meal Name" />
+                                <TextInput
+                                    id="name"
+                                    value={data.name}
+                                    onChange={(event) =>
+                                        setData('name', event.target.value)
+                                    }
+                                    className="mt-1 block w-full"
+                                    required
+                                />
+                                <InputError
+                                    message={errors.name}
+                                    className="mt-2"
+                                />
+                            </div>
+
+                            <div>
+                                <InputLabel
+                                    htmlFor="menu_category_id"
+                                    value="Category"
+                                />
+                                <select
+                                    id="menu_category_id"
+                                    value={data.menu_category_id}
+                                    onChange={(event) =>
+                                        setData(
+                                            'menu_category_id',
+                                            event.target.value,
+                                        )
+                                    }
+                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    required
+                                >
+                                    <option value="">Select a category</option>
+                                    {categories.map((category) => (
+                                        <option
+                                            key={category.id}
+                                            value={category.id}
+                                        >
+                                            {category.name}
+                                        </option>
+                                    ))}
+                                </select>
+                                <InputError
+                                    message={errors.menu_category_id}
+                                    className="mt-2"
+                                />
+                            </div>
+
+                            <div>
+                                <InputLabel
+                                    htmlFor="day_of_week"
+                                    value="Day of Week"
+                                />
+                                <select
+                                    id="day_of_week"
+                                    value={data.day_of_week}
+                                    onChange={(event) =>
+                                        setData(
+                                            'day_of_week',
+                                            event.target.value,
+                                        )
+                                    }
+                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    required
+                                >
+                                    <option value="">Select a day</option>
+                                    {days.map((day) => (
+                                        <option key={day} value={day}>
+                                            {day.charAt(0).toUpperCase() +
+                                                day.slice(1)}
+                                        </option>
+                                    ))}
+                                </select>
+                                <InputError
+                                    message={errors.day_of_week}
+                                    className="mt-2"
+                                />
+                            </div>
+
+                            <div>
+                                <InputLabel
+                                    htmlFor="price"
+                                    value="Price (RM)"
+                                />
+                                <TextInput
+                                    id="price"
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    value={data.price}
+                                    onChange={(event) =>
+                                        setData('price', event.target.value)
+                                    }
+                                    className="mt-1 block w-full"
+                                    required
+                                />
+                                <InputError
+                                    message={errors.price}
+                                    className="mt-2"
+                                />
+                            </div>
+
+                            <div className="md:col-span-2">
+                                <InputLabel
+                                    htmlFor="description"
+                                    value="Description"
+                                />
+                                <textarea
+                                    id="description"
+                                    value={data.description}
+                                    onChange={(event) =>
+                                        setData(
+                                            'description',
+                                            event.target.value,
+                                        )
+                                    }
+                                    rows="3"
+                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                />
+                                <InputError
+                                    message={errors.description}
+                                    className="mt-2"
+                                />
+                            </div>
+
+                            <div>
+                                <InputLabel
+                                    htmlFor="image"
+                                    value={
+                                        editingId
+                                            ? 'Replace Meal Photo (optional)'
+                                            : 'Meal Photo'
+                                    }
+                                />
+                                <input
+                                    ref={fileInput}
+                                    id="image"
+                                    type="file"
+                                    accept="image/jpeg,image/png,image/webp"
+                                    onChange={(event) =>
+                                        setData(
+                                            'image',
+                                            event.target.files[0] ?? null,
+                                        )
+                                    }
+                                    className="mt-1 block w-full text-sm text-gray-700 file:mr-4 file:rounded-md file:border-0 file:bg-indigo-50 file:px-4 file:py-2 file:text-indigo-700 hover:file:bg-indigo-100 dark:text-gray-200"
+                                    required={!editingId}
+                                />
+                                <p className="mt-1 text-xs text-gray-500">
+                                    JPEG, PNG, or WebP, maximum 5 MB.
+                                </p>
+                                <InputError
+                                    message={errors.image}
+                                    className="mt-2"
+                                />
+                            </div>
+
+                            <div className="flex items-center pt-6">
+                                <label className="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
+                                    <input
+                                        type="checkbox"
+                                        checked={data.is_available}
+                                        onChange={(event) =>
+                                            setData(
+                                                'is_available',
+                                                event.target.checked,
+                                            )
+                                        }
+                                        className="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500"
+                                    />
+                                    Available for ordering
+                                </label>
+                            </div>
+
+                            <div className="flex items-center gap-3 md:col-span-2">
+                                <PrimaryButton
+                                    disabled={
+                                        processing || categories.length === 0
+                                    }
+                                >
+                                    {processing
+                                        ? 'Saving...'
+                                        : editingId
+                                          ? 'Update Meal'
+                                          : 'Add Meal'}
+                                </PrimaryButton>
+                                {editingId && (
+                                    <button
+                                        type="button"
+                                        onClick={clearForm}
+                                        className="rounded-md bg-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-300"
+                                    >
+                                        Cancel
+                                    </button>
+                                )}
+                            </div>
+                        </form>
+                    </div>
+
+                    <div className="overflow-hidden bg-white shadow sm:rounded-lg dark:bg-gray-800">
+                        <div className="overflow-x-auto">
+                            <table className="min-w-full divide-y divide-gray-200">
+                                <thead className="bg-slate-100">
+                                    <tr>
+                                        {[
+                                            'Photo',
+                                            'Meal',
+                                            'Category',
+                                            'Day',
+                                            'Price',
+                                            'Available',
+                                            'Operation',
+                                        ].map((heading) => (
+                                            <th
+                                                key={heading}
+                                                className="px-4 py-3 text-center text-xs font-semibold uppercase text-gray-700"
+                                            >
+                                                {heading}
+                                            </th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-200 bg-white">
+                                    {menuItems.map((item) => (
+                                        <tr key={item.id}>
+                                            <td className="px-4 py-3">
+                                                {item.image_url ? (
+                                                    <img
+                                                        src={item.image_url}
+                                                        alt={item.name}
+                                                        className="mx-auto h-20 w-20 rounded-md object-cover"
+                                                    />
+                                                ) : (
+                                                    <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-md bg-gray-100 text-xs text-gray-500">
+                                                        No photo
+                                                    </div>
+                                                )}
+                                            </td>
+                                            <td className="px-4 py-3 text-sm text-gray-900">
+                                                <p className="font-medium">
+                                                    {item.name}
+                                                </p>
+                                                <p className="max-w-xs text-xs text-gray-500">
+                                                    {item.description}
+                                                </p>
+                                            </td>
+                                            <td className="px-4 py-3 text-center text-sm text-gray-900">
+                                                {item.menu_categories
+                                                    .map(
+                                                        (category) =>
+                                                            category.name,
+                                                    )
+                                                    .join(', ') || '—'}
+                                            </td>
+                                            <td className="px-4 py-3 text-center text-sm capitalize text-gray-900">
+                                                {item.day_of_week}
+                                            </td>
+                                            <td className="px-4 py-3 text-center text-sm text-gray-900">
+                                                RM{' '}
+                                                {Number(item.price).toFixed(2)}
+                                            </td>
+                                            <td className="px-4 py-3 text-center text-sm">
+                                                <span
+                                                    className={`rounded-full px-2 py-1 text-xs font-medium ${item.is_available ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}
+                                                >
+                                                    {item.is_available
+                                                        ? 'Yes'
+                                                        : 'No'}
+                                                </span>
+                                            </td>
+                                            <td className="px-4 py-3 text-center">
+                                                <div className="flex justify-center gap-2">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() =>
+                                                            startEdit(item)
+                                                        }
+                                                        className="rounded-md bg-gray-100 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200"
+                                                    >
+                                                        Edit
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() =>
+                                                            remove(item)
+                                                        }
+                                                        className="rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-700"
+                                                    >
+                                                        Delete
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    {menuItems.length === 0 && (
+                                        <tr>
+                                            <td
+                                                colSpan="7"
+                                                className="px-4 py-10 text-center text-sm text-gray-500"
+                                            >
+                                                No meals have been added yet.
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
                         </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                    </div>
+                </div>
             </div>
-          </div>
-        </div>
-      </div>
-    </AuthenticatedLayout>
-  );
+        </AuthenticatedLayout>
+    );
 }
