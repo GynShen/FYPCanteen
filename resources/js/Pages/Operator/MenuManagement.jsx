@@ -31,7 +31,7 @@ export default function MenuManagement({ menuItems, categories, schools }) {
         clearErrors,
         transform,
     } = useForm({
-        menu_category_id: categories[0]?.id ?? '',
+        menu_category_ids: [],
         school_ids: [],
         name: '',
         description: '',
@@ -55,7 +55,9 @@ export default function MenuManagement({ menuItems, categories, schools }) {
         clearErrors();
         setEditingId(item.id);
         setData({
-            menu_category_id: item.menu_categories[0]?.id ?? '',
+            menu_category_ids: item.menu_categories.map(
+                (category) => category.id,
+            ),
             school_ids: item.schools.map((school) => school.id),
             name: item.name,
             description: item.description ?? '',
@@ -107,6 +109,17 @@ export default function MenuManagement({ menuItems, categories, schools }) {
                       (selectedSchoolId) => selectedSchoolId !== schoolId,
                   )
                 : [...data.school_ids, schoolId],
+        );
+    };
+
+    const toggleCategory = (categoryId) => {
+        setData(
+            'menu_category_ids',
+            data.menu_category_ids.includes(categoryId)
+                ? data.menu_category_ids.filter(
+                      (selectedCategoryId) => selectedCategoryId !== categoryId,
+                  )
+                : [...data.menu_category_ids, categoryId],
         );
     };
 
@@ -186,34 +199,29 @@ export default function MenuManagement({ menuItems, categories, schools }) {
                             </div>
 
                             <div>
-                                <InputLabel
-                                    htmlFor="menu_category_id"
-                                    value="Category"
-                                />
-                                <select
-                                    id="menu_category_id"
-                                    value={data.menu_category_id}
-                                    onChange={(event) =>
-                                        setData(
-                                            'menu_category_id',
-                                            event.target.value,
-                                        )
-                                    }
-                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                    required
-                                >
-                                    <option value="">Select a category</option>
+                                <InputLabel value="Categories" />
+                                <div className="mt-2 grid gap-2 sm:grid-cols-2">
                                     {categories.map((category) => (
-                                        <option
+                                        <label
                                             key={category.id}
-                                            value={category.id}
+                                            className="inline-flex items-center gap-2 rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-700 dark:text-gray-200"
                                         >
+                                            <input
+                                                type="checkbox"
+                                                checked={data.menu_category_ids.includes(
+                                                    category.id,
+                                                )}
+                                                onChange={() =>
+                                                    toggleCategory(category.id)
+                                                }
+                                                className="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500"
+                                            />
                                             {category.name}
-                                        </option>
+                                        </label>
                                     ))}
-                                </select>
+                                </div>
                                 <InputError
-                                    message={errors.menu_category_id}
+                                    message={errors.menu_category_ids}
                                     className="mt-2"
                                 />
                             </div>

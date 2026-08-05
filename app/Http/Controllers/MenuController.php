@@ -43,7 +43,7 @@ class MenuController extends Controller
                     'image_url' => $driveImage['url'],
                 ]);
 
-                $menuItem->menuCategories()->sync([$validated['menu_category_id']]);
+                $menuItem->menuCategories()->sync($validated['menu_category_ids']);
                 $menuItem->schools()->sync($validated['school_ids']);
                 $menuItem->days()->createMany($this->dayRecords($validated['days']));
             });
@@ -73,7 +73,7 @@ class MenuController extends Controller
                 }
 
                 $menu->update($attributes);
-                $menu->menuCategories()->sync([$validated['menu_category_id']]);
+                $menu->menuCategories()->sync($validated['menu_category_ids']);
                 $menu->schools()->sync($validated['school_ids']);
                 $menu->days()->delete();
                 $menu->days()->createMany($this->dayRecords($validated['days']));
@@ -112,7 +112,8 @@ class MenuController extends Controller
     private function validateMenu(Request $request, bool $imageRequired): array
     {
         return $request->validate([
-            'menu_category_id' => ['required', 'integer', Rule::exists('menu_categories', 'id')],
+            'menu_category_ids' => ['required', 'array', 'min:1'],
+            'menu_category_ids.*' => ['required', 'integer', 'distinct', Rule::exists('menu_categories', 'id')],
             'school_ids' => ['required', 'array', 'min:1'],
             'school_ids.*' => ['required', 'integer', 'distinct', Rule::exists('schools', 'id')],
             'name' => ['required', 'string', 'max:255'],
