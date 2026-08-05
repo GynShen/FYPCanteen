@@ -4,6 +4,7 @@ use App\Http\Controllers\SchoolController;
 use App\Http\Controllers\MenuCategoryController;
 use App\Http\Controllers\MenuController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\GoogleDriveController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -20,6 +21,14 @@ Route::get('/', function () {
 Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
+
+Route::controller(GoogleDriveController::class)->group(function () {
+    Route::get('file-upload', 'index');
+    Route::post('upload-file', 'uploadFileToDrive')->name('upload-file');
+
+    Route::get('drive/download/{id}', 'downloadFile')->name('drive.download');
+    Route::get('drive/delete/{id}', 'deleteFile')->name('drive.delete');
+});
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
