@@ -13,7 +13,7 @@ class MenuController extends Controller
         abort_unless($request->user()->hasRole('operator'), 403);
 
         return inertia('Operator/MenuManagement', [
-            'menuItems' => MenuItem::with('menuCategory')->get(),
+            'menuItems' => MenuItem::with('menuCategories')->get(),
             'categories' => MenuCategory::orderBy('name')->get(),
         ]);
     }
