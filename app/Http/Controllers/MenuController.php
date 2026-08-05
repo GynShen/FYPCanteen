@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\MenuCategory;
 use App\Models\MenuItem;
+use App\Models\School;
 use App\Services\GoogleDriveService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -21,8 +22,9 @@ class MenuController extends Controller
         $this->authorizeOperator($request);
 
         return inertia('Operator/MenuManagement', [
-            'menuItems' => MenuItem::with(['menuCategories', 'days'])->latest()->get(),
+            'menuItems' => MenuItem::with(['menuCategories', 'days', 'schools'])->latest()->get(),
             'categories' => MenuCategory::orderBy('name')->get(),
+            'schools' => School::orderBy('name')->get(),
         ]);
     }
 
@@ -42,6 +44,7 @@ class MenuController extends Controller
                 ]);
 
                 $menuItem->menuCategories()->sync([$validated['menu_category_id']]);
+                $menuItem->schools()->sync($validated['school_ids']);
                 $menuItem->days()->createMany($this->dayRecords($validated['days']));
             });
         } catch (Throwable $exception) {
@@ -71,6 +74,7 @@ class MenuController extends Controller
 
                 $menu->update($attributes);
                 $menu->menuCategories()->sync([$validated['menu_category_id']]);
+                $menu->schools()->sync($validated['school_ids']);
                 $menu->days()->delete();
                 $menu->days()->createMany($this->dayRecords($validated['days']));
             });
@@ -109,6 +113,8 @@ class MenuController extends Controller
     {
         return $request->validate([
             'menu_category_id' => ['required', 'integer', Rule::exists('menu_categories', 'id')],
+            'school_ids' => ['required', 'array', 'min:1'],
+            'school_ids.*' => ['required', 'integer', 'distinct', Rule::exists('schools', 'id')],
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
             'days' => ['required', 'array', 'min:1'],

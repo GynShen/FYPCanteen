@@ -16,7 +16,7 @@ const days = [
     'sunday',
 ];
 
-export default function MenuManagement({ menuItems, categories }) {
+export default function MenuManagement({ menuItems, categories, schools }) {
     const [editingId, setEditingId] = useState(null);
     const fileInput = useRef(null);
 
@@ -32,6 +32,7 @@ export default function MenuManagement({ menuItems, categories }) {
         transform,
     } = useForm({
         menu_category_id: categories[0]?.id ?? '',
+        school_ids: [],
         name: '',
         description: '',
         days: [],
@@ -55,6 +56,7 @@ export default function MenuManagement({ menuItems, categories }) {
         setEditingId(item.id);
         setData({
             menu_category_id: item.menu_categories[0]?.id ?? '',
+            school_ids: item.schools.map((school) => school.id),
             name: item.name,
             description: item.description ?? '',
             days: item.days.map((day) => day.day_of_week),
@@ -97,6 +99,17 @@ export default function MenuManagement({ menuItems, categories }) {
         );
     };
 
+    const toggleSchool = (schoolId) => {
+        setData(
+            'school_ids',
+            data.school_ids.includes(schoolId)
+                ? data.school_ids.filter(
+                      (selectedSchoolId) => selectedSchoolId !== schoolId,
+                  )
+                : [...data.school_ids, schoolId],
+        );
+    };
+
     const remove = (item) => {
         if (
             !window.confirm(
@@ -133,9 +146,21 @@ export default function MenuManagement({ menuItems, categories }) {
                             {editingId ? 'Edit Meal' : 'Add Meal'}
                         </h3>
 
+                        {editingId && (
+                            <p className="mb-4 text-sm font-medium text-indigo-600 dark:text-indigo-400">
+                                Editing menu item ID: {editingId}
+                            </p>
+                        )}
+
                         {categories.length === 0 && (
                             <p className="mb-4 rounded-md bg-amber-50 p-3 text-sm text-amber-800">
                                 Create a menu category before adding a meal.
+                            </p>
+                        )}
+
+                        {schools.length === 0 && (
+                            <p className="mb-4 rounded-md bg-amber-50 p-3 text-sm text-amber-800">
+                                Create a school before adding a meal.
                             </p>
                         )}
 
@@ -215,6 +240,34 @@ export default function MenuManagement({ menuItems, categories }) {
                                 </div>
                                 <InputError
                                     message={errors.days}
+                                    className="mt-2"
+                                />
+                            </div>
+
+                            <div>
+                                <InputLabel value="Available at Schools" />
+                                <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                                    {schools.map((school) => (
+                                        <label
+                                            key={school.id}
+                                            className="inline-flex items-center gap-2 rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-700 dark:text-gray-200"
+                                        >
+                                            <input
+                                                type="checkbox"
+                                                checked={data.school_ids.includes(
+                                                    school.id,
+                                                )}
+                                                onChange={() =>
+                                                    toggleSchool(school.id)
+                                                }
+                                                className="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500"
+                                            />
+                                            {school.name}
+                                        </label>
+                                    ))}
+                                </div>
+                                <InputError
+                                    message={errors.school_ids}
                                     className="mt-2"
                                 />
                             </div>
@@ -317,7 +370,9 @@ export default function MenuManagement({ menuItems, categories }) {
                             <div className="flex items-center gap-3 md:col-span-2">
                                 <PrimaryButton
                                     disabled={
-                                        processing || categories.length === 0
+                                        processing ||
+                                        categories.length === 0 ||
+                                        schools.length === 0
                                     }
                                 >
                                     {processing
@@ -345,10 +400,12 @@ export default function MenuManagement({ menuItems, categories }) {
                                 <thead className="bg-slate-100">
                                     <tr>
                                         {[
+                                            'ID',
                                             'Photo',
                                             'Meal',
                                             'Category',
-                                            'Day',
+                                            'Schools',
+                                            'Days',
                                             'Price',
                                             'Available',
                                             'Operation',
@@ -365,6 +422,9 @@ export default function MenuManagement({ menuItems, categories }) {
                                 <tbody className="divide-y divide-gray-200 bg-white">
                                     {menuItems.map((item) => (
                                         <tr key={item.id}>
+                                            <td className="px-4 py-3 text-center text-sm text-gray-900">
+                                                {item.id}
+                                            </td>
                                             <td className="px-4 py-3">
                                                 {item.image_url ? (
                                                     <img
@@ -393,6 +453,13 @@ export default function MenuManagement({ menuItems, categories }) {
                                                             category.name,
                                                     )
                                                     .join(', ') || '—'}
+                                            </td>
+                                            <td className="px-4 py-3 text-center text-sm capitalize text-gray-900">
+                                                {item.schools
+                                                    .map(
+                                                        (school) => school.name,
+                                                    )
+                                                    .join(', ')}
                                             </td>
                                             <td className="px-4 py-3 text-center text-sm capitalize text-gray-900">
                                                 {item.days
@@ -442,7 +509,7 @@ export default function MenuManagement({ menuItems, categories }) {
                                     {menuItems.length === 0 && (
                                         <tr>
                                             <td
-                                                colSpan="7"
+                                                colSpan="9"
                                                 className="px-4 py-10 text-center text-sm text-gray-500"
                                             >
                                                 No meals have been added yet.

@@ -48,6 +48,11 @@ class MenuItem extends Model
         return $this->belongsToMany(MenuCategory::class, 'menu_category_menu_items');
     }
 
+    public function schools(): BelongsToMany
+    {
+        return $this->belongsToMany(School::class, 'school_menu_items')->withTimestamps();
+    }
+
     public function days(): HasMany
     {
         return $this->hasMany(MenuItemDay::class);
