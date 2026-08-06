@@ -1,9 +1,10 @@
 <?php
 
-use App\Http\Controllers\SchoolController;
 use App\Http\Controllers\MenuCategoryController;
 use App\Http\Controllers\MenuController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\SchoolController;
+use App\Http\Controllers\StudentController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -32,6 +33,13 @@ Route::middleware('auth')->group(function () {
     Route::patch('/operator/school/{school}', [SchoolController::class, 'update'])->name('operator.school.update');
     Route::delete('/operator/school/{school}', [SchoolController::class, 'destroy'])->name('operator.school.destroy');
 
+    // Manage students
+    Route::get('/operator/student', [StudentController::class, 'index'])->name('operator.student');
+    Route::post('/operator/student', [StudentController::class, 'store'])->name('operator.student.store');
+    Route::patch('/operator/student/{student}', [StudentController::class, 'update'])->name('operator.student.update');
+    Route::delete('/operator/student/{student}', [StudentController::class, 'destroy'])->name('operator.student.destroy');
+    Route::get('/operator/student/{student}/qr-code', [StudentController::class, 'qrCode'])->name('operator.student.qr-code');
+
     // Manage menu category
     Route::get('/operator/menuCategory', [MenuCategoryController::class, 'index'])->name('operator.menuCategory');
     Route::post('/operator/menuCategory', [MenuCategoryController::class, 'store'])->name('operator.menuCategory.store');
@@ -45,4 +53,4 @@ Route::middleware('auth')->group(function () {
     Route::delete('/operator/menu/{menu}', [MenuController::class, 'destroy'])->name('operator.menu.destroy');
 });
 
-require __DIR__ . '/auth.php';
+require __DIR__.'/auth.php';

@@ -41,6 +41,14 @@ export default function AuthenticatedLayout({ header, children }) {
                                             School Management
                                         </NavLink>
                                         <NavLink
+                                            href={route('operator.student')}
+                                            active={route().current(
+                                                'operator.student',
+                                            )}
+                                        >
+                                            Student Management
+                                        </NavLink>
+                                        <NavLink
                                             href={route(
                                                 'operator.menuCategory',
                                             )}
@@ -185,9 +193,12 @@ export default function AuthenticatedLayout({ header, children }) {
                                         School Management
                                     </ResponsiveNavLink>
                                     <ResponsiveNavLink
-                                        href={route(
-                                            'operator.menuCategory',
-                                        )}
+                                        href={route('operator.student')}
+                                    >
+                                        Student Management
+                                    </ResponsiveNavLink>
+                                    <ResponsiveNavLink
+                                        href={route('operator.menuCategory')}
                                     >
                                         Menu Category Management
                                     </ResponsiveNavLink>
