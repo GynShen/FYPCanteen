@@ -48,6 +48,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/customer/checkout/success', [StripePaymentController::class, 'success'])->name('customer.checkout.success');
     Route::get('/customer/checkout/cancel/{order}', [StripePaymentController::class, 'cancel'])->name('customer.checkout.cancel');
     Route::get('/customer/orders', [CustomerOrderController::class, 'orders'])->name('customer.orders');
+    Route::patch('/customer/orders/items/{orderItem}', [CustomerOrderController::class, 'updateOrderedMeal'])->name('customer.orders.items.update');
 
     // Manage schools
     Route::get('/operator/school', [SchoolController::class, 'index'])->name('operator.school');

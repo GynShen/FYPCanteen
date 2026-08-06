@@ -6,6 +6,7 @@ use App\Models\Cart;
 use App\Models\CartItem;
 use App\Models\Children;
 use App\Models\MenuItem;
+use App\Models\OrderItem;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -204,14 +205,68 @@ class CustomerOrderController extends Controller
     public function orders(Request $request)
     {
         $this->authorizeCustomer($request);
+        [$weekStart, $weekEnd] = $this->orderingWindow();
+        $canModifyOrders = now()->dayOfWeekIso !== 7;
+        $orders = $request->user()
+            ->orders()
+            ->with(['payment', 'orderItems.menuItem', 'orderItems.student.school'])
+            ->latest()
+            ->get();
+
+        $orders->each(function ($order) use ($canModifyOrders, $weekStart, $weekEnd) {
+            $order->orderItems->each(fn ($item) => $item->setAttribute(
+                'can_edit',
+                $canModifyOrders
+                    && $order->order_status === 'paid'
+                    && $item->scheduled_time->betweenIncluded($weekStart, $weekEnd)
+            ));
+        });
 
         return inertia('Customer/Orders', [
-            'orders' => $request->user()
-                ->orders()
-                ->with(['payment', 'orderItems.menuItem', 'orderItems.student.school'])
-                ->latest()
+            'orders' => $orders,
+            'menuItems' => MenuItem::query()
+                ->where('is_available', true)
+                ->whereHas('schools.students.child', fn ($query) => $query->where('user_id', $request->user()->id))
+                ->with(['days', 'schools'])
+                ->orderBy('name')
                 ->get(),
+            'canModifyOrders' => $canModifyOrders,
         ]);
+    }
+
+    public function updateOrderedMeal(Request $request, OrderItem $orderItem): RedirectResponse
+    {
+        $this->authorizeCustomer($request);
+        abort_unless($orderItem->order()->where('user_id', $request->user()->id)->exists(), 403);
+        abort_unless($orderItem->order()->where('order_status', 'paid')->exists(), 422, 'Only paid orders can be changed.');
+
+        [$weekStart, $weekEnd] = $this->orderingWindow();
+        if (now()->dayOfWeekIso === 7 || ! $orderItem->scheduled_time->betweenIncluded($weekStart, $weekEnd)) {
+            throw ValidationException::withMessages([
+                'order_item' => 'This order can no longer be changed. Saturday is the deadline for next week.',
+            ]);
+        }
+
+        $validated = $request->validate([
+            'menu_item_id' => ['required', 'integer', Rule::exists('menu_items', 'id')],
+        ]);
+        $replacement = MenuItem::query()
+            ->whereKey($validated['menu_item_id'])
+            ->where('is_available', true)
+            ->where('price', $orderItem->unit_price)
+            ->whereHas('schools.students', fn ($query) => $query->whereKey($orderItem->student_id))
+            ->whereHas('days', fn ($query) => $query->where('day_of_week', strtolower($orderItem->scheduled_time->format('l'))))
+            ->first();
+
+        if (! $replacement) {
+            throw ValidationException::withMessages([
+                'menu_item_id' => 'Choose a same-price meal available for this child on the same weekday.',
+            ]);
+        }
+
+        $orderItem->update(['menu_item_id' => $replacement->id]);
+
+        return back()->with('success', 'Ordered meal changed successfully. No additional payment was required.');
     }
 
     /** @return array<string, mixed> */
