@@ -15,9 +15,9 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->text('description')->nullable();
-            $table->enum('day_of_week', ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']);
             $table->decimal('price', 10, 2);
             $table->text('image_url')->nullable();
+            $table->string('image_drive_id')->nullable();
             $table->boolean('is_available')->default(false);
             $table->timestamps();
         });

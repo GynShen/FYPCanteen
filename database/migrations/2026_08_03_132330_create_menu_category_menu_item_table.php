@@ -11,10 +11,6 @@ return new class extends Migration
      */
     public function up(): void
     {
-        if (Schema::hasTable('menu_category_menu_items')) {
-            return;
-        }
-
         Schema::create('menu_category_menu_items', function (Blueprint $table) {
             $table->id();
             $table->foreignId('menu_category_id')->constrained('menu_categories')->cascadeOnDelete();

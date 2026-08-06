@@ -18,6 +18,8 @@ return new class extends Migration
             $table->foreignId('menu_item_id')
                 ->constrained('menu_items')->cascadeOnDelete();
             $table->timestamps();
+
+            $table->unique(['school_id', 'menu_item_id']);
         });
     }
 
