@@ -30,24 +30,36 @@ export default function AuthenticatedLayout({ header, children }) {
                                 >
                                     Dashboard
                                 </NavLink>
-                                <NavLink
-                                    href={route('operator.school')}
-                                    active={route().current('operator.school')}
-                                >
-                                    School Management
-                                </NavLink>
-                                <NavLink
-                                    href={route('operator.menuCategory')}
-                                    active={route().current('operator.menuCategory')}
-                                >
-                                    Menu Category Management
-                                </NavLink>
-                                <NavLink
-                                    href={route('operator.menu')}
-                                    active={route().current('operator.menu')}
-                                >
-                                    Menu Management
-                                </NavLink>
+                                {user.role === 'operator' && (
+                                    <>
+                                        <NavLink
+                                            href={route('operator.school')}
+                                            active={route().current(
+                                                'operator.school',
+                                            )}
+                                        >
+                                            School Management
+                                        </NavLink>
+                                        <NavLink
+                                            href={route(
+                                                'operator.menuCategory',
+                                            )}
+                                            active={route().current(
+                                                'operator.menuCategory',
+                                            )}
+                                        >
+                                            Menu Category Management
+                                        </NavLink>
+                                        <NavLink
+                                            href={route('operator.menu')}
+                                            active={route().current(
+                                                'operator.menu',
+                                            )}
+                                        >
+                                            Menu Management
+                                        </NavLink>
+                                    </>
+                                )}
                             </div>
                         </div>
 
@@ -165,9 +177,27 @@ export default function AuthenticatedLayout({ header, children }) {
                         </div>
 
                         <div className="mt-3 space-y-1">
-                            <ResponsiveNavLink href={route('operator.school')}>
-                                School Management
-                            </ResponsiveNavLink>
+                            {user.role === 'operator' && (
+                                <>
+                                    <ResponsiveNavLink
+                                        href={route('operator.school')}
+                                    >
+                                        School Management
+                                    </ResponsiveNavLink>
+                                    <ResponsiveNavLink
+                                        href={route(
+                                            'operator.menuCategory',
+                                        )}
+                                    >
+                                        Menu Category Management
+                                    </ResponsiveNavLink>
+                                    <ResponsiveNavLink
+                                        href={route('operator.menu')}
+                                    >
+                                        Menu Management
+                                    </ResponsiveNavLink>
+                                </>
+                            )}
                             <ResponsiveNavLink href={route('profile.edit')}>
                                 Profile
                             </ResponsiveNavLink>
