@@ -84,7 +84,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                                 'customer.menu',
                                             )}
                                         >
-                                            Menu & Cart
+                                            Menu
                                         </NavLink>
                                         <NavLink
                                             href={route('customer.orders')}
@@ -247,7 +247,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                     <ResponsiveNavLink
                                         href={route('customer.menu')}
                                     >
-                                        Menu & Cart
+                                        Menu
                                     </ResponsiveNavLink>
                                     <ResponsiveNavLink
                                         href={route('customer.orders')}

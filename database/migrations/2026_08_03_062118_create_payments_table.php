@@ -21,6 +21,8 @@ return new class extends Migration
             $table->dateTime('payment_date');
             $table->string('method');
             $table->string('status');
+            $table->string('stripe_session_id')->nullable()->unique();
+            $table->string('stripe_payment_intent_id')->nullable()->index();
             $table->timestamps();
         });
     }

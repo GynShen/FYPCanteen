@@ -194,7 +194,7 @@ export default function CustomerMenu({ children, menuItems, cartItems }) {
     const checkout = () => {
         if (
             window.confirm(
-                'Complete the temporary payment and create this order?',
+                'Continue to Stripe to pay for this order?',
             )
         ) {
             router.post(route('customer.checkout'));
@@ -205,11 +205,11 @@ export default function CustomerMenu({ children, menuItems, cartItems }) {
         <AuthenticatedLayout
             header={
                 <h2 className="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
-                    Menu & Cart
+                    Menu
                 </h2>
             }
         >
-            <Head title="Menu & Cart" />
+            <Head title="Menu" />
             <div className="py-12">
                 <div className="mx-auto max-w-7xl space-y-6 sm:px-6 lg:px-8">
                     {children.length === 0 ? (
@@ -431,11 +431,10 @@ export default function CustomerMenu({ children, menuItems, cartItems }) {
                                     onClick={checkout}
                                     className="rounded-md bg-green-600 px-5 py-3 font-medium text-white hover:bg-green-700"
                                 >
-                                    Pay Now (Temporary)
+                                    Pay with Stripe
                                 </button>
                                 <p className="text-xs text-gray-500">
-                                    Placeholder payment only. Stripe is not yet
-                                    connected.
+                                    You will be redirected to Stripe's secure checkout page.
                                 </p>
                             </div>
                         )}

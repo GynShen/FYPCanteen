@@ -17,6 +17,8 @@ class Payment extends Model
         'payment_date',
         'method',
         'status',
+        'stripe_session_id',
+        'stripe_payment_intent_id',
     ];
 
     protected function casts(): array

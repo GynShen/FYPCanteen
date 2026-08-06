@@ -6,6 +6,7 @@ use App\Http\Controllers\MenuCategoryController;
 use App\Http\Controllers\MenuController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SchoolController;
+use App\Http\Controllers\StripePaymentController;
 use App\Http\Controllers\StudentController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -24,6 +25,8 @@ Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
+Route::post('/stripe/webhook', [StripePaymentController::class, 'webhook'])->name('stripe.webhook');
+
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
@@ -41,7 +44,9 @@ Route::middleware('auth')->group(function () {
     Route::put('/customer/cart-selection', [CustomerOrderController::class, 'setCartQuantity'])->name('customer.cart.selection');
     Route::patch('/customer/cart/{cartItem}', [CustomerOrderController::class, 'updateCart'])->name('customer.cart.update');
     Route::delete('/customer/cart/{cartItem}', [CustomerOrderController::class, 'removeFromCart'])->name('customer.cart.destroy');
-    Route::post('/customer/checkout', [CustomerOrderController::class, 'checkout'])->name('customer.checkout');
+    Route::post('/customer/checkout', [StripePaymentController::class, 'checkout'])->name('customer.checkout');
+    Route::get('/customer/checkout/success', [StripePaymentController::class, 'success'])->name('customer.checkout.success');
+    Route::get('/customer/checkout/cancel/{order}', [StripePaymentController::class, 'cancel'])->name('customer.checkout.cancel');
     Route::get('/customer/orders', [CustomerOrderController::class, 'orders'])->name('customer.orders');
 
     // Manage schools
