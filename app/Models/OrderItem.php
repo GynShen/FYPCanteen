@@ -14,9 +14,18 @@ class OrderItem extends Model
         'order_id',
         'student_id',
         'menu_item_id',
+        'unit_price',
         'scheduled_time',
-        'quantity'
+        'quantity',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'unit_price' => 'decimal:2',
+            'scheduled_time' => 'datetime',
+        ];
+    }
 
     public function order(): BelongsTo
     {
@@ -32,5 +41,4 @@ class OrderItem extends Model
     {
         return $this->belongsTo(MenuItem::class);
     }
-
 }

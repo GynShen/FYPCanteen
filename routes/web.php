@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ChildrenController;
+use App\Http\Controllers\CustomerOrderController;
 use App\Http\Controllers\MenuCategoryController;
 use App\Http\Controllers\MenuController;
 use App\Http\Controllers\ProfileController;
@@ -33,6 +34,15 @@ Route::middleware('auth')->group(function () {
     Route::post('/customer/children', [ChildrenController::class, 'store'])->name('customer.children.store');
     Route::patch('/customer/children/{child}', [ChildrenController::class, 'update'])->name('customer.children.update');
     Route::delete('/customer/children/{child}', [ChildrenController::class, 'destroy'])->name('customer.children.destroy');
+
+    // Customer ordering
+    Route::get('/customer/menu', [CustomerOrderController::class, 'menu'])->name('customer.menu');
+    Route::post('/customer/cart', [CustomerOrderController::class, 'addToCart'])->name('customer.cart.store');
+    Route::put('/customer/cart-selection', [CustomerOrderController::class, 'setCartQuantity'])->name('customer.cart.selection');
+    Route::patch('/customer/cart/{cartItem}', [CustomerOrderController::class, 'updateCart'])->name('customer.cart.update');
+    Route::delete('/customer/cart/{cartItem}', [CustomerOrderController::class, 'removeFromCart'])->name('customer.cart.destroy');
+    Route::post('/customer/checkout', [CustomerOrderController::class, 'checkout'])->name('customer.checkout');
+    Route::get('/customer/orders', [CustomerOrderController::class, 'orders'])->name('customer.orders');
 
     // Manage schools
     Route::get('/operator/school', [SchoolController::class, 'index'])->name('operator.school');

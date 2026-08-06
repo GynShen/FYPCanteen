@@ -16,8 +16,16 @@ class Payment extends Model
         'amount',
         'payment_date',
         'method',
-        'status'
+        'status',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'amount' => 'decimal:2',
+            'payment_date' => 'datetime',
+        ];
+    }
 
     public function user(): BelongsTo
     {
