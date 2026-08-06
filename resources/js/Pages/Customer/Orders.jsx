@@ -22,6 +22,7 @@ export default function Orders({ orders, menuItems, canModifyOrders }) {
     const [editingItem, setEditingItem] = useState(null);
     const [replacementId, setReplacementId] = useState('');
     const [processing, setProcessing] = useState(false);
+    const [expandedOrders, setExpandedOrders] = useState({});
 
     const replacements = useMemo(() => {
         if (!editingItem) return [];
@@ -69,22 +70,31 @@ export default function Orders({ orders, menuItems, canModifyOrders }) {
 
                     {orders.map((order) => {
                         const paymentStatus = order.payment?.status ?? 'unpaid';
+                        const expanded = expandedOrders[order.id] ?? false;
                         const childGroups = [...new Map(order.order_items.map((item) => [item.student_id, item.student])).entries()];
 
                         return (
                             <section key={order.id} className="overflow-hidden rounded-xl border border-slate-300 bg-white shadow-lg">
-                                <div className="flex flex-col justify-between gap-4 border-b border-slate-300 bg-slate-100 p-5 sm:flex-row sm:items-center">
+                                <button
+                                    type="button"
+                                    onClick={() => setExpandedOrders((current) => ({ ...current, [order.id]: !expanded }))}
+                                    className="flex w-full flex-col justify-between gap-4 border-b border-slate-300 bg-slate-100 p-5 text-left transition-colors hover:bg-slate-200 sm:flex-row sm:items-center"
+                                    aria-expanded={expanded}
+                                >
                                     <div><h3 className="text-lg font-bold text-slate-900">Order #{order.id}</h3><p className="mt-1 text-sm text-slate-600">{new Date(order.created_at).toLocaleString('en-MY')}</p></div>
-                                    <div className="text-left sm:text-right">
+                                    <div className="flex items-center gap-4 text-left sm:text-right">
+                                        <div>
                                         <p className="text-2xl font-bold text-slate-900">RM {Number(order.total_amount).toFixed(2)}</p>
                                         <div className="mt-2 flex flex-wrap items-center gap-2 sm:justify-end">
                                             <span className="rounded-full border px-3 py-1 text-xs font-bold capitalize" style={paymentBadge[paymentStatus] ?? defaultPaymentBadge}>Payment: {paymentStatus}</span>
                                             <span className="rounded-full border border-slate-300 bg-white px-3 py-1 text-xs font-semibold capitalize text-slate-700">{order.payment?.method ?? 'No payment method'}</span>
                                         </div>
+                                        </div>
+                                        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-300 text-xl font-bold text-slate-700">{expanded ? '−' : '+'}</span>
                                     </div>
-                                </div>
+                                </button>
 
-                                <div className="space-y-5 p-5">
+                                {expanded && <div className="space-y-5 p-5">
                                     {childGroups.map(([studentId, student], childIndex) => {
                                         const items = order.order_items.filter((item) => item.student_id === studentId);
                                         return (
@@ -123,7 +133,7 @@ export default function Orders({ orders, menuItems, canModifyOrders }) {
                                             </div>
                                         );
                                     })}
-                                </div>
+                                </div>}
                             </section>
                         );
                     })}
