@@ -2,6 +2,7 @@ import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
+import WeeklyMenuTimetable from '@/Components/WeeklyMenuTimetable';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, useForm } from '@inertiajs/react';
 import { useRef, useState } from 'react';
@@ -16,7 +17,12 @@ const days = [
     'sunday',
 ];
 
-export default function MenuManagement({ menuItems, categories, schools }) {
+export default function MenuManagement({
+    menuItems,
+    categories,
+    schools,
+    previewSchoolId,
+}) {
     const [editingId, setEditingId] = useState(null);
     const fileInput = useRef(null);
 
@@ -70,6 +76,15 @@ export default function MenuManagement({ menuItems, categories, schools }) {
         if (fileInput.current) {
             fileInput.current.value = '';
         }
+    };
+
+    const editFromPreview = (item) => {
+        startEdit(item);
+        window.setTimeout(() => {
+            document
+                .getElementById('menu-form')
+                ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 50);
     };
 
     const submit = (event) => {
@@ -154,7 +169,10 @@ export default function MenuManagement({ menuItems, categories, schools }) {
 
             <div className="py-12">
                 <div className="mx-auto max-w-7xl space-y-6 sm:px-6 lg:px-8">
-                    <div className="bg-white p-4 shadow sm:rounded-lg sm:p-8 dark:bg-gray-800">
+                    <div
+                        id="menu-form"
+                        className="scroll-mt-6 bg-white p-4 shadow sm:rounded-lg sm:p-8 dark:bg-gray-800"
+                    >
                         <h3 className="mb-6 text-lg font-medium text-gray-900 dark:text-gray-100">
                             {editingId ? 'Edit Meal' : 'Add Meal'}
                         </h3>
@@ -528,6 +546,13 @@ export default function MenuManagement({ menuItems, categories, schools }) {
                             </table>
                         </div>
                     </div>
+
+                    <WeeklyMenuTimetable
+                        menuItems={menuItems}
+                        schools={schools}
+                        initialSchoolId={previewSchoolId}
+                        onEdit={editFromPreview}
+                    />
                 </div>
             </div>
         </AuthenticatedLayout>

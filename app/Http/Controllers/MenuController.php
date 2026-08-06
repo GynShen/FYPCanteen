@@ -25,6 +25,10 @@ class MenuController extends Controller
             'menuItems' => MenuItem::with(['menuCategories', 'days', 'schools'])->latest()->get(),
             'categories' => MenuCategory::orderBy('name')->get(),
             'schools' => School::orderBy('name')->get(),
+            'previewSchoolId' => $request->filled('school_id')
+                && School::whereKey($request->integer('school_id'))->exists()
+                    ? $request->integer('school_id')
+                    : 'all',
         ]);
     }
 
