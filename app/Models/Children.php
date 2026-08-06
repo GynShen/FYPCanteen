@@ -10,6 +10,8 @@ class Children extends Model
 {
     use HasFactory;
 
+    protected $table = 'children';
+
     protected $fillable = [
         'user_id',
         'student_id',

@@ -68,6 +68,16 @@ export default function AuthenticatedLayout({ header, children }) {
                                         </NavLink>
                                     </>
                                 )}
+                                {user.role === 'customer' && (
+                                    <NavLink
+                                        href={route('customer.children')}
+                                        active={route().current(
+                                            'customer.children',
+                                        )}
+                                    >
+                                        Children Management
+                                    </NavLink>
+                                )}
                             </div>
                         </div>
 
@@ -208,6 +218,13 @@ export default function AuthenticatedLayout({ header, children }) {
                                         Menu Management
                                     </ResponsiveNavLink>
                                 </>
+                            )}
+                            {user.role === 'customer' && (
+                                <ResponsiveNavLink
+                                    href={route('customer.children')}
+                                >
+                                    Children Management
+                                </ResponsiveNavLink>
                             )}
                             <ResponsiveNavLink href={route('profile.edit')}>
                                 Profile
