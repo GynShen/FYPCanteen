@@ -217,6 +217,10 @@ export default function CustomerMenu({ children, menuItems, cartItems }) {
             <Head title="Menu" />
             <div className="py-12">
                 <div className="mx-auto max-w-7xl space-y-6 sm:px-6 lg:px-8">
+                    <div className="rounded-lg border border-emerald-300 bg-emerald-50 p-4 text-sm text-emerald-800 shadow-sm">
+                        Meal orders for the following week must be placed by Saturday. Please review and complete your children&apos;s meal selections before the weekly deadline.
+                    </div>
+
                     {children.length === 0 ? (
                         <div className="rounded-lg bg-amber-50 p-6 text-amber-800 shadow">
                             Link a child in Children Management before ordering
@@ -264,9 +268,11 @@ export default function CustomerMenu({ children, menuItems, cartItems }) {
                                             ))}
                                         </select>
                                     </div>
-                                    <button type="button" onClick={() => setShowCart(true)} className="rounded-md bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700">
-                                        Cart ({cartItems.length}) · RM {total.toFixed(2)}
-                                    </button>
+                                    {selectedChild?.student.school?.is_active && (
+                                        <button type="button" onClick={() => setShowCart(true)} className="rounded-md bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700">
+                                            Cart ({cartItems.length}) · RM {total.toFixed(2)}
+                                        </button>
+                                    )}
                                     </div>
                                 </div>
                                 {Object.values(errors).length > 0 && (
@@ -276,6 +282,18 @@ export default function CustomerMenu({ children, menuItems, cartItems }) {
                                 )}
                             </section>
 
+                            {!selectedChild?.student.school?.is_active && (
+                                <section className="rounded-lg border border-amber-300 bg-amber-50 p-6 shadow">
+                                    <h3 className="text-lg font-semibold text-amber-900">
+                                        Meal ordering is temporarily unavailable
+                                    </h3>
+                                    <p className="mt-2 text-sm text-amber-800">
+                                        {selectedChild?.student.school?.name} is currently inactive. We apologize for the inconvenience. Please contact the school for further assistance.
+                                    </p>
+                                </section>
+                            )}
+
+                            {selectedChild?.student.school?.is_active && (
                             <section className="overflow-hidden bg-white shadow sm:rounded-lg dark:bg-gray-800">
                                 <div className="overflow-x-auto">
                                     <table className="w-full min-w-[820px] table-fixed border-collapse border border-slate-300">
@@ -382,6 +400,7 @@ export default function CustomerMenu({ children, menuItems, cartItems }) {
                                     <TablePagination totalItems={visibleMeals.length} currentPage={currentPage} onPageChange={setCurrentPage} />
                                 </div>
                             </section>
+                            )}
                         </>
                     )}
 

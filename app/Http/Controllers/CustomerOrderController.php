@@ -24,7 +24,11 @@ class CustomerOrderController extends Controller
             ->children()
             ->with('student.school')
             ->get();
-        $schoolIds = $children->pluck('student.school_id')->unique()->values();
+        $schoolIds = $children
+            ->filter(fn ($child) => $child->student?->school?->is_active)
+            ->pluck('student.school_id')
+            ->unique()
+            ->values();
         $cart = Cart::query()
             ->where('user_id', $request->user()->id)
             ->with([
@@ -39,7 +43,9 @@ class CustomerOrderController extends Controller
             'children' => $children,
             'menuItems' => MenuItem::query()
                 ->where('is_available', true)
-                ->whereHas('schools', fn ($query) => $query->whereIn('schools.id', $schoolIds))
+                ->whereHas('schools', fn ($query) => $query
+                    ->where('schools.is_active', true)
+                    ->whereIn('schools.id', $schoolIds))
                 ->with(['menuCategories', 'days', 'schools'])
                 ->orderBy('name')
                 ->get(),
@@ -240,6 +246,12 @@ class CustomerOrderController extends Controller
         abort_unless($orderItem->order()->where('user_id', $request->user()->id)->exists(), 403);
         abort_unless($orderItem->order()->where('order_status', 'paid')->exists(), 422, 'Only paid orders can be changed.');
 
+        if (! $orderItem->student()->whereHas('school', fn ($query) => $query->where('is_active', true))->exists()) {
+            throw ValidationException::withMessages([
+                'order_item' => 'Meal changes are unavailable because this school is currently inactive.',
+            ]);
+        }
+
         [$weekStart, $weekEnd] = $this->orderingWindow();
         if (now()->dayOfWeekIso === 7 || ! $orderItem->scheduled_time->betweenIncluded($weekStart, $weekEnd)) {
             throw ValidationException::withMessages([
@@ -292,10 +304,13 @@ class CustomerOrderController extends Controller
         $childExists = Children::query()
             ->where('user_id', $request->user()->id)
             ->where('student_id', $studentId)
+            ->whereHas('student.school', fn ($query) => $query->where('is_active', true))
             ->exists();
 
         if (! $childExists) {
-            throw ValidationException::withMessages(['student_id' => 'This student is not linked to your account.']);
+            throw ValidationException::withMessages([
+                'student_id' => 'Meal ordering is unavailable because this student’s school is currently inactive.',
+            ]);
         }
 
         $mealExists = MenuItem::query()
