@@ -44,12 +44,16 @@ class SchoolController extends Controller
         return redirect()->route('owner.school');
     }
 
-    public function destroy(Request $request, School $school)
+    public function toggleActive(Request $request, School $school)
     {
         abort_unless($request->user()->hasRole('owner'), 403);
 
-        $school->delete();
+        $school->update(['is_active' => ! $school->is_active]);
 
-        return redirect()->route('owner.school');
+        return back()->with(
+            'success',
+            $school->is_active ? 'School activated.' : 'School deactivated.',
+        );
     }
+
 }

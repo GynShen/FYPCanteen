@@ -14,7 +14,15 @@ class School extends Model
     protected $fillable = [
         'name',
         'address',
+        'is_active',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'is_active' => 'boolean',
+        ];
+    }
 
     public function students(): HasMany
     {

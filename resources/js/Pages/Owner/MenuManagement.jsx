@@ -306,8 +306,8 @@ export default function MenuManagement({
                                 <TextInput
                                     id="price"
                                     type="number"
-                                    min="0"
-                                    step="0.01"
+                                    min="0.01"
+                                    step="1"
                                     value={data.price}
                                     onChange={(event) =>
                                         setData('price', event.target.value)

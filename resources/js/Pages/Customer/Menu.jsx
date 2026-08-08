@@ -431,7 +431,7 @@ export default function CustomerMenu({ children, menuItems, cartItems }) {
                                     onClick={checkout}
                                     className="rounded-md bg-green-600 px-5 py-3 font-medium text-white hover:bg-green-700"
                                 >
-                                    Pay with Stripe
+                                    Make payment
                                 </button>
                                 <p className="text-xs text-gray-500">
                                     You will be redirected to Stripe's secure checkout page.

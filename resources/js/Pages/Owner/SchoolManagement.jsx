@@ -3,7 +3,7 @@ import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, useForm } from '@inertiajs/react';
+import { Head, router, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 
 export default function SchoolManagement({ schools }) {
@@ -14,7 +14,6 @@ export default function SchoolManagement({ schools }) {
         setData,
         post,
         patch,
-        delete: destroy,
         processing,
         errors,
         reset,
@@ -23,10 +22,6 @@ export default function SchoolManagement({ schools }) {
         name: '',
         address: '',
     });
-
-    const isEditingDeletedSchool =
-        editingId !== null &&
-        !schools.some((school) => school.id === editingId);
 
     const startEdit = (school) => {
         clearErrors();
@@ -75,18 +70,18 @@ export default function SchoolManagement({ schools }) {
         });
     };
 
-    const remove = (id) => {
-        const confirmed = window.confirm(
-            'Are you sure you want to delete this school?',
-        );
+    const toggleStatus = (school) => {
+        const action = school.is_active ? 'deactivate' : 'activate';
 
-        if (!confirmed) {
+        if (!window.confirm(`Are you sure you want to ${action} ${school.name}?`)) {
             return;
         }
 
-        destroy(route('owner.school.destroy', { school: id }), {
-            preserveScroll: true,
-        });
+        router.patch(
+            route('owner.school.status', { school: school.id }),
+            {},
+            { preserveScroll: true },
+        );
     };
 
     return (
@@ -176,13 +171,6 @@ export default function SchoolManagement({ schools }) {
                                     </p>
                                 )}
 
-                                {isEditingDeletedSchool && (
-                                    <p className="text-sm font-medium text-red-600">
-                                        This school has been deleted or no
-                                        longer exists.
-                                    </p>
-                                )}
-
                                 <div className="flex items-center gap-4">
                                     <PrimaryButton disabled={processing}>
                                         {editingId
@@ -224,6 +212,9 @@ export default function SchoolManagement({ schools }) {
                                         <th className="px-6 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-700">
                                             Updated At
                                         </th>
+                                        <th className="px-6 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-700">
+                                            Status
+                                        </th>
                     <th className="px-6 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-700">
                                             Operation
                                         </th>
@@ -246,6 +237,11 @@ export default function SchoolManagement({ schools }) {
                                                     school.created_at,
                                                 ).toLocaleString('en-SG')}
                                             </td>
+                                            <td className="px-6 py-4 text-center">
+                                                <span className={`rounded-full px-3 py-1 text-xs font-semibold ${school.is_active ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}`}>
+                                                    {school.is_active ? 'Active' : 'Inactive'}
+                                                </span>
+                                            </td>
                                             <td className="px-6 py-4 text-center text-sm text-gray-900">
                                                 {new Date(
                                                     school.updated_at,
@@ -264,12 +260,10 @@ export default function SchoolManagement({ schools }) {
                                                     </button>
                                                     <button
                                                         type="button"
-                                                        onClick={() =>
-                                                            remove(school.id)
-                                                        }
-                                                        className="rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-red-700"
+                                                        onClick={() => toggleStatus(school)}
+                                                        className={`rounded-md px-3 py-2 text-sm font-medium text-white transition ${school.is_active ? 'bg-amber-600 hover:bg-amber-700' : 'bg-emerald-600 hover:bg-emerald-700'}`}
                                                     >
-                                                        Delete
+                                                        {school.is_active ? 'Deactivate' : 'Activate'}
                                                     </button>
                                                 </div>
                                             </td>

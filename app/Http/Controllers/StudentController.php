@@ -20,7 +20,7 @@ class StudentController extends Controller
 
         return inertia('Owner/StudentManagement', [
             'students' => Student::with('school')->latest()->get(),
-            'schools' => School::orderBy('name')->get(),
+            'schools' => School::where('is_active', true)->orderBy('name')->get(),
         ]);
     }
 
@@ -85,7 +85,7 @@ class StudentController extends Controller
     private function validateStudent(Request $request): array
     {
         return $request->validate([
-            'school_id' => ['required', 'integer', Rule::exists('schools', 'id')],
+            'school_id' => ['required', 'integer', Rule::exists('schools', 'id')->where('is_active', true)],
             'name' => ['required', 'string', 'max:255'],
             'class' => ['required', 'string', 'max:100'],
         ]);

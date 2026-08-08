@@ -31,7 +31,7 @@ Route::post('/stripe/webhook', [StripePaymentController::class, 'webhook'])->nam
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::patch('/profile/deactivate', [ProfileController::class, 'deactivate'])->name('profile.deactivate');
 
     // Manage a customer's children
     Route::get('/customer/children', [ChildrenController::class, 'index'])->name('customer.children');
@@ -55,7 +55,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/owner/school', [SchoolController::class, 'index'])->name('owner.school');
     Route::post('/owner/school', [SchoolController::class, 'store'])->name('owner.school.store');
     Route::patch('/owner/school/{school}', [SchoolController::class, 'update'])->name('owner.school.update');
-    Route::delete('/owner/school/{school}', [SchoolController::class, 'destroy'])->name('owner.school.destroy');
+    Route::patch('/owner/school/{school}/status', [SchoolController::class, 'toggleActive'])->name('owner.school.status');
 
     // Manage students
     Route::get('/owner/student', [StudentController::class, 'index'])->name('owner.student');

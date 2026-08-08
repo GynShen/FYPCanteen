@@ -24,9 +24,9 @@ class MenuController extends Controller
         return inertia('Owner/MenuManagement', [
             'menuItems' => MenuItem::with(['menuCategories', 'days', 'schools'])->latest()->get(),
             'categories' => MenuCategory::orderBy('name')->get(),
-            'schools' => School::orderBy('name')->get(),
+            'schools' => School::where('is_active', true)->orderBy('name')->get(),
             'previewSchoolId' => $request->filled('school_id')
-                && School::whereKey($request->integer('school_id'))->exists()
+                && School::whereKey($request->integer('school_id'))->where('is_active', true)->exists()
                     ? $request->integer('school_id')
                     : 'all',
         ]);
@@ -119,14 +119,14 @@ class MenuController extends Controller
             'menu_category_ids' => ['required', 'array', 'min:1'],
             'menu_category_ids.*' => ['required', 'integer', 'distinct', Rule::exists('menu_categories', 'id')],
             'school_ids' => ['required', 'array', 'min:1'],
-            'school_ids.*' => ['required', 'integer', 'distinct', Rule::exists('schools', 'id')],
+            'school_ids.*' => ['required', 'integer', 'distinct', Rule::exists('schools', 'id')->where('is_active', true)],
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
             'days' => ['required', 'array', 'min:1'],
             'days.*' => ['required', 'distinct', Rule::in([
                 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday',
             ])],
-            'price' => ['required', 'numeric', 'min:0', 'max:99999999.99'],
+            'price' => ['required', 'numeric', 'min:0.01', 'max:99999999.99'],
             'image' => [$imageRequired ? 'required' : 'nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:5120'],
             'is_available' => ['required', 'boolean'],
         ]);
