@@ -3,9 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Children;
+use App\Models\Student;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Validation\Rule;
+use Manoar\QrCode\Facades\QrCode;
 
 class ChildrenController extends Controller
 {
@@ -53,28 +56,68 @@ class ChildrenController extends Controller
         return redirect()->route('customer.children')->with('success', 'Child removed successfully.');
     }
 
+    public function qrCode(Request $request, Children $child): Response
+    {
+        $this->authorizeCustomer($request);
+        $this->authorizeOwnership($request, $child);
+
+        $student = $child->student;
+        $svg = QrCode::format('svg')
+            ->size(360)
+            ->margin(2)
+            ->errorCorrection('H')
+            ->generate($student->qr_code);
+
+        return response((string) $svg, 200, [
+            'Content-Type' => 'image/svg+xml',
+            'Cache-Control' => 'private, no-store, max-age=0',
+            'Content-Disposition' => 'inline; filename="student-'.$student->student_code.'-qr.svg"',
+        ]);
+    }
+
     /**
      * @return array{student_id: int}
      */
     private function validateStudent(Request $request, ?Children $child = null): array
     {
-        $uniqueStudent = Rule::unique('children', 'student_id');
+        $request->merge([
+            'student_code' => strtoupper(trim((string) $request->input('student_code'))),
+        ]);
 
-        if ($child) {
-            $uniqueStudent->ignore($child->id);
-        }
-
-        return $request->validate([
-            'student_id' => [
+        $validated = $request->validate([
+            'student_code' => [
                 'required',
-                'integer',
-                Rule::exists('students', 'id'),
-                $uniqueStudent,
+                'string',
+                'max:255',
+                Rule::exists('students', 'student_code'),
             ],
         ], [
-            'student_id.exists' => 'No student was found with this ID.',
-            'student_id.unique' => 'This student is already linked to a customer account.',
+            'student_code.exists' => 'No student was found with this Student ID.',
         ]);
+
+        $student = Student::query()
+            ->where('student_code', strtoupper($validated['student_code']))
+            ->whereHas('school', fn ($query) => $query->where('is_active', true))
+            ->first();
+
+        if (! $student) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'student_code' => 'This student’s school is currently inactive.',
+            ]);
+        }
+
+        $alreadyClaimed = Children::query()
+            ->where('student_id', $student->id)
+            ->when($child, fn ($query) => $query->where('id', '!=', $child->id))
+            ->exists();
+
+        if ($alreadyClaimed) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'student_code' => 'This student is already linked to a customer account.',
+            ]);
+        }
+
+        return ['student_id' => $student->id];
     }
 
     private function authorizeCustomer(Request $request): void

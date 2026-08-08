@@ -1,5 +1,6 @@
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
+import Modal from '@/Components/Modal';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import TablePagination from '@/Components/TablePagination';
@@ -10,6 +11,7 @@ import { useState } from 'react';
 
 export default function ChildrenManagement({ children }) {
     const [editingId, setEditingId] = useState(null);
+    const [qrChild, setQrChild] = useState(null);
     const { currentPage, setCurrentPage, paginatedItems } =
         useTablePagination(children);
 
@@ -24,7 +26,7 @@ export default function ChildrenManagement({ children }) {
         reset,
         clearErrors,
     } = useForm({
-        student_id: '',
+        student_code: '',
     });
 
     const clearForm = () => {
@@ -36,7 +38,7 @@ export default function ChildrenManagement({ children }) {
     const startEdit = (child) => {
         clearErrors();
         setEditingId(child.id);
-        setData('student_id', child.student_id);
+        setData('student_code', child.student.student_code);
     };
 
     const submit = (event) => {
@@ -106,24 +108,22 @@ export default function ChildrenManagement({ children }) {
 
                         <form onSubmit={submit} className="mt-6 max-w-xl">
                             <InputLabel
-                                htmlFor="student_id"
+                                htmlFor="student_code"
                                 value="Student ID"
                             />
                             <TextInput
-                                id="student_id"
-                                type="number"
-                                min="1"
-                                step="1"
-                                value={data.student_id}
+                                id="student_code"
+                                type="text"
+                                value={data.student_code}
                                 onChange={(event) =>
-                                    setData('student_id', event.target.value)
+                                    setData('student_code', event.target.value.toUpperCase())
                                 }
                                 className="mt-1 block w-full"
-                                placeholder="Enter the student's ID"
+                                placeholder="Example: STU000001"
                                 required
                             />
                             <InputError
-                                message={errors.student_id}
+                                message={errors.student_code}
                                 className="mt-2"
                             />
 
@@ -174,7 +174,7 @@ export default function ChildrenManagement({ children }) {
                                     {paginatedItems.map((child) => (
                                         <tr key={child.id}>
                                             <td className="px-4 py-3 text-center text-sm text-gray-900">
-                                                {child.student.id}
+                                                {child.student.student_code}
                                             </td>
                                             <td className="px-4 py-3 text-center text-sm text-gray-900">
                                                 {child.student.name}
@@ -188,6 +188,15 @@ export default function ChildrenManagement({ children }) {
                                             </td>
                                             <td className="px-4 py-3 text-center">
                                                 <div className="flex justify-center gap-2">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() =>
+                                                            setQrChild(child)
+                                                        }
+                                                        className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+                                                    >
+                                                        Show QR
+                                                    </button>
                                                     <button
                                                         type="button"
                                                         onClick={() =>
@@ -229,6 +238,55 @@ export default function ChildrenManagement({ children }) {
                     </div>
                 </div>
             </div>
+
+            <Modal
+                show={qrChild !== null}
+                maxWidth="md"
+                onClose={() => setQrChild(null)}
+            >
+                {qrChild && (
+                    <div className="bg-white p-6 text-center text-slate-900">
+                        <h3 className="text-xl font-semibold text-slate-900">
+                            {qrChild.student.name}
+                        </h3>
+                        <p className="mt-1 text-sm text-slate-600">
+                            Student ID: {qrChild.student.student_code} · {qrChild.student.class} · {qrChild.student.school?.name}
+                        </p>
+
+                        <img
+                            src={route('customer.children.qr-code', {
+                                child: qrChild.id,
+                            })}
+                            alt={`QR code for ${qrChild.student.name}`}
+                            className="mx-auto mt-5 h-80 w-80 max-w-full"
+                        />
+
+                        <p className="mt-3 text-xs text-slate-500">
+                            This QR permanently identifies your child. Keep it private and use it only for meal collection.
+                        </p>
+
+                        <div className="mt-6 flex justify-center gap-3">
+                            <a
+                                href={route('customer.children.qr-code', {
+                                    child: qrChild.id,
+                                })}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+                            >
+                                Open QR
+                            </a>
+                            <button
+                                type="button"
+                                onClick={() => setQrChild(null)}
+                                className="rounded-md bg-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-300"
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </Modal>
         </AuthenticatedLayout>
     );
 }

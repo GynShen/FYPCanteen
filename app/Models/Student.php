@@ -14,10 +14,22 @@ class Student extends Model
 
     protected $fillable = [
         'school_id',
+        'student_code',
         'name',
         'class',
         'qr_code',
     ];
+
+    protected static function booted(): void
+    {
+        static::created(function (Student $student) {
+            if (! $student->student_code) {
+                $student->updateQuietly([
+                    'student_code' => 'STU'.str_pad((string) $student->id, 6, '0', STR_PAD_LEFT),
+                ]);
+            }
+        });
+    }
 
     public function school(): BelongsTo
     {

@@ -106,7 +106,7 @@ export default function StudentManagement({ students, schools }) {
 
                         {editingId && (
                             <p className="mb-4 text-sm font-medium text-indigo-600 dark:text-indigo-400">
-                                Editing student ID: {editingId}. The QR code
+                                Editing student ID: {students.find((student) => student.id === editingId)?.student_code}. The QR code
                                 will remain unchanged.
                             </p>
                         )}
@@ -243,7 +243,7 @@ export default function StudentManagement({ students, schools }) {
                                     {paginatedItems.map((student) => (
                                         <tr key={student.id}>
                                             <td className="px-4 py-3 text-center text-sm text-gray-900">
-                                                {student.id}
+                                                {student.student_code}
                                             </td>
                                             <td className="px-4 py-3 text-center text-sm text-gray-900">
                                                 {student.name}
@@ -319,7 +319,7 @@ export default function StudentManagement({ students, schools }) {
                             {qrStudent.name}
                         </h3>
                         <p className="mt-1 text-sm text-gray-500">
-                            Student ID: {qrStudent.id} · {qrStudent.class} ·{' '}
+                            Student ID: {qrStudent.student_code} · {qrStudent.class} ·{' '}
                             {qrStudent.school?.name}
                         </p>
 

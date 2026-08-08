@@ -38,6 +38,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/customer/children', [ChildrenController::class, 'store'])->name('customer.children.store');
     Route::patch('/customer/children/{child}', [ChildrenController::class, 'update'])->name('customer.children.update');
     Route::delete('/customer/children/{child}', [ChildrenController::class, 'destroy'])->name('customer.children.destroy');
+    Route::get('/customer/children/{child}/qr-code', [ChildrenController::class, 'qrCode'])->name('customer.children.qr-code');
 
     // Customer ordering
     Route::get('/customer/menu', [CustomerOrderController::class, 'menu'])->name('customer.menu');

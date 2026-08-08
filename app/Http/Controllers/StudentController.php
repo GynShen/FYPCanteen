@@ -75,7 +75,7 @@ class StudentController extends Controller
         return response((string) $svg, 200, [
             'Content-Type' => 'image/svg+xml',
             'Cache-Control' => 'private, no-store, max-age=0',
-            'Content-Disposition' => 'inline; filename="student-'.$student->id.'-qr.svg"',
+            'Content-Disposition' => 'inline; filename="student-'.$student->student_code.'-qr.svg"',
         ]);
     }
 
