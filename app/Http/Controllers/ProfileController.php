@@ -35,6 +35,8 @@ class ProfileController extends Controller
 
     public function deactivate(Request $request): RedirectResponse
     {
+        abort_if($request->user()->hasRole('operator'), 403);
+
         $request->validate([
             'password' => ['required', 'current_password'],
         ]);
