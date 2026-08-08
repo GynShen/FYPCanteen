@@ -293,7 +293,9 @@ export default function CustomerMenu({ children, menuItems, cartItems }) {
                                     </h3>
                                     <p className="mt-2 text-sm text-amber-800">
                                         {!selectedStudentApproved
-                                            ? `${selectedChild?.student.name}'s registration is awaiting school approval. Ordering will be enabled after approval.`
+                                            ? selectedChild?.student.approval_status === 'rejected'
+                                                ? `${selectedChild?.student.name}'s registration was rejected: ${selectedChild?.student.rejection_reason} Please correct and resubmit it in Children Management.`
+                                                : `${selectedChild?.student.name}'s registration is awaiting school approval. Ordering will be enabled after approval.`
                                             : `${selectedChild?.student.school?.name} is currently inactive. We apologize for the inconvenience. Please contact the school for further assistance.`}
                                     </p>
                                 </section>

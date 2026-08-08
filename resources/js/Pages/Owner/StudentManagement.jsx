@@ -97,6 +97,21 @@ export default function StudentManagement({ students, pendingStudents, schools }
         router.patch(route('student-approvals.approve', { student: student.id }), {}, { preserveScroll: true });
     };
 
+    const reject = (student) => {
+        const reason = window.prompt(`Reason for rejecting ${student.name}:`);
+        if (reason === null) return;
+        if (reason.trim().length < 5) {
+            window.alert('Please provide a rejection reason of at least 5 characters.');
+            return;
+        }
+        router.patch(route('student-approvals.reject', { student: student.id }), { rejection_reason: reason.trim() }, { preserveScroll: true });
+    };
+
+    const editPending = (student) => {
+        startEdit(student);
+        window.setTimeout(() => document.getElementById('student-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+    };
+
     return (
         <AuthenticatedLayout
             header={
@@ -109,7 +124,7 @@ export default function StudentManagement({ students, pendingStudents, schools }
 
             <div className="py-12">
                 <div className="mx-auto max-w-7xl space-y-6 sm:px-6 lg:px-8">
-                    <div className="bg-white p-4 shadow sm:rounded-lg sm:p-8 dark:bg-gray-800">
+                    <div id="student-form" className="scroll-mt-6 bg-white p-4 shadow sm:rounded-lg sm:p-8 dark:bg-gray-800">
                         <h3 className="mb-6 text-lg font-medium text-gray-900 dark:text-gray-100">
                             {editingId ? 'Edit Student' : 'Add Student'}
                         </h3>
@@ -254,7 +269,7 @@ export default function StudentManagement({ students, pendingStudents, schools }
                                             <td className="px-4 py-3 text-center text-sm text-gray-900">{student.school?.name}</td>
                                             <td className="px-4 py-3 text-center text-sm text-gray-900"><span className="block font-medium">{student.child?.user?.name}</span><span className="text-xs text-gray-500">{student.child?.user?.email}</span></td>
                                             <td className="px-4 py-3 text-center text-sm text-gray-900">{new Date(student.created_at).toLocaleString('en-MY')}</td>
-                                            <td className="px-4 py-3 text-center"><button type="button" onClick={() => approve(student)} className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700">Approve</button></td>
+                                            <td className="px-4 py-3 text-center"><div className="flex flex-wrap justify-center gap-2"><button type="button" onClick={() => editPending(student)} className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-700">Edit</button><button type="button" onClick={() => approve(student)} className="rounded-md bg-emerald-600 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-700">Approve</button><button type="button" onClick={() => reject(student)} className="rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white hover:bg-red-700">Reject</button></div></td>
                                         </tr>
                                     ))}
                                     {pendingStudents.length === 0 && <tr><td colSpan="7" className="px-4 py-10 text-center text-sm text-gray-500">No pending student registrations.</td></tr>}
@@ -274,6 +289,7 @@ export default function StudentManagement({ students, pendingStudents, schools }
                                             'Name',
                                             'Class',
                                             'School',
+                                            'Status',
                                             'QR Code',
                                             'Operation',
                                         ].map((heading) => (
@@ -300,6 +316,12 @@ export default function StudentManagement({ students, pendingStudents, schools }
                                             </td>
                                             <td className="px-4 py-3 text-center text-sm text-gray-900">
                                                 {student.school?.name ?? '-'}
+                                            </td>
+                                            <td className="px-4 py-3 text-center">
+                                                <span className={`rounded-full px-3 py-1 text-xs font-semibold ${student.approval_status === 'approved' ? 'bg-emerald-100 text-emerald-800' : student.approval_status === 'rejected' ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800'}`}>
+                                                    {student.approval_status.charAt(0).toUpperCase() + student.approval_status.slice(1)}
+                                                </span>
+                                                {student.rejection_reason && <p className="mt-2 max-w-xs text-xs text-red-600">{student.rejection_reason}</p>}
                                             </td>
                                             <td className="px-4 py-3 text-center">
                                                 <button
@@ -340,7 +362,7 @@ export default function StudentManagement({ students, pendingStudents, schools }
                                     {students.length === 0 && (
                                         <tr>
                                             <td
-                                                colSpan="6"
+                                                colSpan="7"
                                                 className="px-4 py-10 text-center text-sm text-gray-500"
                                             >
                                                 No students have been added yet.

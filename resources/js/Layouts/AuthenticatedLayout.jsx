@@ -109,7 +109,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                         href={route('owner.student')}
                                         active={route().current('owner.student*')}
                                     >
-                                        Student Management
+                                        Student
                                     </NavLink>
                                 )}
                             </div>
@@ -280,7 +280,7 @@ export default function AuthenticatedLayout({ header, children }) {
                             )}
                             {user.role === 'operator' && (
                                 <ResponsiveNavLink href={route('owner.student')}>
-                                    Student Management
+                                    Student
                                 </ResponsiveNavLink>
                             )}
                             <ResponsiveNavLink href={route('profile.edit')}>

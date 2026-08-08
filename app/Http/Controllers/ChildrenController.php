@@ -73,6 +73,29 @@ class ChildrenController extends Controller
         return back()->with('success', 'Student submitted for school approval. Meal ordering will be enabled after approval.');
     }
 
+    public function resubmitStudent(Request $request, Children $child): RedirectResponse
+    {
+        $this->authorizeCustomer($request);
+        $this->authorizeOwnership($request, $child);
+        abort_unless($child->student?->approval_status === 'rejected', 422, 'Only rejected registrations can be resubmitted.');
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'class' => ['required', 'string', 'max:100'],
+            'school_id' => ['required', 'integer', Rule::exists('schools', 'id')->where('is_active', true)],
+        ]);
+
+        $child->student->update([
+            ...$validated,
+            'approval_status' => 'pending',
+            'rejection_reason' => null,
+            'reviewed_by' => null,
+            'reviewed_at' => null,
+        ]);
+
+        return back()->with('success', 'Student details corrected and resubmitted for approval.');
+    }
+
     public function destroy(Request $request, Children $child): RedirectResponse
     {
         $this->authorizeCustomer($request);

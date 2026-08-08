@@ -13,6 +13,7 @@ export default function ChildrenManagement({ children, schools }) {
     const [editingId, setEditingId] = useState(null);
     const [qrChild, setQrChild] = useState(null);
     const [showStudentRequest, setShowStudentRequest] = useState(false);
+    const [resubmittingChild, setResubmittingChild] = useState(null);
     const { currentPage, setCurrentPage, paginatedItems } =
         useTablePagination(children);
 
@@ -86,13 +87,33 @@ export default function ChildrenManagement({ children, schools }) {
 
     const submitStudentRequest = (event) => {
         event.preventDefault();
-        studentRequestForm.post(route('customer.children.request-student'), {
+        const options = {
             preserveScroll: true,
             onSuccess: () => {
                 studentRequestForm.reset();
                 setShowStudentRequest(false);
+                setResubmittingChild(null);
             },
+        };
+
+        if (resubmittingChild) {
+            studentRequestForm.patch(route('customer.children.resubmit', { child: resubmittingChild.id }), options);
+            return;
+        }
+
+        studentRequestForm.post(route('customer.children.request-student'), options);
+    };
+
+    const openResubmit = (child) => {
+        setResubmittingChild(child);
+        studentRequestForm.setData({
+            name: child.student.name,
+            class: child.student.class,
+            school_id: child.student.school_id,
         });
+        studentRequestForm.clearErrors();
+        setShowStudentRequest(true);
+        window.setTimeout(() => document.getElementById('student-request-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
     };
 
     return (
@@ -168,14 +189,22 @@ export default function ChildrenManagement({ children, schools }) {
                         <div className="mt-6 border-t border-gray-200 pt-5">
                             <button
                                 type="button"
-                                onClick={() => setShowStudentRequest((value) => !value)}
+                                onClick={() => {
+                                    if (!showStudentRequest) {
+                                        setResubmittingChild(null);
+                                        studentRequestForm.reset();
+                                        studentRequestForm.clearErrors();
+                                    }
+                                    setShowStudentRequest((value) => !value);
+                                }}
                                 className="text-sm font-semibold text-indigo-600 hover:text-indigo-800 hover:underline"
                             >
                                 Student ID not found? Submit a new student
                             </button>
 
                             {showStudentRequest && (
-                                <form onSubmit={submitStudentRequest} className="mt-5 grid gap-4 md:grid-cols-3">
+                                <form id="student-request-form" onSubmit={submitStudentRequest} className="mt-5 grid scroll-mt-6 gap-4 md:grid-cols-3">
+                                    {resubmittingChild && <p className="rounded-md bg-red-50 p-3 text-sm text-red-700 md:col-span-3"><strong>Rejection reason:</strong> {resubmittingChild.student.rejection_reason}</p>}
                                     <div>
                                         <InputLabel htmlFor="new-student-name" value="Student Name" />
                                         <TextInput id="new-student-name" value={studentRequestForm.data.name} onChange={(event) => studentRequestForm.setData('name', event.target.value)} className="mt-1 block w-full" required />
@@ -197,7 +226,7 @@ export default function ChildrenManagement({ children, schools }) {
                                     <div className="md:col-span-3">
                                         <p className="mb-3 text-sm text-amber-700">The student will remain pending until approved by the school or owner. Ordering is disabled while pending.</p>
                                         <PrimaryButton disabled={studentRequestForm.processing || schools.length === 0}>
-                                            {studentRequestForm.processing ? 'Submitting...' : 'Submit for Approval'}
+                                            {studentRequestForm.processing ? 'Submitting...' : resubmittingChild ? 'Correct & Resubmit' : 'Submit for Approval'}
                                         </PrimaryButton>
                                     </div>
                                 </form>
@@ -244,12 +273,20 @@ export default function ChildrenManagement({ children, schools }) {
                                                     '-'}
                                             </td>
                                             <td className="px-4 py-3 text-center">
-                                                <span className={`rounded-full px-3 py-1 text-xs font-semibold ${child.student.approval_status === 'approved' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
-                                                    {child.student.approval_status === 'approved' ? 'Approved' : 'Pending'}
+                                                <span className={`rounded-full px-3 py-1 text-xs font-semibold ${child.student.approval_status === 'approved' ? 'bg-emerald-100 text-emerald-800' : child.student.approval_status === 'rejected' ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800'}`}>
+                                                    {child.student.approval_status.charAt(0).toUpperCase() + child.student.approval_status.slice(1)}
                                                 </span>
+                                                {child.student.rejection_reason && <p className="mt-2 max-w-xs text-xs text-red-600">{child.student.rejection_reason}</p>}
                                             </td>
                                             <td className="px-4 py-3 text-center">
                                                 <div className="flex justify-center gap-2">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => openResubmit(child)}
+                                                        className={`rounded-md bg-amber-600 px-3 py-2 text-sm font-medium text-white hover:bg-amber-700 ${child.student.approval_status === 'rejected' ? '' : 'hidden'}`}
+                                                    >
+                                                        Correct &amp; Resubmit
+                                                    </button>
                                                     <button
                                                         type="button"
                                                         onClick={() =>

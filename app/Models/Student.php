@@ -18,8 +18,16 @@ class Student extends Model
         'name',
         'class',
         'approval_status',
+        'rejection_reason',
+        'reviewed_by',
+        'reviewed_at',
         'qr_code',
     ];
+
+    protected function casts(): array
+    {
+        return ['reviewed_at' => 'datetime'];
+    }
 
     protected static function booted(): void
     {
@@ -45,5 +53,10 @@ class Student extends Model
     public function child(): HasOne
     {
         return $this->hasOne(Children::class);
+    }
+
+    public function reviewer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'reviewed_by');
     }
 }
