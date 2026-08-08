@@ -2,7 +2,9 @@ import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
+import TablePagination from '@/Components/TablePagination';
 import WeeklyMenuTimetable from '@/Components/WeeklyMenuTimetable';
+import useTablePagination from '@/Hooks/useTablePagination';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, useForm } from '@inertiajs/react';
 import { useRef, useState } from 'react';
@@ -24,6 +26,8 @@ export default function MenuManagement({
     previewSchoolId,
 }) {
     const [editingId, setEditingId] = useState(null);
+    const { currentPage, setCurrentPage, paginatedItems } =
+        useTablePagination(menuItems);
     const fileInput = useRef(null);
 
     const {
@@ -375,7 +379,7 @@ export default function MenuManagement({
                                     id="price"
                                     type="number"
                                     min="0.01"
-                                    step="1"
+                                    step="any"
                                     value={data.price}
                                     onChange={(event) =>
                                         setData('price', event.target.value)
@@ -514,7 +518,7 @@ export default function MenuManagement({
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200 bg-white">
-                                    {menuItems.map((item) => (
+                                    {paginatedItems.map((item) => (
                                         <tr key={item.id}>
                                             <td className="px-4 py-3 text-center text-sm text-gray-900">
                                                 {item.id}
@@ -613,6 +617,7 @@ export default function MenuManagement({
                                 </tbody>
                             </table>
                         </div>
+                        <TablePagination totalItems={menuItems.length} currentPage={currentPage} onPageChange={setCurrentPage} />
                     </div>
 
                     <WeeklyMenuTimetable

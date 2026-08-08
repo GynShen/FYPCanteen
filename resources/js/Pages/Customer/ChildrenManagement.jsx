@@ -2,12 +2,16 @@ import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
+import TablePagination from '@/Components/TablePagination';
+import useTablePagination from '@/Hooks/useTablePagination';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 
 export default function ChildrenManagement({ children }) {
     const [editingId, setEditingId] = useState(null);
+    const { currentPage, setCurrentPage, paginatedItems } =
+        useTablePagination(children);
 
     const {
         data,
@@ -167,7 +171,7 @@ export default function ChildrenManagement({ children }) {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200 bg-white">
-                                    {children.map((child) => (
+                                    {paginatedItems.map((child) => (
                                         <tr key={child.id}>
                                             <td className="px-4 py-3 text-center text-sm text-gray-900">
                                                 {child.student.id}
@@ -221,6 +225,7 @@ export default function ChildrenManagement({ children }) {
                                 </tbody>
                             </table>
                         </div>
+                        <TablePagination totalItems={children.length} currentPage={currentPage} onPageChange={setCurrentPage} />
                     </div>
                 </div>
             </div>

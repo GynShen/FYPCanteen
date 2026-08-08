@@ -3,6 +3,8 @@ import InputLabel from '@/Components/InputLabel';
 import Modal from '@/Components/Modal';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
+import TablePagination from '@/Components/TablePagination';
+import useTablePagination from '@/Hooks/useTablePagination';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, router, useForm } from '@inertiajs/react';
 import { useState } from 'react';
@@ -10,6 +12,8 @@ import { useState } from 'react';
 export default function OperatorManagement({ operators }) {
     const [editingId, setEditingId] = useState(null);
     const [passwordOperator, setPasswordOperator] = useState(null);
+    const { currentPage, setCurrentPage, paginatedItems } =
+        useTablePagination(operators);
     const form = useForm({
         name: '',
         email: '',
@@ -102,7 +106,7 @@ export default function OperatorManagement({ operators }) {
                             <table className="min-w-full divide-y divide-gray-200">
                                 <thead className="bg-slate-100"><tr>{['ID', 'Name', 'Email', 'Phone', 'Status', 'Created', 'Actions'].map((heading) => <th key={heading} className="px-4 py-3 text-center text-xs font-bold uppercase text-slate-700">{heading}</th>)}</tr></thead>
                                 <tbody className="divide-y divide-gray-200 bg-white">
-                                    {operators.map((operator) => (
+                                    {paginatedItems.map((operator) => (
                                         <tr key={operator.id} className="text-slate-800 even:bg-slate-50">
                                             <td className="px-4 py-3 text-center text-sm font-semibold">{operator.id}</td><td className="px-4 py-3 text-center text-sm font-medium">{operator.name}</td><td className="px-4 py-3 text-center text-sm">{operator.email}</td><td className="px-4 py-3 text-center text-sm">{operator.phone_number}</td>
                                             <td className="px-4 py-3 text-center"><span className={`rounded-full px-3 py-1 text-xs font-bold ${operator.is_active ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}`}>{operator.is_active ? 'Active' : 'Inactive'}</span></td>
@@ -114,6 +118,7 @@ export default function OperatorManagement({ operators }) {
                                 </tbody>
                             </table>
                         </div>
+                        <TablePagination totalItems={operators.length} currentPage={currentPage} onPageChange={setCurrentPage} />
                     </section>
                 </div>
             </div>

@@ -1,5 +1,6 @@
 import Modal from '@/Components/Modal';
-import { useMemo, useState } from 'react';
+import TablePagination, { TABLE_PAGE_SIZE } from '@/Components/TablePagination';
+import { useEffect, useMemo, useState } from 'react';
 
 const weekDays = [
     'monday',
@@ -12,28 +13,39 @@ const weekDays = [
 ];
 
 const dayName = (day) => day.charAt(0).toUpperCase() + day.slice(1);
+const mealsPerPage = TABLE_PAGE_SIZE;
 
 export default function WeeklyMenuTimetable({
     menuItems,
     schools,
-    initialSchoolId = 'all',
+    initialSchoolId = null,
     onEdit,
 }) {
-    const [selectedSchool, setSelectedSchool] = useState(
-        String(initialSchoolId),
-    );
+    const [selectedSchool, setSelectedSchool] = useState(() => {
+        const requestedSchool = schools.find(
+            (school) => school.id === Number(initialSchoolId),
+        );
+
+        return String(requestedSchool?.id ?? schools[0]?.id ?? '');
+    });
     const [selectedMeal, setSelectedMeal] = useState(null);
+    const [currentPage, setCurrentPage] = useState(1);
 
     const visibleMeals = useMemo(() => {
-        if (selectedSchool === 'all') {
-            return menuItems;
-        }
-
         const schoolId = Number(selectedSchool);
 
         return menuItems.filter((meal) =>
             meal.schools.some((school) => school.id === schoolId),
         );
+    }, [menuItems, selectedSchool]);
+
+    const paginatedMeals = visibleMeals.slice(
+        (currentPage - 1) * mealsPerPage,
+        currentPage * mealsPerPage,
+    );
+
+    useEffect(() => {
+        setCurrentPage(1);
     }, [menuItems, selectedSchool]);
 
     const scheduledDays = (meal) =>
@@ -74,7 +86,6 @@ export default function WeeklyMenuTimetable({
                             }
                             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                         >
-                            <option value="all">All schools</option>
                             {schools.map((school) => (
                                 <option key={school.id} value={school.id}>
                                     {school.name}
@@ -104,7 +115,7 @@ export default function WeeklyMenuTimetable({
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200 bg-white">
-                            {visibleMeals.map((meal) => {
+                            {paginatedMeals.map((meal) => {
                                 const days = scheduledDays(meal);
 
                                 return (
@@ -141,28 +152,40 @@ export default function WeeklyMenuTimetable({
                                                 </span>
                                             </button>
                                         </td>
-                                        {weekDays.map((day) => (
-                                            <td
-                                                key={day}
-                                                className={`px-3 py-4 text-center ${
-                                                    days.has(day)
-                                                        ? 'bg-green-50'
-                                                        : 'bg-gray-50/40'
-                                                }`}
-                                            >
-                                                <span
-                                                    className={
-                                                        days.has(day)
-                                                            ? 'inline-flex h-8 w-8 items-center justify-center rounded-full bg-green-600 font-bold text-white'
-                                                            : 'text-gray-300'
-                                                    }
+                                        {weekDays.map((day) => {
+                                            const scheduled = days.has(day);
+                                            const canOrder =
+                                                scheduled && meal.is_available;
+
+                                            return (
+                                                <td
+                                                    key={day}
+                                                    className={`px-3 py-4 text-center ${
+                                                        canOrder
+                                                            ? 'bg-green-50'
+                                                            : scheduled
+                                                              ? 'bg-red-50'
+                                                              : 'bg-gray-50/40'
+                                                    }`}
                                                 >
-                                                    {days.has(day)
-                                                        ? 'Yes'
-                                                        : '-'}
-                                                </span>
-                                            </td>
-                                        ))}
+                                                    <span
+                                                        className={
+                                                            canOrder
+                                                                ? 'inline-flex h-8 min-w-8 items-center justify-center rounded-full bg-green-600 px-2 font-bold text-white'
+                                                                : scheduled
+                                                                  ? 'inline-flex h-8 min-w-8 items-center justify-center rounded-full bg-red-600 px-2 font-bold text-white'
+                                                                  : 'text-gray-300'
+                                                        }
+                                                    >
+                                                        {canOrder
+                                                            ? 'Yes'
+                                                            : scheduled
+                                                              ? 'No'
+                                                              : '-'}
+                                                    </span>
+                                                </td>
+                                            );
+                                        })}
                                     </tr>
                                 );
                             })}
@@ -179,6 +202,7 @@ export default function WeeklyMenuTimetable({
                         </tbody>
                     </table>
                 </div>
+                <TablePagination totalItems={visibleMeals.length} currentPage={currentPage} onPageChange={setCurrentPage} />
             </div>
 
             <Modal

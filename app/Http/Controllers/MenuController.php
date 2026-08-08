@@ -126,7 +126,7 @@ class MenuController extends Controller
             'days.*' => ['required', 'distinct', Rule::in([
                 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday',
             ])],
-            'price' => ['required', 'numeric', 'min:0.01', 'max:99999999.99'],
+            'price' => ['required', 'numeric', 'decimal:0,2', 'min:0.01', 'max:99999999.99'],
             'image' => [$imageRequired ? 'required' : 'nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:5120'],
             'is_available' => ['required', 'boolean'],
         ]);

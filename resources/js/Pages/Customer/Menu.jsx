@@ -1,5 +1,7 @@
 import Modal from '@/Components/Modal';
+import TablePagination, { TABLE_PAGE_SIZE } from '@/Components/TablePagination';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import useTablePagination from '@/Hooks/useTablePagination';
 import { Head, router, usePage } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
 
@@ -54,6 +56,7 @@ export default function CustomerMenu({ children, menuItems, cartItems }) {
     const [showCart, setShowCart] = useState(false);
     const [draftQuantities, setDraftQuantities] = useState({});
     const [expandedChildren, setExpandedChildren] = useState({});
+    const [cartPages, setCartPages] = useState({});
 
     const selectedChild = children.find(
         (child) => child.student_id === Number(selectedChildId),
@@ -66,6 +69,8 @@ export default function CustomerMenu({ children, menuItems, cartItems }) {
             ),
         );
     }, [menuItems, selectedChild]);
+    const { currentPage, setCurrentPage, paginatedItems } =
+        useTablePagination(visibleMeals);
     const savedTotal = cartItems.reduce(
         (sum, item) => sum + Number(item.menu_item.price) * item.quantity,
         0,
@@ -291,7 +296,7 @@ export default function CustomerMenu({ children, menuItems, cartItems }) {
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-gray-200 bg-white">
-                                            {visibleMeals.map((meal) => {
+                                            {paginatedItems.map((meal) => {
                                                 const days = new Set(
                                                     meal.days.map(
                                                         (day) =>
@@ -374,6 +379,7 @@ export default function CustomerMenu({ children, menuItems, cartItems }) {
                                             )}
                                         </tbody>
                                     </table>
+                                    <TablePagination totalItems={visibleMeals.length} currentPage={currentPage} onPageChange={setCurrentPage} />
                                 </div>
                             </section>
                         </>
@@ -391,6 +397,8 @@ export default function CustomerMenu({ children, menuItems, cartItems }) {
                             {cartGroups.map(({ child, items }) => {
                                 const expanded = expandedChildren[child.student_id] ?? false;
                                 const meals = [...new Map(items.map((item) => [item.menu_item_id, item.menu_item])).values()];
+                                const cartPage = cartPages[child.student_id] ?? 1;
+                                const paginatedCartMeals = meals.slice((cartPage - 1) * TABLE_PAGE_SIZE, cartPage * TABLE_PAGE_SIZE);
                                 const childTotal = items.reduce((sum, item) => sum + Number(item.menu_item.price) * item.quantity, 0);
                                 return (
                                     <div key={child.id} className="overflow-hidden rounded-lg border border-slate-300 bg-white shadow-sm">
@@ -403,7 +411,7 @@ export default function CustomerMenu({ children, menuItems, cartItems }) {
                                                 <table className="w-full min-w-[800px] table-fixed border-collapse border border-slate-300">
                                                     <thead className="sticky top-0 z-20 shadow-sm"><tr><th className="border border-slate-400 bg-slate-200 px-3 py-3 text-left text-xs font-bold uppercase text-slate-800">Meal</th>{weekDays.map((day) => <th key={day} className="min-w-28 border border-slate-400 bg-slate-200 px-2 py-3 text-center text-xs font-bold uppercase text-slate-800">{dayName(day)}<span className="mt-0.5 block text-[10px] font-normal">{shortDate(day)}</span></th>)}</tr></thead>
                                                     <tbody>
-                                                        {meals.map((meal, mealIndex) => (
+                                                        {paginatedCartMeals.map((meal, mealIndex) => (
                                                             <tr key={meal.id} className={mealIndex % 2 ? 'bg-slate-50' : 'bg-white'}>
                                                                 <td className="border border-slate-300 px-3 py-3"><button type="button" onClick={() => openMeal(meal)} className="font-medium text-indigo-700 hover:underline">{meal.name}</button><span className="block text-xs text-slate-500">RM {Number(meal.price).toFixed(2)}</span></td>
                                                                 {weekDays.map((day) => {
@@ -415,6 +423,16 @@ export default function CustomerMenu({ children, menuItems, cartItems }) {
                                                         {meals.length === 0 && <tr><td colSpan="8" className="border border-slate-300 px-4 py-8 text-center text-sm text-slate-500">No meals selected for this child.</td></tr>}
                                                     </tbody>
                                                 </table>
+                                                <TablePagination
+                                                    totalItems={meals.length}
+                                                    currentPage={cartPage}
+                                                    onPageChange={(page) =>
+                                                        setCartPages((current) => ({
+                                                            ...current,
+                                                            [child.student_id]: page,
+                                                        }))
+                                                    }
+                                                />
                                             </div>
                                         )}
                                     </div>

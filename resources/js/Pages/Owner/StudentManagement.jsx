@@ -3,12 +3,16 @@ import InputLabel from '@/Components/InputLabel';
 import Modal from '@/Components/Modal';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
+import TablePagination from '@/Components/TablePagination';
+import useTablePagination from '@/Hooks/useTablePagination';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 
 export default function StudentManagement({ students, schools }) {
     const [editingId, setEditingId] = useState(null);
+    const { currentPage, setCurrentPage, paginatedItems } =
+        useTablePagination(students);
     const [qrStudent, setQrStudent] = useState(null);
 
     const {
@@ -236,7 +240,7 @@ export default function StudentManagement({ students, schools }) {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200 bg-white">
-                                    {students.map((student) => (
+                                    {paginatedItems.map((student) => (
                                         <tr key={student.id}>
                                             <td className="px-4 py-3 text-center text-sm text-gray-900">
                                                 {student.id}
@@ -299,6 +303,7 @@ export default function StudentManagement({ students, schools }) {
                                 </tbody>
                             </table>
                         </div>
+                        <TablePagination totalItems={students.length} currentPage={currentPage} onPageChange={setCurrentPage} />
                     </div>
                 </div>
             </div>

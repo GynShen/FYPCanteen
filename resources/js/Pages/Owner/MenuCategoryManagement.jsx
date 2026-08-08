@@ -2,12 +2,15 @@ import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
+import TablePagination from '@/Components/TablePagination';
+import useTablePagination from '@/Hooks/useTablePagination';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 
 export default function MenuCategoriesManagement({ menuCategories }) {
   const [editingId, setEditingId] = useState(null);
+  const { currentPage, setCurrentPage, paginatedItems } = useTablePagination(menuCategories);
 
   const { data, setData, post, patch, delete: destroy, processing, errors, reset, clearErrors } = useForm({
     name: '',
@@ -157,7 +160,7 @@ export default function MenuCategoriesManagement({ menuCategories }) {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 bg-white">
-                  {menuCategories.map((menuCategories) => (
+                  {paginatedItems.map((menuCategories) => (
                     <tr key={menuCategories.id}>
                       <td className="px-6 py-4 text-center text-sm text-gray-900">
                         {menuCategories.id}
@@ -188,6 +191,7 @@ export default function MenuCategoriesManagement({ menuCategories }) {
                 </tbody>
               </table>
             </div>
+            <TablePagination totalItems={menuCategories.length} currentPage={currentPage} onPageChange={setCurrentPage} />
           </div>
         </div>
       </div>

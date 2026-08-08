@@ -1,5 +1,7 @@
 import Modal from '@/Components/Modal';
+import TablePagination from '@/Components/TablePagination';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import useTablePagination from '@/Hooks/useTablePagination';
 import { Head, router, usePage } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
 
@@ -23,6 +25,8 @@ export default function Orders({ orders, menuItems, canModifyOrders }) {
     const [replacementId, setReplacementId] = useState('');
     const [processing, setProcessing] = useState(false);
     const [expandedOrders, setExpandedOrders] = useState({});
+    const { currentPage, setCurrentPage, paginatedItems } =
+        useTablePagination(orders);
 
     const replacements = useMemo(() => {
         if (!editingItem) return [];
@@ -68,7 +72,7 @@ export default function Orders({ orders, menuItems, canModifyOrders }) {
                             : 'The Saturday deadline has passed. Ordered meals can no longer be changed.'}
                     </div>
 
-                    {orders.map((order) => {
+                    {paginatedItems.map((order) => {
                         const paymentStatus = order.payment?.status ?? 'unpaid';
                         const expanded = expandedOrders[order.id] ?? false;
                         const childGroups = [...new Map(order.order_items.map((item) => [item.student_id, item.student])).entries()];
@@ -137,6 +141,7 @@ export default function Orders({ orders, menuItems, canModifyOrders }) {
                             </section>
                         );
                     })}
+                    <TablePagination totalItems={orders.length} currentPage={currentPage} onPageChange={setCurrentPage} />
 
                     {orders.length === 0 && <div className="rounded-xl bg-white p-10 text-center text-slate-600 shadow">You have not placed any orders yet.</div>}
                 </div>
