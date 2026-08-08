@@ -199,7 +199,7 @@ class CustomerOrderController extends Controller
             return $order;
         });
 
-        return redirect()->route('customer.orders')->with('success', 'Temporary payment completed. Order #'.$order->id.' was created.');
+        return redirect()->route('customer.orders')->with('success', 'Payment completed. Order #'.$order->id.' was created.');
     }
 
     public function orders(Request $request)

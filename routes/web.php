@@ -4,6 +4,7 @@ use App\Http\Controllers\ChildrenController;
 use App\Http\Controllers\CustomerOrderController;
 use App\Http\Controllers\MenuCategoryController;
 use App\Http\Controllers\MenuController;
+use App\Http\Controllers\OperatorController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SchoolController;
 use App\Http\Controllers\StripePaymentController;
@@ -74,6 +75,14 @@ Route::middleware('auth')->group(function () {
     Route::post('/owner/menu', [MenuController::class, 'store'])->name('owner.menu.store');
     Route::patch('/owner/menu/{menu}', [MenuController::class, 'update'])->name('owner.menu.update');
     Route::delete('/owner/menu/{menu}', [MenuController::class, 'destroy'])->name('owner.menu.destroy');
+
+    // Manage operator accounts
+    Route::get('/owner/operators', [OperatorController::class, 'index'])->name('owner.operators');
+    Route::post('/owner/operators', [OperatorController::class, 'store'])->name('owner.operators.store');
+    Route::patch('/owner/operators/{operator}', [OperatorController::class, 'update'])->name('owner.operators.update');
+    Route::patch('/owner/operators/{operator}/status', [OperatorController::class, 'toggleActive'])->name('owner.operators.status');
+    Route::patch('/owner/operators/{operator}/password', [OperatorController::class, 'resetPassword'])->name('owner.operators.password');
+    Route::delete('/owner/operators/{operator}', [OperatorController::class, 'destroy'])->name('owner.operators.destroy');
 });
 
 require __DIR__.'/auth.php';

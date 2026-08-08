@@ -33,6 +33,14 @@ export default function AuthenticatedLayout({ header, children }) {
                                 {user.role === 'owner' && (
                                     <>
                                         <NavLink
+                                            href={route('owner.operators')}
+                                            active={route().current(
+                                                'owner.operators',
+                                            )}
+                                        >
+                                            Operator Management
+                                        </NavLink>
+                                        <NavLink
                                             href={route('owner.school')}
                                             active={route().current(
                                                 'owner.school',
@@ -215,6 +223,11 @@ export default function AuthenticatedLayout({ header, children }) {
                         <div className="mt-3 space-y-1">
                             {user.role === 'owner' && (
                                 <>
+                                    <ResponsiveNavLink
+                                        href={route('owner.operators')}
+                                    >
+                                        Operator Management
+                                    </ResponsiveNavLink>
                                     <ResponsiveNavLink
                                         href={route('owner.school')}
                                     >

@@ -383,7 +383,7 @@ export default function CustomerMenu({ children, menuItems, cartItems }) {
                     <section className="max-h-[78vh] overflow-y-auto bg-slate-50 dark:bg-gray-800">
                         <div className="border-b border-gray-200 p-5">
                             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                                Temporary Cart
+                                Cart
                             </h3>
                             <p className="text-sm text-gray-500">Expand each child to review which weekdays have meals and which are still empty.</p>
                         </div>
