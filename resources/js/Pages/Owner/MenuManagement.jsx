@@ -138,6 +138,37 @@ export default function MenuManagement({
         );
     };
 
+    const allDaysSelected =
+        days.length > 0 && days.every((day) => data.days.includes(day));
+    const allCategoriesSelected =
+        categories.length > 0 &&
+        categories.every((category) =>
+            data.menu_category_ids.includes(category.id),
+        );
+    const allSchoolsSelected =
+        schools.length > 0 &&
+        schools.every((school) => data.school_ids.includes(school.id));
+
+    const toggleAllDays = () => {
+        setData('days', allDaysSelected ? [] : [...days]);
+    };
+
+    const toggleAllCategories = () => {
+        setData(
+            'menu_category_ids',
+            allCategoriesSelected
+                ? []
+                : categories.map((category) => category.id),
+        );
+    };
+
+    const toggleAllSchools = () => {
+        setData(
+            'school_ids',
+            allSchoolsSelected ? [] : schools.map((school) => school.id),
+        );
+    };
+
     const remove = (item) => {
         if (
             !window.confirm(
@@ -217,7 +248,20 @@ export default function MenuManagement({
                             </div>
 
                             <div>
-                                <InputLabel value="Categories" />
+                                <div className="flex items-center gap-2">
+                                    <InputLabel value="Categories" />
+                                    {categories.length > 0 && (
+                                        <button
+                                            type="button"
+                                            onClick={toggleAllCategories}
+                                            className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 hover:underline dark:text-indigo-400 dark:hover:text-indigo-300"
+                                        >
+                                            {allCategoriesSelected
+                                                ? 'Clear all'
+                                                : 'Select all'}
+                                        </button>
+                                    )}
+                                </div>
                                 <div className="mt-2 grid gap-2 sm:grid-cols-2">
                                     {categories.map((category) => (
                                         <label
@@ -245,7 +289,18 @@ export default function MenuManagement({
                             </div>
 
                             <div>
-                                <InputLabel value="Available Days" />
+                                <div className="flex items-center gap-2">
+                                    <InputLabel value="Available Days" />
+                                    <button
+                                        type="button"
+                                        onClick={toggleAllDays}
+                                        className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 hover:underline dark:text-indigo-400 dark:hover:text-indigo-300"
+                                    >
+                                        {allDaysSelected
+                                            ? 'Clear all'
+                                            : 'Select all'}
+                                    </button>
+                                </div>
                                 <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
                                     {days.map((day) => (
                                         <label
@@ -271,7 +326,20 @@ export default function MenuManagement({
                             </div>
 
                             <div>
-                                <InputLabel value="Available at Schools" />
+                                <div className="flex items-center gap-2">
+                                    <InputLabel value="Available at Schools" />
+                                    {schools.length > 0 && (
+                                        <button
+                                            type="button"
+                                            onClick={toggleAllSchools}
+                                            className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 hover:underline dark:text-indigo-400 dark:hover:text-indigo-300"
+                                        >
+                                            {allSchoolsSelected
+                                                ? 'Clear all'
+                                                : 'Select all'}
+                                        </button>
+                                    )}
+                                </div>
                                 <div className="mt-2 grid gap-2 sm:grid-cols-2">
                                     {schools.map((school) => (
                                         <label
