@@ -18,6 +18,7 @@ return new class extends Migration
                 ->constrained('schools')->cascadeOnDelete();
             $table->string('name')->required();
             $table->string('class')->required();
+            $table->enum('approval_status', ['pending', 'approved'])->default('approved');
             $table->string('qr_code')->unique()->required();
             $table->timestamps();
         });

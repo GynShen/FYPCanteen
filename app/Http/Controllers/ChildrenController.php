@@ -4,10 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Models\Children;
 use App\Models\Student;
+use App\Models\School;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Manoar\QrCode\Facades\QrCode;
 
 class ChildrenController extends Controller
@@ -22,6 +25,7 @@ class ChildrenController extends Controller
                 ->with('student.school')
                 ->latest()
                 ->get(),
+            'schools' => School::where('is_active', true)->orderBy('name')->get(['id', 'name']),
         ]);
     }
 
@@ -44,6 +48,29 @@ class ChildrenController extends Controller
         $child->update($this->validateStudent($request, $child));
 
         return redirect()->route('customer.children')->with('success', 'Child updated successfully.');
+    }
+
+    public function requestStudent(Request $request): RedirectResponse
+    {
+        $this->authorizeCustomer($request);
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'class' => ['required', 'string', 'max:100'],
+            'school_id' => ['required', 'integer', Rule::exists('schools', 'id')->where('is_active', true)],
+        ]);
+
+        DB::transaction(function () use ($request, $validated) {
+            $student = Student::create([
+                ...$validated,
+                'approval_status' => 'pending',
+                'qr_code' => (string) Str::uuid(),
+            ]);
+
+            $request->user()->children()->create(['student_id' => $student->id]);
+        });
+
+        return back()->with('success', 'Student submitted for school approval. Meal ordering will be enabled after approval.');
     }
 
     public function destroy(Request $request, Children $child): RedirectResponse
@@ -97,6 +124,7 @@ class ChildrenController extends Controller
 
         $student = Student::query()
             ->where('student_code', strtoupper($validated['student_code']))
+            ->where('approval_status', 'approved')
             ->whereHas('school', fn ($query) => $query->where('is_active', true))
             ->first();
 

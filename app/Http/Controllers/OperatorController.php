@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\School;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -19,7 +20,9 @@ class OperatorController extends Controller
             'operators' => User::query()
                 ->where('role', 'operator')
                 ->orderBy('name')
-                ->get(['id', 'name', 'email', 'phone_number', 'is_active', 'created_at']),
+                ->with('school:id,name')
+                ->get(['id', 'name', 'email', 'phone_number', 'school_id', 'is_active', 'created_at']),
+            'schools' => School::where('is_active', true)->orderBy('name')->get(['id', 'name']),
         ]);
     }
 
@@ -31,6 +34,7 @@ class OperatorController extends Controller
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', Rule::unique(User::class)],
             'phone_number' => ['required', 'string', 'max:255', Rule::unique(User::class)],
             'password' => ['required', 'confirmed', Password::defaults()],
+            'school_id' => ['required', 'integer', Rule::exists('schools', 'id')->where('is_active', true)],
         ]);
 
         User::create([
@@ -50,6 +54,7 @@ class OperatorController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', Rule::unique(User::class)->ignore($operator->id)],
             'phone_number' => ['required', 'string', 'max:255', Rule::unique(User::class)->ignore($operator->id)],
+            'school_id' => ['required', 'integer', Rule::exists('schools', 'id')->where('is_active', true)],
         ]));
 
         return back()->with('success', 'Operator account updated successfully.');

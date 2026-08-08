@@ -207,6 +207,7 @@ class StripePaymentController extends Controller
         $weekStart = $today->copy()->startOfWeek()->addWeeks($weeksAhead)->startOfDay();
         $weekEnd = $weekStart->copy()->endOfWeek()->endOfDay();
         $valid = $request->user()->children()->where('student_id', $item->student_id)->exists()
+            && $item->student->approval_status === 'approved'
             && $item->student->school?->is_active
             && $item->menuItem->is_available
             && $item->menuItem->schools->contains('id', $item->student->school_id)

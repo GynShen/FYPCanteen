@@ -61,6 +61,10 @@ export default function CustomerMenu({ children, menuItems, cartItems }) {
     const selectedChild = children.find(
         (child) => child.student_id === Number(selectedChildId),
     );
+    const selectedStudentApproved =
+        selectedChild?.student.approval_status === 'approved';
+    const canOrderForSelectedChild =
+        selectedStudentApproved && selectedChild?.student.school?.is_active;
     const visibleMeals = useMemo(() => {
         if (!selectedChild) return [];
         return menuItems.filter((meal) =>
@@ -268,7 +272,7 @@ export default function CustomerMenu({ children, menuItems, cartItems }) {
                                             ))}
                                         </select>
                                     </div>
-                                    {selectedChild?.student.school?.is_active && (
+                                    {canOrderForSelectedChild && (
                                         <button type="button" onClick={() => setShowCart(true)} className="rounded-md bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700">
                                             Cart ({cartItems.length}) · RM {total.toFixed(2)}
                                         </button>
@@ -282,18 +286,20 @@ export default function CustomerMenu({ children, menuItems, cartItems }) {
                                 )}
                             </section>
 
-                            {!selectedChild?.student.school?.is_active && (
+                            {!canOrderForSelectedChild && (
                                 <section className="rounded-lg border border-amber-300 bg-amber-50 p-6 shadow">
                                     <h3 className="text-lg font-semibold text-amber-900">
                                         Meal ordering is temporarily unavailable
                                     </h3>
                                     <p className="mt-2 text-sm text-amber-800">
-                                        {selectedChild?.student.school?.name} is currently inactive. We apologize for the inconvenience. Please contact the school for further assistance.
+                                        {!selectedStudentApproved
+                                            ? `${selectedChild?.student.name}'s registration is awaiting school approval. Ordering will be enabled after approval.`
+                                            : `${selectedChild?.student.school?.name} is currently inactive. We apologize for the inconvenience. Please contact the school for further assistance.`}
                                     </p>
                                 </section>
                             )}
 
-                            {selectedChild?.student.school?.is_active && (
+                            {canOrderForSelectedChild && (
                             <section className="overflow-hidden bg-white shadow sm:rounded-lg dark:bg-gray-800">
                                 <div className="overflow-x-auto">
                                     <table className="w-full min-w-[820px] table-fixed border-collapse border border-slate-300">

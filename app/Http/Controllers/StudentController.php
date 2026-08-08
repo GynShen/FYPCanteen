@@ -16,17 +16,34 @@ class StudentController extends Controller
 {
     public function index(Request $request)
     {
-        $this->authorizeOwner($request);
+        $this->authorizeManager($request);
+        $operatorSchoolId = $request->user()->hasRole('operator')
+            ? $request->user()->school_id
+            : null;
 
         return inertia('Owner/StudentManagement', [
-            'students' => Student::with('school')->latest()->get(),
-            'schools' => School::where('is_active', true)->orderBy('name')->get(),
+            'students' => Student::query()
+                ->with('school')
+                ->when($operatorSchoolId, fn ($query) => $query->where('school_id', $operatorSchoolId))
+                ->latest()
+                ->get(),
+            'pendingStudents' => Student::query()
+                ->where('approval_status', 'pending')
+                ->when($operatorSchoolId, fn ($query) => $query->where('school_id', $operatorSchoolId))
+                ->with(['school:id,name', 'child.user:id,name,email'])
+                ->oldest()
+                ->get(),
+            'schools' => School::query()
+                ->where('is_active', true)
+                ->when($operatorSchoolId, fn ($query) => $query->whereKey($operatorSchoolId))
+                ->orderBy('name')
+                ->get(),
         ]);
     }
 
     public function store(Request $request): RedirectResponse
     {
-        $this->authorizeOwner($request);
+        $this->authorizeManager($request);
 
         $validated = $this->validateStudent($request);
 
@@ -40,7 +57,8 @@ class StudentController extends Controller
 
     public function update(Request $request, Student $student): RedirectResponse
     {
-        $this->authorizeOwner($request);
+        $this->authorizeManager($request);
+        $this->authorizeStudentAccess($request, $student);
 
         $student->update($this->validateStudent($request));
 
@@ -49,7 +67,8 @@ class StudentController extends Controller
 
     public function destroy(Request $request, Student $student): RedirectResponse
     {
-        $this->authorizeOwner($request);
+        $this->authorizeManager($request);
+        $this->authorizeStudentAccess($request, $student);
 
         if ($student->child()->exists() || $student->orderItems()->exists()) {
             throw ValidationException::withMessages([
@@ -64,7 +83,8 @@ class StudentController extends Controller
 
     public function qrCode(Request $request, Student $student): Response
     {
-        $this->authorizeOwner($request);
+        $this->authorizeManager($request);
+        $this->authorizeStudentAccess($request, $student);
 
         $svg = QrCode::format('svg')
             ->size(360)
@@ -84,15 +104,29 @@ class StudentController extends Controller
      */
     private function validateStudent(Request $request): array
     {
-        return $request->validate([
+        $validated = $request->validate([
             'school_id' => ['required', 'integer', Rule::exists('schools', 'id')->where('is_active', true)],
             'name' => ['required', 'string', 'max:255'],
             'class' => ['required', 'string', 'max:100'],
         ]);
+
+        if ($request->user()->hasRole('operator')) {
+            abort_unless((int) $request->user()->school_id === (int) $validated['school_id'], 403);
+        }
+
+        return $validated;
     }
 
-    private function authorizeOwner(Request $request): void
+    private function authorizeManager(Request $request): void
     {
-        abort_unless($request->user()?->hasRole('owner'), 403);
+        abort_unless(in_array($request->user()?->role, ['owner', 'operator'], true), 403);
+        abort_if($request->user()->hasRole('operator') && ! $request->user()->school_id, 403);
+    }
+
+    private function authorizeStudentAccess(Request $request, Student $student): void
+    {
+        if ($request->user()->hasRole('operator')) {
+            abort_unless((int) $request->user()->school_id === (int) $student->school_id, 403);
+        }
     }
 }

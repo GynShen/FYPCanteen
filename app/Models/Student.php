@@ -17,6 +17,7 @@ class Student extends Model
         'student_code',
         'name',
         'class',
+        'approval_status',
         'qr_code',
     ];
 

@@ -9,9 +9,10 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 
-export default function ChildrenManagement({ children }) {
+export default function ChildrenManagement({ children, schools }) {
     const [editingId, setEditingId] = useState(null);
     const [qrChild, setQrChild] = useState(null);
+    const [showStudentRequest, setShowStudentRequest] = useState(false);
     const { currentPage, setCurrentPage, paginatedItems } =
         useTablePagination(children);
 
@@ -27,6 +28,11 @@ export default function ChildrenManagement({ children }) {
         clearErrors,
     } = useForm({
         student_code: '',
+    });
+    const studentRequestForm = useForm({
+        name: '',
+        class: '',
+        school_id: schools[0]?.id ?? '',
     });
 
     const clearForm = () => {
@@ -74,6 +80,17 @@ export default function ChildrenManagement({ children }) {
                 if (editingId === child.id) {
                     clearForm();
                 }
+            },
+        });
+    };
+
+    const submitStudentRequest = (event) => {
+        event.preventDefault();
+        studentRequestForm.post(route('customer.children.request-student'), {
+            preserveScroll: true,
+            onSuccess: () => {
+                studentRequestForm.reset();
+                setShowStudentRequest(false);
             },
         });
     };
@@ -147,6 +164,45 @@ export default function ChildrenManagement({ children }) {
                                 )}
                             </div>
                         </form>
+
+                        <div className="mt-6 border-t border-gray-200 pt-5">
+                            <button
+                                type="button"
+                                onClick={() => setShowStudentRequest((value) => !value)}
+                                className="text-sm font-semibold text-indigo-600 hover:text-indigo-800 hover:underline"
+                            >
+                                Student ID not found? Submit a new student
+                            </button>
+
+                            {showStudentRequest && (
+                                <form onSubmit={submitStudentRequest} className="mt-5 grid gap-4 md:grid-cols-3">
+                                    <div>
+                                        <InputLabel htmlFor="new-student-name" value="Student Name" />
+                                        <TextInput id="new-student-name" value={studentRequestForm.data.name} onChange={(event) => studentRequestForm.setData('name', event.target.value)} className="mt-1 block w-full" required />
+                                        <InputError message={studentRequestForm.errors.name} className="mt-2" />
+                                    </div>
+                                    <div>
+                                        <InputLabel htmlFor="new-student-class" value="Class" />
+                                        <TextInput id="new-student-class" value={studentRequestForm.data.class} onChange={(event) => studentRequestForm.setData('class', event.target.value)} className="mt-1 block w-full" placeholder="Example: 4 Amanah" required />
+                                        <InputError message={studentRequestForm.errors.class} className="mt-2" />
+                                    </div>
+                                    <div>
+                                        <InputLabel htmlFor="new-student-school" value="School" />
+                                        <select id="new-student-school" value={studentRequestForm.data.school_id} onChange={(event) => studentRequestForm.setData('school_id', event.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                                            <option value="">Select a school</option>
+                                            {schools.map((school) => <option key={school.id} value={school.id}>{school.name}</option>)}
+                                        </select>
+                                        <InputError message={studentRequestForm.errors.school_id} className="mt-2" />
+                                    </div>
+                                    <div className="md:col-span-3">
+                                        <p className="mb-3 text-sm text-amber-700">The student will remain pending until approved by the school or owner. Ordering is disabled while pending.</p>
+                                        <PrimaryButton disabled={studentRequestForm.processing || schools.length === 0}>
+                                            {studentRequestForm.processing ? 'Submitting...' : 'Submit for Approval'}
+                                        </PrimaryButton>
+                                    </div>
+                                </form>
+                            )}
+                        </div>
                     </div>
 
                     <div className="overflow-hidden bg-white shadow sm:rounded-lg dark:bg-gray-800">
@@ -159,6 +215,7 @@ export default function ChildrenManagement({ children }) {
                                             'Name',
                                             'Class',
                                             'School',
+                                            'Status',
                                             'Operation',
                                         ].map((heading) => (
                                             <th
@@ -185,6 +242,11 @@ export default function ChildrenManagement({ children }) {
                                             <td className="px-4 py-3 text-center text-sm text-gray-900">
                                                 {child.student.school?.name ??
                                                     '-'}
+                                            </td>
+                                            <td className="px-4 py-3 text-center">
+                                                <span className={`rounded-full px-3 py-1 text-xs font-semibold ${child.student.approval_status === 'approved' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
+                                                    {child.student.approval_status === 'approved' ? 'Approved' : 'Pending'}
+                                                </span>
                                             </td>
                                             <td className="px-4 py-3 text-center">
                                                 <div className="flex justify-center gap-2">
@@ -223,7 +285,7 @@ export default function ChildrenManagement({ children }) {
                                     {children.length === 0 && (
                                         <tr>
                                             <td
-                                                colSpan="5"
+                                                colSpan="6"
                                                 className="px-4 py-10 text-center text-sm text-gray-500"
                                             >
                                                 No children are linked to your

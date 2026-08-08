@@ -6,13 +6,18 @@ import TextInput from '@/Components/TextInput';
 import TablePagination from '@/Components/TablePagination';
 import useTablePagination from '@/Hooks/useTablePagination';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, useForm } from '@inertiajs/react';
+import { Head, router, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 
-export default function StudentManagement({ students, schools }) {
+export default function StudentManagement({ students, pendingStudents, schools }) {
     const [editingId, setEditingId] = useState(null);
     const { currentPage, setCurrentPage, paginatedItems } =
         useTablePagination(students);
+    const {
+        currentPage: approvalPage,
+        setCurrentPage: setApprovalPage,
+        paginatedItems: paginatedPendingStudents,
+    } = useTablePagination(pendingStudents);
     const [qrStudent, setQrStudent] = useState(null);
 
     const {
@@ -85,6 +90,11 @@ export default function StudentManagement({ students, schools }) {
                 }
             },
         });
+    };
+
+    const approve = (student) => {
+        if (!window.confirm(`Approve ${student.name} (${student.student_code})?`)) return;
+        router.patch(route('student-approvals.approve', { student: student.id }), {}, { preserveScroll: true });
     };
 
     return (
@@ -218,6 +228,43 @@ export default function StudentManagement({ students, schools }) {
                     </div>
 
                     <div className="overflow-hidden bg-white shadow sm:rounded-lg dark:bg-gray-800">
+                        <div className="border-b border-gray-200 p-5">
+                            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                                Pending Student Approvals
+                            </h3>
+                            <p className="mt-1 text-sm text-gray-500">
+                                Verify parent-submitted student details before enabling meal ordering.
+                            </p>
+                        </div>
+                        <div className="overflow-x-auto">
+                            <table className="min-w-full divide-y divide-gray-200">
+                                <thead className="bg-slate-100">
+                                    <tr>
+                                        {['Student ID', 'Name', 'Class', 'School', 'Parent', 'Submitted', 'Action'].map((heading) => (
+                                            <th key={heading} className="px-4 py-3 text-center text-xs font-semibold uppercase text-gray-700">{heading}</th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-200 bg-white">
+                                    {paginatedPendingStudents.map((student) => (
+                                        <tr key={student.id} className="even:bg-slate-50">
+                                            <td className="px-4 py-3 text-center text-sm font-semibold text-gray-900">{student.student_code}</td>
+                                            <td className="px-4 py-3 text-center text-sm text-gray-900">{student.name}</td>
+                                            <td className="px-4 py-3 text-center text-sm text-gray-900">{student.class}</td>
+                                            <td className="px-4 py-3 text-center text-sm text-gray-900">{student.school?.name}</td>
+                                            <td className="px-4 py-3 text-center text-sm text-gray-900"><span className="block font-medium">{student.child?.user?.name}</span><span className="text-xs text-gray-500">{student.child?.user?.email}</span></td>
+                                            <td className="px-4 py-3 text-center text-sm text-gray-900">{new Date(student.created_at).toLocaleString('en-MY')}</td>
+                                            <td className="px-4 py-3 text-center"><button type="button" onClick={() => approve(student)} className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700">Approve</button></td>
+                                        </tr>
+                                    ))}
+                                    {pendingStudents.length === 0 && <tr><td colSpan="7" className="px-4 py-10 text-center text-sm text-gray-500">No pending student registrations.</td></tr>}
+                                </tbody>
+                            </table>
+                        </div>
+                        <TablePagination totalItems={pendingStudents.length} currentPage={approvalPage} onPageChange={setApprovalPage} />
+                    </div>
+
+                    <div className="overflow-hidden bg-white shadow sm:rounded-lg dark:bg-gray-800">
                         <div className="overflow-x-auto">
                             <table className="min-w-full divide-y divide-gray-200">
                                 <thead className="bg-slate-100">
@@ -305,6 +352,7 @@ export default function StudentManagement({ students, schools }) {
                         </div>
                         <TablePagination totalItems={students.length} currentPage={currentPage} onPageChange={setCurrentPage} />
                     </div>
+
                 </div>
             </div>
 

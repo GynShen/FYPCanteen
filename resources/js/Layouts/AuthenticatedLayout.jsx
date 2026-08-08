@@ -33,20 +33,20 @@ export default function AuthenticatedLayout({ header, children }) {
                                 {user.role === 'owner' && (
                                     <>
                                         <NavLink
-                                            href={route('owner.operators')}
-                                            active={route().current(
-                                                'owner.operators',
-                                            )}
-                                        >
-                                            Operator Management
-                                        </NavLink>
-                                        <NavLink
                                             href={route('owner.school')}
                                             active={route().current(
                                                 'owner.school',
                                             )}
                                         >
-                                            School Management
+                                            School
+                                        </NavLink>
+                                        <NavLink
+                                            href={route('owner.operators')}
+                                            active={route().current(
+                                                'owner.operators',
+                                            )}
+                                        >
+                                            Operator
                                         </NavLink>
                                         <NavLink
                                             href={route('owner.student')}
@@ -54,7 +54,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                                 'owner.student',
                                             )}
                                         >
-                                            Student Management
+                                            Student
                                         </NavLink>
                                         <NavLink
                                             href={route(
@@ -64,7 +64,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                                 'owner.menuCategory',
                                             )}
                                         >
-                                            Menu Category Management
+                                            Menu Category
                                         </NavLink>
                                         <NavLink
                                             href={route('owner.menu')}
@@ -72,7 +72,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                                 'owner.menu',
                                             )}
                                         >
-                                            Menu Management
+                                            Menu
                                         </NavLink>
                                     </>
                                 )}
@@ -84,7 +84,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                                 'customer.children',
                                             )}
                                         >
-                                            Children Management
+                                            Children
                                         </NavLink>
                                         <NavLink
                                             href={route('customer.menu')}
@@ -103,6 +103,14 @@ export default function AuthenticatedLayout({ header, children }) {
                                             Orders
                                         </NavLink>
                                     </>
+                                )}
+                                {user.role === 'operator' && (
+                                    <NavLink
+                                        href={route('owner.student')}
+                                        active={route().current('owner.student*')}
+                                    >
+                                        Student Management
+                                    </NavLink>
                                 )}
                             </div>
                         </div>
@@ -224,29 +232,30 @@ export default function AuthenticatedLayout({ header, children }) {
                             {user.role === 'owner' && (
                                 <>
                                     <ResponsiveNavLink
-                                        href={route('owner.operators')}
-                                    >
-                                        Operator Management
-                                    </ResponsiveNavLink>
-                                    <ResponsiveNavLink
                                         href={route('owner.school')}
                                     >
-                                        School Management
+                                        School
                                     </ResponsiveNavLink>
+                                    <ResponsiveNavLink
+                                        href={route('owner.operators')}
+                                    >
+                                        Operator
+                                    </ResponsiveNavLink>
+
                                     <ResponsiveNavLink
                                         href={route('owner.student')}
                                     >
-                                        Student Management
+                                        Student
                                     </ResponsiveNavLink>
                                     <ResponsiveNavLink
                                         href={route('owner.menuCategory')}
                                     >
-                                        Menu Category Management
+                                        Menu Category
                                     </ResponsiveNavLink>
                                     <ResponsiveNavLink
                                         href={route('owner.menu')}
                                     >
-                                        Menu Management
+                                        Menu
                                     </ResponsiveNavLink>
                                 </>
                             )}
@@ -255,7 +264,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                     <ResponsiveNavLink
                                         href={route('customer.children')}
                                     >
-                                        Children Management
+                                        Children
                                     </ResponsiveNavLink>
                                     <ResponsiveNavLink
                                         href={route('customer.menu')}
@@ -268,6 +277,11 @@ export default function AuthenticatedLayout({ header, children }) {
                                         Orders
                                     </ResponsiveNavLink>
                                 </>
+                            )}
+                            {user.role === 'operator' && (
+                                <ResponsiveNavLink href={route('owner.student')}>
+                                    Student Management
+                                </ResponsiveNavLink>
                             )}
                             <ResponsiveNavLink href={route('profile.edit')}>
                                 Profile

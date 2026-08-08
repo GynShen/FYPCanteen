@@ -9,7 +9,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, router, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 
-export default function OperatorManagement({ operators }) {
+export default function OperatorManagement({ operators, schools }) {
     const [editingId, setEditingId] = useState(null);
     const [passwordOperator, setPasswordOperator] = useState(null);
     const { currentPage, setCurrentPage, paginatedItems } =
@@ -18,6 +18,7 @@ export default function OperatorManagement({ operators }) {
         name: '',
         email: '',
         phone_number: '',
+        school_id: schools[0]?.id ?? '',
         password: '',
         password_confirmation: '',
     });
@@ -37,6 +38,7 @@ export default function OperatorManagement({ operators }) {
             name: operator.name,
             email: operator.email,
             phone_number: operator.phone_number,
+            school_id: operator.school_id ?? '',
             password: '',
             password_confirmation: '',
         });
@@ -96,6 +98,7 @@ export default function OperatorManagement({ operators }) {
                             <div><InputLabel htmlFor="operator-name" value="Name" /><TextInput id="operator-name" value={form.data.name} onChange={(event) => form.setData('name', event.target.value)} className="mt-1 block w-full" required /><InputError message={form.errors.name} className="mt-2" /></div>
                             <div><InputLabel htmlFor="operator-email" value="Email" /><TextInput id="operator-email" type="email" value={form.data.email} onChange={(event) => form.setData('email', event.target.value)} className="mt-1 block w-full" required /><InputError message={form.errors.email} className="mt-2" /></div>
                             <div><InputLabel htmlFor="operator-phone" value="Phone Number" /><TextInput id="operator-phone" value={form.data.phone_number} onChange={(event) => form.setData('phone_number', event.target.value)} className="mt-1 block w-full" required /><InputError message={form.errors.phone_number} className="mt-2" /></div>
+                            <div><InputLabel htmlFor="operator-school" value="Assigned School" /><select id="operator-school" value={form.data.school_id} onChange={(event) => form.setData('school_id', event.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required><option value="">Select a school</option>{schools.map((school) => <option key={school.id} value={school.id}>{school.name}</option>)}</select><InputError message={form.errors.school_id} className="mt-2" /></div>
                             {!editingId && <><div><InputLabel htmlFor="operator-password" value="Password" /><TextInput id="operator-password" type="password" value={form.data.password} onChange={(event) => form.setData('password', event.target.value)} className="mt-1 block w-full" required /><InputError message={form.errors.password} className="mt-2" /></div><div><InputLabel htmlFor="operator-password-confirmation" value="Confirm Password" /><TextInput id="operator-password-confirmation" type="password" value={form.data.password_confirmation} onChange={(event) => form.setData('password_confirmation', event.target.value)} className="mt-1 block w-full" required /></div></>}
                             <div className="flex items-center gap-3 md:col-span-2"><PrimaryButton disabled={form.processing}>{form.processing ? 'Saving...' : editingId ? 'Update Operator' : 'Create Operator'}</PrimaryButton>{editingId && <button type="button" onClick={clearForm} className="rounded-md bg-gray-200 px-4 py-2 text-sm font-semibold text-gray-700">Cancel</button>}</div>
                         </form>
@@ -104,17 +107,18 @@ export default function OperatorManagement({ operators }) {
                     <section className="overflow-hidden rounded-lg bg-white shadow dark:bg-gray-800">
                         <div className="overflow-x-auto">
                             <table className="min-w-full divide-y divide-gray-200">
-                                <thead className="bg-slate-100"><tr>{['ID', 'Name', 'Email', 'Phone', 'Status', 'Created', 'Actions'].map((heading) => <th key={heading} className="px-4 py-3 text-center text-xs font-bold uppercase text-slate-700">{heading}</th>)}</tr></thead>
+                                <thead className="bg-slate-100"><tr>{['ID', 'Name', 'Email', 'Phone', 'School', 'Status', 'Created', 'Actions'].map((heading) => <th key={heading} className="px-4 py-3 text-center text-xs font-bold uppercase text-slate-700">{heading}</th>)}</tr></thead>
                                 <tbody className="divide-y divide-gray-200 bg-white">
                                     {paginatedItems.map((operator) => (
                                         <tr key={operator.id} className="text-slate-800 even:bg-slate-50">
                                             <td className="px-4 py-3 text-center text-sm font-semibold">{operator.id}</td><td className="px-4 py-3 text-center text-sm font-medium">{operator.name}</td><td className="px-4 py-3 text-center text-sm">{operator.email}</td><td className="px-4 py-3 text-center text-sm">{operator.phone_number}</td>
+                                            <td className="px-4 py-3 text-center text-sm">{operator.school?.name ?? 'Not assigned'}</td>
                                             <td className="px-4 py-3 text-center"><span className={`rounded-full px-3 py-1 text-xs font-bold ${operator.is_active ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}`}>{operator.is_active ? 'Active' : 'Inactive'}</span></td>
                                             <td className="px-4 py-3 text-center text-sm">{new Date(operator.created_at).toLocaleString('en-MY')}</td>
                                             <td className="px-4 py-3"><div className="flex flex-wrap justify-center gap-2"><button type="button" onClick={() => startEdit(operator)} className="rounded bg-indigo-600 px-3 py-2 text-xs font-semibold text-white">Edit</button><button type="button" onClick={() => toggleStatus(operator)} className={`rounded px-3 py-2 text-xs font-semibold text-white ${operator.is_active ? 'bg-amber-600' : 'bg-emerald-600'}`}>{operator.is_active ? 'Deactivate' : 'Activate'}</button><button type="button" onClick={() => openPassword(operator)} className="rounded px-3 py-2 text-xs font-semibold" style={{ backgroundColor: '#475569', color: '#ffffff' }}>Reset Password</button><button type="button" onClick={() => remove(operator)} className="rounded bg-red-600 px-3 py-2 text-xs font-semibold text-white">Delete</button></div></td>
                                         </tr>
                                     ))}
-                                    {operators.length === 0 && <tr><td colSpan="7" className="px-4 py-10 text-center text-sm text-gray-500">No operator accounts have been created.</td></tr>}
+                                    {operators.length === 0 && <tr><td colSpan="8" className="px-4 py-10 text-center text-sm text-gray-500">No operator accounts have been created.</td></tr>}
                                 </tbody>
                             </table>
                         </div>
