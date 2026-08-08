@@ -97,8 +97,8 @@ export default function MenuManagement({
 
         post(
             editingId
-                ? route('operator.menu.update', { menu: editingId })
-                : route('operator.menu.store'),
+                ? route('owner.menu.update', { menu: editingId })
+                : route('owner.menu.store'),
             {
                 forceFormData: true,
                 preserveScroll: true,
@@ -147,7 +147,7 @@ export default function MenuManagement({
             return;
         }
 
-        destroy(route('operator.menu.destroy', { menu: item.id }), {
+        destroy(route('owner.menu.destroy', { menu: item.id }), {
             preserveScroll: true,
             onSuccess: () => {
                 if (editingId === item.id) {

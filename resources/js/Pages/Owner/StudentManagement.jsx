@@ -48,14 +48,14 @@ export default function StudentManagement({ students, schools }) {
         clearErrors();
 
         if (editingId) {
-            patch(route('operator.student.update', { student: editingId }), {
+            patch(route('owner.student.update', { student: editingId }), {
                 preserveScroll: true,
                 onSuccess: clearForm,
             });
             return;
         }
 
-        post(route('operator.student.store'), {
+        post(route('owner.student.store'), {
             preserveScroll: true,
             onSuccess: clearForm,
         });
@@ -70,7 +70,7 @@ export default function StudentManagement({ students, schools }) {
             return;
         }
 
-        destroy(route('operator.student.destroy', { student: student.id }), {
+        destroy(route('owner.student.destroy', { student: student.id }), {
             preserveScroll: true,
             onSuccess: () => {
                 if (editingId === student.id) {
@@ -319,7 +319,7 @@ export default function StudentManagement({ students, schools }) {
                         </p>
 
                         <img
-                            src={route('operator.student.qr-code', {
+                            src={route('owner.student.qr-code', {
                                 student: qrStudent.id,
                             })}
                             alt={`QR code for ${qrStudent.name}`}
@@ -334,7 +334,7 @@ export default function StudentManagement({ students, schools }) {
 
                         <div className="mt-6 flex justify-center gap-3">
                             <a
-                                href={route('operator.student.qr-code', {
+                                href={route('owner.student.qr-code', {
                                     student: qrStudent.id,
                                 })}
                                 target="_blank"

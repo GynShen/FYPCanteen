@@ -52,7 +52,7 @@ export default function SchoolManagement({ schools }) {
         clearErrors();
 
         if (editingId) {
-            patch(route('operator.school.update', { school: editingId }), {
+            patch(route('owner.school.update', { school: editingId }), {
                 preserveScroll: true,
                 onSuccess: () => cancelEdit(),
                 onError: () => {
@@ -66,7 +66,7 @@ export default function SchoolManagement({ schools }) {
             return;
         }
 
-        post(route('operator.school.store'), {
+        post(route('owner.school.store'), {
             preserveScroll: true,
             onSuccess: () => {
                 clearErrors();
@@ -84,7 +84,7 @@ export default function SchoolManagement({ schools }) {
             return;
         }
 
-        destroy(route('operator.school.destroy', { school: id }), {
+        destroy(route('owner.school.destroy', { school: id }), {
             preserveScroll: true,
         });
     };

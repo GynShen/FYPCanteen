@@ -12,7 +12,6 @@ export default function Register() {
         password: '',
         password_confirmation: '',
         phone_number: '',
-        role: 'customer',
     });
 
     const submit = (e) => {
@@ -119,24 +118,6 @@ export default function Register() {
                     />
 
                     <InputError message={errors.phone_number} className="mt-2" />
-                </div>
-
-                <div className="mt-4">
-                    <InputLabel htmlFor="role" value="Role" />
-
-                   <select
-                        id="role"
-                        name="role"
-                        value={data.role}
-                        onChange={(e) => setData('role', e.target.value)}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                        required
-                    >
-                        <option value="customer">Customer</option>
-                        <option value="operator">Operator</option>
-                   </select>
-
-                   <InputError message={errors.role} className="mt-2" />
                 </div>
 
                 <div className="mt-4 flex items-center justify-end">

@@ -9,16 +9,16 @@ class SchoolController extends Controller
 {
     public function index(Request $request)
     {
-        abort_unless($request->user()->hasRole('operator'), 403);
+        abort_unless($request->user()->hasRole('owner'), 403);
 
-        return inertia('Operator/SchoolManagement', [
+        return inertia('Owner/SchoolManagement', [
             'schools' => School::latest()->get(),
         ]);
     }
 
     public function store(Request $request)
     {
-        abort_unless($request->user()->hasRole('operator'), 403);
+        abort_unless($request->user()->hasRole('owner'), 403);
 
         $validated = $request->validate([
             'name' => 'required|string|max:255|unique:schools,name',
@@ -27,29 +27,29 @@ class SchoolController extends Controller
 
         School::create($validated);
 
-        return redirect()->route('operator.school');
+        return redirect()->route('owner.school');
     }
 
     public function update(Request $request, School $school)
     {
-        abort_unless($request->user()->hasRole('operator'), 403);
+        abort_unless($request->user()->hasRole('owner'), 403);
 
         $validated = $request->validate([
-            'name' => 'required|string|max:255|unique:schools,name,' . $school->id,
-            'address' => 'required|string|max:255|unique:schools,address,' . $school->id,
+            'name' => 'required|string|max:255|unique:schools,name,'.$school->id,
+            'address' => 'required|string|max:255|unique:schools,address,'.$school->id,
         ]);
 
         $school->update($validated);
 
-        return redirect()->route('operator.school');
+        return redirect()->route('owner.school');
     }
 
     public function destroy(Request $request, School $school)
     {
-        abort_unless($request->user()->hasRole('operator'), 403);
+        abort_unless($request->user()->hasRole('owner'), 403);
 
         $school->delete();
 
-        return redirect()->route('operator.school');
+        return redirect()->route('owner.school');
     }
 }

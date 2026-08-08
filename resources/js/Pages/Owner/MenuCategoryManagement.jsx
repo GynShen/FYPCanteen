@@ -38,7 +38,7 @@ export default function MenuCategoriesManagement({ menuCategories }) {
     clearErrors();
 
     if (editingId) {
-      patch(route('operator.menuCategory.update', { menuCategory: editingId }), {
+      patch(route('owner.menuCategory.update', { menuCategory: editingId }), {
         preserveScroll: true,
         onSuccess: () => cancelEdit(),
         onError: () => {
@@ -50,7 +50,7 @@ export default function MenuCategoriesManagement({ menuCategories }) {
       return;
     }
 
-    post(route('operator.menuCategory.store'), {
+    post(route('owner.menuCategory.store'), {
       preserveScroll: true,
       onSuccess: () => {
         clearErrors();
@@ -66,7 +66,7 @@ export default function MenuCategoriesManagement({ menuCategories }) {
       return;
     }
 
-    destroy(route('operator.menuCategory.destroy', { menuCategory: id }), {
+    destroy(route('owner.menuCategory.destroy', { menuCategory: id }), {
       preserveScroll: true,
     });
   };

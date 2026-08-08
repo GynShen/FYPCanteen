@@ -10,16 +10,16 @@ class MenuCategoryController extends Controller
 {
     public function index(Request $request)
     {
-        abort_unless($request->user()->hasRole('operator'), 403);
+        abort_unless($request->user()->hasRole('owner'), 403);
 
-        return inertia('Operator/MenuCategoryManagement', [
+        return inertia('Owner/MenuCategoryManagement', [
             'menuCategories' => MenuCategory::orderBy('name')->get(),
         ]);
     }
 
     public function store(Request $request)
     {
-        abort_unless($request->user()->hasRole('operator'), 403);
+        abort_unless($request->user()->hasRole('owner'), 403);
 
         $validated = $request->validate([
             'name' => [
@@ -40,12 +40,12 @@ class MenuCategoryController extends Controller
 
         MenuCategory::create($validated);
 
-        return redirect()->route('operator.menuCategory');
+        return redirect()->route('owner.menuCategory');
     }
 
     public function update(Request $request, MenuCategory $menuCategory)
     {
-        abort_unless($request->user()->hasRole('operator'), 403);
+        abort_unless($request->user()->hasRole('owner'), 403);
 
         $validated = $request->validate([
             'name' => [
@@ -67,15 +67,15 @@ class MenuCategoryController extends Controller
 
         $menuCategory->update($validated);
 
-        return redirect()->route('operator.menuCategory');
+        return redirect()->route('owner.menuCategory');
     }
 
     public function destroy(Request $request, MenuCategory $menuCategory)
     {
-        abort_unless($request->user()->hasRole('operator'), 403);
+        abort_unless($request->user()->hasRole('owner'), 403);
 
         $menuCategory->delete();
 
-        return redirect()->route('operator.menuCategory');
+        return redirect()->route('owner.menuCategory');
     }
 }

@@ -30,38 +30,38 @@ export default function AuthenticatedLayout({ header, children }) {
                                 >
                                     Dashboard
                                 </NavLink>
-                                {user.role === 'operator' && (
+                                {user.role === 'owner' && (
                                     <>
                                         <NavLink
-                                            href={route('operator.school')}
+                                            href={route('owner.school')}
                                             active={route().current(
-                                                'operator.school',
+                                                'owner.school',
                                             )}
                                         >
                                             School Management
                                         </NavLink>
                                         <NavLink
-                                            href={route('operator.student')}
+                                            href={route('owner.student')}
                                             active={route().current(
-                                                'operator.student',
+                                                'owner.student',
                                             )}
                                         >
                                             Student Management
                                         </NavLink>
                                         <NavLink
                                             href={route(
-                                                'operator.menuCategory',
+                                                'owner.menuCategory',
                                             )}
                                             active={route().current(
-                                                'operator.menuCategory',
+                                                'owner.menuCategory',
                                             )}
                                         >
                                             Menu Category Management
                                         </NavLink>
                                         <NavLink
-                                            href={route('operator.menu')}
+                                            href={route('owner.menu')}
                                             active={route().current(
-                                                'operator.menu',
+                                                'owner.menu',
                                             )}
                                         >
                                             Menu Management
@@ -213,25 +213,25 @@ export default function AuthenticatedLayout({ header, children }) {
                         </div>
 
                         <div className="mt-3 space-y-1">
-                            {user.role === 'operator' && (
+                            {user.role === 'owner' && (
                                 <>
                                     <ResponsiveNavLink
-                                        href={route('operator.school')}
+                                        href={route('owner.school')}
                                     >
                                         School Management
                                     </ResponsiveNavLink>
                                     <ResponsiveNavLink
-                                        href={route('operator.student')}
+                                        href={route('owner.student')}
                                     >
                                         Student Management
                                     </ResponsiveNavLink>
                                     <ResponsiveNavLink
-                                        href={route('operator.menuCategory')}
+                                        href={route('owner.menuCategory')}
                                     >
                                         Menu Category Management
                                     </ResponsiveNavLink>
                                     <ResponsiveNavLink
-                                        href={route('operator.menu')}
+                                        href={route('owner.menu')}
                                     >
                                         Menu Management
                                     </ResponsiveNavLink>

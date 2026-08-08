@@ -19,9 +19,9 @@ class MenuController extends Controller
 
     public function index(Request $request)
     {
-        $this->authorizeOperator($request);
+        $this->authorizeOwner($request);
 
-        return inertia('Operator/MenuManagement', [
+        return inertia('Owner/MenuManagement', [
             'menuItems' => MenuItem::with(['menuCategories', 'days', 'schools'])->latest()->get(),
             'categories' => MenuCategory::orderBy('name')->get(),
             'schools' => School::orderBy('name')->get(),
@@ -34,7 +34,7 @@ class MenuController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $this->authorizeOperator($request);
+        $this->authorizeOwner($request);
 
         $validated = $this->validateMenu($request, true);
         $driveImage = $this->uploadImage($request);
@@ -56,12 +56,12 @@ class MenuController extends Controller
             throw $exception;
         }
 
-        return redirect()->route('operator.menu')->with('success', 'Meal added successfully.');
+        return redirect()->route('owner.menu')->with('success', 'Meal added successfully.');
     }
 
     public function update(Request $request, MenuItem $menu): RedirectResponse
     {
-        $this->authorizeOperator($request);
+        $this->authorizeOwner($request);
 
         $validated = $this->validateMenu($request, false);
         $newDriveImage = $request->hasFile('image') ? $this->uploadImage($request) : null;
@@ -91,23 +91,23 @@ class MenuController extends Controller
             $this->deleteDriveImageQuietly($oldDriveId);
         }
 
-        return redirect()->route('operator.menu')->with('success', 'Meal updated successfully.');
+        return redirect()->route('owner.menu')->with('success', 'Meal updated successfully.');
     }
 
     public function destroy(Request $request, MenuItem $menu): RedirectResponse
     {
-        $this->authorizeOperator($request);
+        $this->authorizeOwner($request);
 
         $driveId = $menu->image_drive_id;
         $menu->delete();
         $this->deleteDriveImageQuietly($driveId);
 
-        return redirect()->route('operator.menu')->with('success', 'Meal deleted successfully.');
+        return redirect()->route('owner.menu')->with('success', 'Meal deleted successfully.');
     }
 
-    private function authorizeOperator(Request $request): void
+    private function authorizeOwner(Request $request): void
     {
-        abort_unless($request->user()?->hasRole('operator'), 403);
+        abort_unless($request->user()?->hasRole('owner'), 403);
     }
 
     /**

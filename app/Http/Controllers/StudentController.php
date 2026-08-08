@@ -16,9 +16,9 @@ class StudentController extends Controller
 {
     public function index(Request $request)
     {
-        $this->authorizeOperator($request);
+        $this->authorizeOwner($request);
 
-        return inertia('Operator/StudentManagement', [
+        return inertia('Owner/StudentManagement', [
             'students' => Student::with('school')->latest()->get(),
             'schools' => School::orderBy('name')->get(),
         ]);
@@ -26,7 +26,7 @@ class StudentController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $this->authorizeOperator($request);
+        $this->authorizeOwner($request);
 
         $validated = $this->validateStudent($request);
 
@@ -35,21 +35,21 @@ class StudentController extends Controller
             'qr_code' => (string) Str::uuid(),
         ]);
 
-        return redirect()->route('operator.student')->with('success', 'Student added successfully.');
+        return redirect()->route('owner.student')->with('success', 'Student added successfully.');
     }
 
     public function update(Request $request, Student $student): RedirectResponse
     {
-        $this->authorizeOperator($request);
+        $this->authorizeOwner($request);
 
         $student->update($this->validateStudent($request));
 
-        return redirect()->route('operator.student')->with('success', 'Student updated successfully.');
+        return redirect()->route('owner.student')->with('success', 'Student updated successfully.');
     }
 
     public function destroy(Request $request, Student $student): RedirectResponse
     {
-        $this->authorizeOperator($request);
+        $this->authorizeOwner($request);
 
         if ($student->child()->exists() || $student->orderItems()->exists()) {
             throw ValidationException::withMessages([
@@ -59,12 +59,12 @@ class StudentController extends Controller
 
         $student->delete();
 
-        return redirect()->route('operator.student')->with('success', 'Student deleted successfully.');
+        return redirect()->route('owner.student')->with('success', 'Student deleted successfully.');
     }
 
     public function qrCode(Request $request, Student $student): Response
     {
-        $this->authorizeOperator($request);
+        $this->authorizeOwner($request);
 
         $svg = QrCode::format('svg')
             ->size(360)
@@ -91,8 +91,8 @@ class StudentController extends Controller
         ]);
     }
 
-    private function authorizeOperator(Request $request): void
+    private function authorizeOwner(Request $request): void
     {
-        abort_unless($request->user()?->hasRole('operator'), 403);
+        abort_unless($request->user()?->hasRole('owner'), 403);
     }
 }

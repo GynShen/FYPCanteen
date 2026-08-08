@@ -51,29 +51,29 @@ Route::middleware('auth')->group(function () {
     Route::patch('/customer/orders/items/{orderItem}', [CustomerOrderController::class, 'updateOrderedMeal'])->name('customer.orders.items.update');
 
     // Manage schools
-    Route::get('/operator/school', [SchoolController::class, 'index'])->name('operator.school');
-    Route::post('/operator/school', [SchoolController::class, 'store'])->name('operator.school.store');
-    Route::patch('/operator/school/{school}', [SchoolController::class, 'update'])->name('operator.school.update');
-    Route::delete('/operator/school/{school}', [SchoolController::class, 'destroy'])->name('operator.school.destroy');
+    Route::get('/owner/school', [SchoolController::class, 'index'])->name('owner.school');
+    Route::post('/owner/school', [SchoolController::class, 'store'])->name('owner.school.store');
+    Route::patch('/owner/school/{school}', [SchoolController::class, 'update'])->name('owner.school.update');
+    Route::delete('/owner/school/{school}', [SchoolController::class, 'destroy'])->name('owner.school.destroy');
 
     // Manage students
-    Route::get('/operator/student', [StudentController::class, 'index'])->name('operator.student');
-    Route::post('/operator/student', [StudentController::class, 'store'])->name('operator.student.store');
-    Route::patch('/operator/student/{student}', [StudentController::class, 'update'])->name('operator.student.update');
-    Route::delete('/operator/student/{student}', [StudentController::class, 'destroy'])->name('operator.student.destroy');
-    Route::get('/operator/student/{student}/qr-code', [StudentController::class, 'qrCode'])->name('operator.student.qr-code');
+    Route::get('/owner/student', [StudentController::class, 'index'])->name('owner.student');
+    Route::post('/owner/student', [StudentController::class, 'store'])->name('owner.student.store');
+    Route::patch('/owner/student/{student}', [StudentController::class, 'update'])->name('owner.student.update');
+    Route::delete('/owner/student/{student}', [StudentController::class, 'destroy'])->name('owner.student.destroy');
+    Route::get('/owner/student/{student}/qr-code', [StudentController::class, 'qrCode'])->name('owner.student.qr-code');
 
     // Manage menu category
-    Route::get('/operator/menuCategory', [MenuCategoryController::class, 'index'])->name('operator.menuCategory');
-    Route::post('/operator/menuCategory', [MenuCategoryController::class, 'store'])->name('operator.menuCategory.store');
-    Route::patch('/operator/menuCategory/{menuCategory}', [MenuCategoryController::class, 'update'])->name('operator.menuCategory.update');
-    Route::delete('/operator/menuCategory/{menuCategory}', [MenuCategoryController::class, 'destroy'])->name('operator.menuCategory.destroy');
+    Route::get('/owner/menuCategory', [MenuCategoryController::class, 'index'])->name('owner.menuCategory');
+    Route::post('/owner/menuCategory', [MenuCategoryController::class, 'store'])->name('owner.menuCategory.store');
+    Route::patch('/owner/menuCategory/{menuCategory}', [MenuCategoryController::class, 'update'])->name('owner.menuCategory.update');
+    Route::delete('/owner/menuCategory/{menuCategory}', [MenuCategoryController::class, 'destroy'])->name('owner.menuCategory.destroy');
 
     // Manage menu
-    Route::get('/operator/menu', [MenuController::class, 'index'])->name('operator.menu');
-    Route::post('/operator/menu', [MenuController::class, 'store'])->name('operator.menu.store');
-    Route::patch('/operator/menu/{menu}', [MenuController::class, 'update'])->name('operator.menu.update');
-    Route::delete('/operator/menu/{menu}', [MenuController::class, 'destroy'])->name('operator.menu.destroy');
+    Route::get('/owner/menu', [MenuController::class, 'index'])->name('owner.menu');
+    Route::post('/owner/menu', [MenuController::class, 'store'])->name('owner.menu.store');
+    Route::patch('/owner/menu/{menu}', [MenuController::class, 'update'])->name('owner.menu.update');
+    Route::delete('/owner/menu/{menu}', [MenuController::class, 'destroy'])->name('owner.menu.destroy');
 });
 
 require __DIR__.'/auth.php';
