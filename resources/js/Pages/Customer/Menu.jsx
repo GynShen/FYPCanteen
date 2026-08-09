@@ -79,6 +79,10 @@ export default function CustomerMenu({ children, menuItems, cartItems }) {
         (sum, item) => sum + Number(item.menu_item.price) * item.quantity,
         0,
     );
+    const savedQuantity = cartItems.reduce(
+        (sum, item) => sum + Number(item.quantity),
+        0,
+    );
     const total = Object.values(draftQuantities).reduce((sum, draft) => {
         const saved = cartItems.find(
             (item) =>
@@ -88,6 +92,18 @@ export default function CustomerMenu({ children, menuItems, cartItems }) {
         );
         return sum + (draft.quantity - (saved?.quantity ?? 0)) * draft.price;
     }, savedTotal);
+    const totalQuantity = Object.values(draftQuantities).reduce(
+        (sum, draft) => {
+            const saved = cartItems.find(
+                (item) =>
+                    item.student_id === draft.studentId &&
+                    item.menu_item_id === draft.mealId &&
+                    item.scheduled_time.slice(0, 10) === draft.date,
+            );
+            return sum + draft.quantity - (saved?.quantity ?? 0);
+        },
+        savedQuantity,
+    );
     const cartGroups = children.map((child) => ({
         child,
         items: cartItems.filter(
@@ -146,11 +162,19 @@ export default function CustomerMenu({ children, menuItems, cartItems }) {
     };
 
     const openMeal = (meal) => {
+        const date = nextDateForDays(meal.days.map((day) => day.day_of_week));
+        const existingItem = cartItems.find(
+            (item) =>
+                String(item.student_id) === String(selectedChildId) &&
+                item.menu_item_id === meal.id &&
+                item.scheduled_time.slice(0, 10) === date,
+        );
+
         setEditingCartItem(null);
         setSelectedMeal(meal);
         setSelection({
-            date: nextDateForDays(meal.days.map((day) => day.day_of_week)),
-            quantity: 1,
+            date,
+            quantity: existingItem?.quantity ?? 1,
         });
     };
     const editCartItem = (item) => {
@@ -274,7 +298,7 @@ export default function CustomerMenu({ children, menuItems, cartItems }) {
                                     </div>
                                     {canOrderForSelectedChild && (
                                         <button type="button" onClick={() => setShowCart(true)} className="rounded-md bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700">
-                                            Cart ({cartItems.length}) · RM {total.toFixed(2)}
+                                            Cart ({totalQuantity}) · RM {total.toFixed(2)}
                                         </button>
                                     )}
                                     </div>
@@ -549,56 +573,30 @@ export default function CustomerMenu({ children, menuItems, cartItems }) {
                                 );
                             })}
                         </div>
-                        <div className="mt-6 grid gap-4 sm:grid-cols-3">
+                        <div className="mt-6 grid gap-4 sm:grid-cols-2">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700">
+                                <label className="block text-sm font-semibold text-slate-200">
                                     Child
                                 </label>
-                                <select
-                                    value={selectedChildId}
-                                    onChange={(event) =>
-                                        setSelectedChildId(event.target.value)
-                                    }
-                                    className="mt-1 block w-full rounded-md border-gray-300"
-                                >
-                                    {children
-                                        .filter((child) =>
-                                            selectedMeal.schools.some(
-                                                (school) =>
-                                                    school.id ===
-                                                    child.student.school_id,
-                                            ),
-                                        )
-                                        .map((child) => (
-                                            <option
-                                                key={child.id}
-                                                value={child.student_id}
-                                            >
-                                                {child.student.name}
-                                            </option>
-                                        ))}
-                                </select>
+                                <div className="mt-1 min-h-11 rounded-md border border-slate-500 bg-slate-700 px-3 py-2 text-sm text-white">
+                                    <span className="block font-medium">{selectedChild?.student.name}</span>
+                                    <span className="block text-xs text-slate-300">{selectedChild?.student.school?.name}</span>
+                                </div>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700">
+                                <label className="block text-sm font-semibold text-slate-200">
                                     Collection date
                                 </label>
-                                <input
-                                    type="date"
-                                min={nextDateForDay('monday')}
-                                max={nextDateForDay('sunday')}
-                                    value={selection.date}
-                                    onChange={(event) =>
-                                        setSelection({
-                                            ...selection,
-                                            date: event.target.value,
-                                        })
-                                    }
-                                    className="mt-1 block w-full rounded-md border-gray-300"
-                                />
+                                <div className="mt-1 flex min-h-11 items-center rounded-md border border-slate-500 bg-slate-700 px-3 py-2 text-sm font-medium text-white">
+                                    {selection.date
+                                        ? new Date(`${selection.date}T00:00:00`).toLocaleDateString('en-MY')
+                                        : '-'}
+                                </div>
                             </div>
+                        </div>
+                        <div className="mt-4 grid gap-4 sm:grid-cols-2">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700">
+                                <label className="block text-sm font-semibold text-slate-200">
                                     Quantity
                                 </label>
                                 <input
@@ -612,7 +610,7 @@ export default function CustomerMenu({ children, menuItems, cartItems }) {
                                             quantity: event.target.value,
                                         })
                                     }
-                                    className="mt-1 block w-full rounded-md border-gray-300"
+                                    className="mt-1 block w-full rounded-md border-gray-300 bg-white text-slate-900"
                                 />
                             </div>
                         </div>
@@ -630,11 +628,7 @@ export default function CustomerMenu({ children, menuItems, cartItems }) {
                                 disabled={processing || !selection.date}
                                 className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
                             >
-                                {processing
-                                    ? 'Saving...'
-                                    : editingCartItem
-                                      ? 'Update Cart Meal'
-                                      : 'Add to Cart'}
+                                {processing ? 'Saving...' : 'Update Cart'}
                             </button>
                         </div>
                     </div>

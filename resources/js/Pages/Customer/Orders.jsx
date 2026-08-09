@@ -95,12 +95,6 @@ export default function Orders({ orders, menuItems }) {
                                         <span className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-300 text-xl font-bold text-slate-700">{expanded ? '−' : '+'}</span>
                                     </div>
                                 </button>
-                                {order.deadline_locked && (
-                                    <div className="border-b border-amber-300 bg-amber-50 px-5 py-4 text-sm text-amber-800">
-                                        The Saturday deadline has passed. Meals in this order can no longer be changed.
-                                    </div>
-                                )}
-
                                 {expanded && <div className="space-y-5 p-5">
                                     {childGroups.map(([studentId, student], childIndex) => {
                                         const items = order.order_items.filter((item) => item.student_id === studentId);
@@ -129,6 +123,11 @@ export default function Orders({ orders, menuItems }) {
                                                                             <span className="block text-sm font-bold text-indigo-700">{item.menu_item.name}</span>
                                                                             <span className="mt-1 block text-xs text-slate-600">{new Date(item.scheduled_time).toLocaleDateString('en-MY')}</span>
                                                                             <span className="block text-xs font-semibold text-slate-700">Quantity: {item.quantity}</span>
+                                                                            {item.deadline_locked && (
+                                                                                <span className="mt-2 block rounded border border-amber-300 bg-amber-50 px-2 py-1 text-xs font-medium text-amber-800">
+                                                                                    Saturday deadline passed. This meal cannot be changed.
+                                                                                </span>
+                                                                            )}
                                                                         </button>
                                                                     ))}
                                                                     {dayItems.length === 0 && <span className="flex h-full items-center justify-center text-xs font-medium text-slate-400">No meal ordered</span>}

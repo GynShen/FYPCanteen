@@ -66,15 +66,15 @@ class CustomerOrderController extends Controller
         );
 
         $cart = Cart::firstOrCreate(['user_id' => $request->user()->id]);
-        $cartItem = $cart->cartItems()->firstOrNew([
+        $cart->cartItems()->updateOrCreate([
             'student_id' => $validated['student_id'],
             'menu_item_id' => $validated['menu_item_id'],
             'scheduled_time' => $scheduledTime,
+        ], [
+            'quantity' => (int) $validated['quantity'],
         ]);
-        $cartItem->quantity = min(20, ($cartItem->quantity ?? 0) + (int) $validated['quantity']);
-        $cartItem->save();
 
-        return back()->with('success', 'Meal added to cart.');
+        return back()->with('success', 'Cart updated.');
     }
 
     public function updateCart(Request $request, CartItem $cartItem): RedirectResponse
@@ -82,21 +82,18 @@ class CustomerOrderController extends Controller
         $this->authorizeCustomer($request);
         $this->authorizeCartItem($request, $cartItem);
 
-        $validated = $this->validateSelection($request);
-        $scheduledTime = Carbon::parse($validated['collection_date'])->startOfDay();
+        $validated = $request->validate([
+            'quantity' => ['required', 'integer', 'min:1', 'max:20'],
+        ]);
+
         $this->validateMealForChild(
             $request,
-            (int) $validated['student_id'],
-            (int) $validated['menu_item_id'],
-            $scheduledTime,
+            $cartItem->student_id,
+            $cartItem->menu_item_id,
+            $cartItem->scheduled_time,
         );
 
-        $cartItem->update([
-            'student_id' => $validated['student_id'],
-            'menu_item_id' => $validated['menu_item_id'],
-            'scheduled_time' => $scheduledTime,
-            'quantity' => $validated['quantity'],
-        ]);
+        $cartItem->update(['quantity' => $validated['quantity']]);
 
         return back()->with('success', 'Cart updated.');
     }
@@ -211,8 +208,6 @@ class CustomerOrderController extends Controller
     public function orders(Request $request)
     {
         $this->authorizeCustomer($request);
-        [$weekStart, $weekEnd] = $this->orderingWindow();
-        $canModifyOrders = now()->dayOfWeekIso !== 7;
         $orders = $request->user()
             ->orders()
             ->with(['payment', 'orderItems.menuItem', 'orderItems.student.school'])
@@ -220,24 +215,24 @@ class CustomerOrderController extends Controller
             ->get();
 
         $today = now()->startOfDay();
-        $orders->each(function ($order) use ($canModifyOrders, $weekStart, $weekEnd, $today) {
-            $order->orderItems->each(fn ($item) => $item->setAttribute(
-                'can_edit',
-                $canModifyOrders
-                    && $order->order_status === 'paid'
-                    && $item->student?->approval_status === 'approved'
-                    && $item->student?->school?->is_active
-                    && $item->scheduled_time->betweenIncluded($weekStart, $weekEnd)
-            ));
+        $orders->each(function ($order) use ($today) {
+            $order->orderItems->each(function ($item) use ($order, $today) {
+                $deadline = $item->scheduled_time->copy()
+                    ->startOfWeek(Carbon::MONDAY)
+                    ->subDays(2)
+                    ->endOfDay();
+                $isPaidFutureMeal = $order->order_status === 'paid'
+                    && $item->scheduled_time->gte($today);
 
-            $order->setAttribute(
-                'deadline_locked',
-                ! $canModifyOrders
-                    && $order->order_status === 'paid'
-                    && $order->orderItems->contains(
-                        fn ($item) => $item->scheduled_time->gte($today),
-                    ),
-            );
+                $item->setAttribute('deadline_locked', $isPaidFutureMeal && now()->gt($deadline));
+                $item->setAttribute(
+                    'can_edit',
+                    $isPaidFutureMeal
+                        && now()->lte($deadline)
+                        && $item->student?->approval_status === 'approved'
+                        && $item->student?->school?->is_active
+                );
+            });
         });
 
         return inertia('Customer/Orders', [
@@ -248,7 +243,6 @@ class CustomerOrderController extends Controller
                 ->with(['days', 'schools'])
                 ->orderBy('name')
                 ->get(),
-            'canModifyOrders' => $canModifyOrders,
         ]);
     }
 
@@ -264,8 +258,11 @@ class CustomerOrderController extends Controller
             ]);
         }
 
-        [$weekStart, $weekEnd] = $this->orderingWindow();
-        if (now()->dayOfWeekIso === 7 || ! $orderItem->scheduled_time->betweenIncluded($weekStart, $weekEnd)) {
+        $deadline = $orderItem->scheduled_time->copy()
+            ->startOfWeek(Carbon::MONDAY)
+            ->subDays(2)
+            ->endOfDay();
+        if ($orderItem->scheduled_time->lt(now()->startOfDay()) || now()->gt($deadline)) {
             throw ValidationException::withMessages([
                 'order_item' => 'This order can no longer be changed. Saturday is the deadline for next week.',
             ]);
