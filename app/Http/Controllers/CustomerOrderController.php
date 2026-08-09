@@ -219,7 +219,8 @@ class CustomerOrderController extends Controller
             ->latest()
             ->get();
 
-        $orders->each(function ($order) use ($canModifyOrders, $weekStart, $weekEnd) {
+        $today = now()->startOfDay();
+        $orders->each(function ($order) use ($canModifyOrders, $weekStart, $weekEnd, $today) {
             $order->orderItems->each(fn ($item) => $item->setAttribute(
                 'can_edit',
                 $canModifyOrders
@@ -228,6 +229,15 @@ class CustomerOrderController extends Controller
                     && $item->student?->school?->is_active
                     && $item->scheduled_time->betweenIncluded($weekStart, $weekEnd)
             ));
+
+            $order->setAttribute(
+                'deadline_locked',
+                ! $canModifyOrders
+                    && $order->order_status === 'paid'
+                    && $order->orderItems->contains(
+                        fn ($item) => $item->scheduled_time->gte($today),
+                    ),
+            );
         });
 
         return inertia('Customer/Orders', [

@@ -19,7 +19,7 @@ const paymentBadge = {
 };
 const defaultPaymentBadge = { backgroundColor: '#e2e8f0', borderColor: '#94a3b8', color: '#334155' };
 
-export default function Orders({ orders, menuItems, canModifyOrders }) {
+export default function Orders({ orders, menuItems }) {
     const errors = usePage().props.errors;
     const [editingItem, setEditingItem] = useState(null);
     const [replacementId, setReplacementId] = useState('');
@@ -66,10 +66,8 @@ export default function Orders({ orders, menuItems, canModifyOrders }) {
             <Head title="Orders" />
             <div className="py-12">
                 <div className="mx-auto max-w-7xl space-y-6 sm:px-6 lg:px-8">
-                    <div className={`rounded-lg border p-4 text-sm ${canModifyOrders ? 'border-emerald-300 bg-emerald-50 text-emerald-800' : 'border-amber-300 bg-amber-50 text-amber-800'}`}>
-                        {canModifyOrders
-                            ? 'Meal changes are open until Saturday. Click an ordered meal to replace it with another same-price meal for that child and weekday.'
-                            : 'The Saturday deadline has passed. Ordered meals can no longer be changed.'}
+                    <div className="rounded-lg border border-emerald-300 bg-emerald-50 p-4 text-sm text-emerald-800">
+                        Meal changes are allowed until Saturday. Click an ordered meal to replace it with another same-price meal for that child and weekday.
                     </div>
 
                     {paginatedItems.map((order) => {
@@ -97,6 +95,11 @@ export default function Orders({ orders, menuItems, canModifyOrders }) {
                                         <span className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-300 text-xl font-bold text-slate-700">{expanded ? '−' : '+'}</span>
                                     </div>
                                 </button>
+                                {order.deadline_locked && (
+                                    <div className="border-b border-amber-300 bg-amber-50 px-5 py-4 text-sm text-amber-800">
+                                        The Saturday deadline has passed. Meals in this order can no longer be changed.
+                                    </div>
+                                )}
 
                                 {expanded && <div className="space-y-5 p-5">
                                     {childGroups.map(([studentId, student], childIndex) => {
