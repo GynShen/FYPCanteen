@@ -15,6 +15,8 @@ class MenuItem extends Model
         'name',
         'description',
         'price',
+        'available_start_time',
+        'available_end_time',
         'image_drive_id',
         'image_url',
         'is_available',

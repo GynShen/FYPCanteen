@@ -580,6 +580,12 @@ export default function CustomerMenu({ children, menuItems, cartItems }) {
                                         ?.map((category) => category.name)
                                         .join(', ') || '-'}
                                 </p>
+                                <p className="mt-2 text-sm font-medium text-slate-300">
+                                    Collection time:{' '}
+                                    {selectedMeal.available_start_time && selectedMeal.available_end_time
+                                        ? `${selectedMeal.available_start_time.slice(0, 5)}–${selectedMeal.available_end_time.slice(0, 5)}`
+                                        : 'Not specified'}
+                                </p>
                             </div>
                         </div>
                         <div className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">

@@ -51,6 +51,8 @@ export default function MenuManagement({
         description: '',
         days: [],
         price: '',
+        available_start_time: '',
+        available_end_time: '',
         sizes: [],
         image: null,
         is_available: true,
@@ -78,6 +80,8 @@ export default function MenuManagement({
             description: item.description ?? '',
             days: item.days.map((day) => day.day_of_week),
             price: item.price,
+            available_start_time: item.available_start_time?.slice(0, 5) ?? '',
+            available_end_time: item.available_end_time?.slice(0, 5) ?? '',
             sizes: item.sizes
                 .map((size) => size.size)
                 .filter((size) => size !== 'M'),
@@ -454,6 +458,32 @@ export default function MenuManagement({
                                 <InputError message={errors.sizes} className="mt-2" />
                             </div>
 
+                            <div>
+                                <InputLabel htmlFor="available_start_time" value="Available Start Time" />
+                                <TextInput
+                                    id="available_start_time"
+                                    type="time"
+                                    value={data.available_start_time}
+                                    onClick={(event) => event.currentTarget.showPicker?.()}
+                                    onChange={(event) => setData('available_start_time', event.target.value)}
+                                    className="mt-1 block w-full [color-scheme:dark]"
+                                />
+                                <InputError message={errors.available_start_time} className="mt-2" />
+                            </div>
+
+                            <div>
+                                <InputLabel htmlFor="available_end_time" value="Available End Time" />
+                                <TextInput
+                                    id="available_end_time"
+                                    type="time"
+                                    value={data.available_end_time}
+                                    onClick={(event) => event.currentTarget.showPicker?.()}
+                                    onChange={(event) => setData('available_end_time', event.target.value)}
+                                    className="mt-1 block w-full [color-scheme:dark]"
+                                />
+                                <InputError message={errors.available_end_time} className="mt-2" />
+                            </div>
+
                             <div className="md:col-span-2">
                                 <InputLabel
                                     htmlFor="description"
@@ -635,6 +665,11 @@ export default function MenuManagement({
                                                     {item.sizes.length > 0
                                                         ? item.sizes.map((size) => size.size).join(' / ')
                                                         : 'M only'}
+                                                </span>
+                                                <span className="block text-xs text-gray-500">
+                                                    {item.available_start_time && item.available_end_time
+                                                        ? `${item.available_start_time.slice(0, 5)}–${item.available_end_time.slice(0, 5)}`
+                                                        : 'Time not set'}
                                                 </span>
                                             </td>
                                             <td className="px-4 py-3 text-center text-sm">

@@ -132,6 +132,8 @@ class MenuController extends Controller
                 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday',
             ])],
             'price' => ['required', 'numeric', 'decimal:0,2', 'min:'.($hasSmallSize ? '0.51' : '0.01'), 'max:99999999.99'],
+            'available_start_time' => ['nullable', 'date_format:H:i', 'required_with:available_end_time'],
+            'available_end_time' => ['nullable', 'date_format:H:i', 'required_with:available_start_time', 'after:available_start_time'],
             'sizes' => ['nullable', 'array'],
             'sizes.*' => ['required', 'distinct', Rule::in(['S', 'L'])],
             'image' => [$imageRequired ? 'required' : 'nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:5120'],
@@ -149,6 +151,8 @@ class MenuController extends Controller
             'name' => $validated['name'],
             'description' => $validated['description'] ?? null,
             'price' => $validated['price'],
+            'available_start_time' => $validated['available_start_time'] ?? null,
+            'available_end_time' => $validated['available_end_time'] ?? null,
             'is_available' => $validated['is_available'],
         ];
     }
