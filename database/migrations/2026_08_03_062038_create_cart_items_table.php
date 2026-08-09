@@ -15,10 +15,19 @@ return new class extends Migration
             $table->id();
             $table->foreignId('cart_id')
                 ->constrained('carts')->cascadeOnDelete();
+            $table->foreignId('student_id')
+                ->constrained('students')->cascadeOnDelete();
             $table->foreignId('menu_item_id')
                 ->constrained('menu_items')->cascadeOnDelete();
             $table->integer('quantity');
+            $table->dateTime('scheduled_time');
             $table->timestamps();
+            $table->unique([
+                'cart_id',
+                'student_id',
+                'menu_item_id',
+                'scheduled_time',
+            ], 'cart_item_selection_unique');
         });
     }
 

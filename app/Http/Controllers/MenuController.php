@@ -22,7 +22,7 @@ class MenuController extends Controller
         $this->authorizeOwner($request);
 
         return inertia('Owner/MenuManagement', [
-            'menuItems' => MenuItem::with(['menuCategories', 'days', 'schools'])->latest()->get(),
+            'menuItems' => MenuItem::with(['menuCategories', 'days', 'schools', 'sizes'])->latest()->get(),
             'categories' => MenuCategory::orderBy('name')->get(),
             'schools' => School::where('is_active', true)->orderBy('name')->get(),
             'previewSchoolId' => $request->filled('school_id')
@@ -50,6 +50,7 @@ class MenuController extends Controller
                 $menuItem->menuCategories()->sync($validated['menu_category_ids']);
                 $menuItem->schools()->sync($validated['school_ids']);
                 $menuItem->days()->createMany($this->dayRecords($validated['days']));
+                $this->syncSizes($menuItem, $validated['sizes'] ?? []);
             });
         } catch (Throwable $exception) {
             $this->deleteDriveImageQuietly($driveImage['id']);
@@ -81,6 +82,7 @@ class MenuController extends Controller
                 $menu->schools()->sync($validated['school_ids']);
                 $menu->days()->delete();
                 $menu->days()->createMany($this->dayRecords($validated['days']));
+                $this->syncSizes($menu, $validated['sizes'] ?? []);
             });
         } catch (Throwable $exception) {
             $this->deleteDriveImageQuietly($newDriveImage['id'] ?? null);
@@ -115,6 +117,9 @@ class MenuController extends Controller
      */
     private function validateMenu(Request $request, bool $imageRequired): array
     {
+        $requestedSizes = $request->input('sizes', []);
+        $hasSmallSize = is_array($requestedSizes) && in_array('S', $requestedSizes, true);
+
         return $request->validate([
             'menu_category_ids' => ['required', 'array', 'min:1'],
             'menu_category_ids.*' => ['required', 'integer', 'distinct', Rule::exists('menu_categories', 'id')],
@@ -126,7 +131,9 @@ class MenuController extends Controller
             'days.*' => ['required', 'distinct', Rule::in([
                 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday',
             ])],
-            'price' => ['required', 'numeric', 'decimal:0,2', 'min:0.01', 'max:99999999.99'],
+            'price' => ['required', 'numeric', 'decimal:0,2', 'min:'.($hasSmallSize ? '0.51' : '0.01'), 'max:99999999.99'],
+            'sizes' => ['nullable', 'array'],
+            'sizes.*' => ['required', 'distinct', Rule::in(['S', 'L'])],
             'image' => [$imageRequired ? 'required' : 'nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:5120'],
             'is_available' => ['required', 'boolean'],
         ]);
@@ -156,6 +163,26 @@ class MenuController extends Controller
             fn (string $day): array => ['day_of_week' => $day],
             $days,
         );
+    }
+
+    /** @param list<string> $sizes */
+    private function syncSizes(MenuItem $menuItem, array $sizes): void
+    {
+        $menuItem->sizes()->delete();
+
+        if ($sizes !== []) {
+            $records = [['size' => 'M', 'price_adjustment' => 0.00]];
+
+            if (in_array('S', $sizes, true)) {
+                $records[] = ['size' => 'S', 'price_adjustment' => -0.50];
+            }
+
+            if (in_array('L', $sizes, true)) {
+                $records[] = ['size' => 'L', 'price_adjustment' => 0.50];
+            }
+
+            $menuItem->sizes()->createMany($records);
+        }
     }
 
     /**

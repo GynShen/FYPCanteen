@@ -18,6 +18,10 @@ const paymentBadge = {
     cancelled: { backgroundColor: '#fee2e2', borderColor: '#fca5a5', color: '#991b1b' },
 };
 const defaultPaymentBadge = { backgroundColor: '#e2e8f0', borderColor: '#94a3b8', color: '#334155' };
+const priceForSize = (meal, size = 'M') => {
+    const adjustment = meal.sizes?.find((option) => option.size === size)?.price_adjustment ?? 0;
+    return Number(meal.price) + Number(adjustment);
+};
 
 export default function Orders({ orders, menuItems }) {
     const errors = usePage().props.errors;
@@ -33,7 +37,10 @@ export default function Orders({ orders, menuItems }) {
         const weekday = dayForDate(editingItem.scheduled_time);
         return menuItems.filter(
             (meal) =>
-                Number(meal.price) === Number(editingItem.unit_price) &&
+                (meal.sizes?.length > 0
+                    ? meal.sizes.some((option) => option.size === editingItem.size)
+                    : (editingItem.size ?? 'M') === 'M') &&
+                priceForSize(meal, editingItem.size) === Number(editingItem.unit_price) &&
                 meal.schools.some((school) => school.id === editingItem.student.school_id) &&
                 meal.days.some((day) => day.day_of_week === weekday),
         );
@@ -122,6 +129,7 @@ export default function Orders({ orders, menuItems }) {
                                                                         <button key={item.id} type="button" disabled={!item.can_edit} onClick={() => openEdit(item)} className={`mb-2 block w-full rounded-md border p-2 text-left ${item.can_edit ? 'border-emerald-300 bg-white hover:border-indigo-500 hover:shadow' : 'cursor-default border-slate-300 bg-white'}`}>
                                                                             <span className="block text-sm font-bold text-indigo-700">{item.menu_item.name}</span>
                                                                             <span className="mt-1 block text-xs text-slate-600">{new Date(item.scheduled_time).toLocaleDateString('en-MY')}</span>
+                                                                            <span className="block text-xs font-semibold text-slate-700">Size: {item.size ?? 'M'}</span>
                                                                             <span className="block text-xs font-semibold text-slate-700">Quantity: {item.quantity}</span>
                                                                             {item.deadline_locked && (
                                                                                 <span className="mt-2 block rounded border border-amber-300 bg-amber-50 px-2 py-1 text-xs font-medium text-amber-800">
@@ -157,11 +165,11 @@ export default function Orders({ orders, menuItems }) {
                         <div className="mt-5">
                             <label htmlFor="replacement-meal" className="block text-sm font-semibold text-slate-700">Replacement meal</label>
                             <select id="replacement-meal" value={replacementId} onChange={(event) => setReplacementId(event.target.value)} className="mt-1 block w-full rounded-md border-slate-300 text-slate-800">
-                                {replacements.map((meal) => <option key={meal.id} value={meal.id}>{meal.name} — RM {Number(meal.price).toFixed(2)}</option>)}
+                                {replacements.map((meal) => <option key={meal.id} value={meal.id}>{meal.name} ({editingItem.size ?? 'M'}) — RM {priceForSize(meal, editingItem.size).toFixed(2)}</option>)}
                             </select>
                             {errors.menu_item_id && <p className="mt-2 text-sm text-red-600">{errors.menu_item_id}</p>}
                             {errors.order_item && <p className="mt-2 text-sm text-red-600">{errors.order_item}</p>}
-                            <p className="mt-3 rounded-md border border-blue-200 bg-blue-50 p-3 text-xs font-medium text-blue-900">The child, collection date, quantity, and paid total remain unchanged. No payment or refund is created.</p>
+                            <p className="mt-3 rounded-md border border-blue-200 bg-blue-50 p-3 text-xs font-medium text-blue-900">The child, collection date, size, quantity, and paid total remain unchanged. No payment or refund is created.</p>
                         </div>
                         <div className="mt-6 flex justify-end gap-3"><button type="button" onClick={closeEdit} className="rounded-md bg-slate-200 px-4 py-2 text-sm font-semibold text-slate-700">Cancel</button><button type="button" onClick={updateMeal} disabled={processing || !replacementId} className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">{processing ? 'Saving...' : 'Change Meal'}</button></div>
                     </div>

@@ -57,4 +57,25 @@ class MenuItem extends Model
     {
         return $this->hasMany(MenuItemDay::class);
     }
+
+    public function sizes(): HasMany
+    {
+        return $this->hasMany(MenuItemSize::class);
+    }
+
+    public function priceForSize(string $size): float
+    {
+        $adjustment = $this->sizes->firstWhere('size', strtoupper($size))?->price_adjustment ?? 0;
+
+        return round((float) $this->price + (float) $adjustment, 2);
+    }
+
+    public function supportsSize(string $size): bool
+    {
+        $size = strtoupper($size);
+
+        return $this->sizes->isEmpty()
+            ? $size === 'M'
+            : $this->sizes->contains('size', $size);
+    }
 }

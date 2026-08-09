@@ -18,6 +18,10 @@ const days = [
     'saturday',
     'sunday',
 ];
+const optionalSizes = [
+    { code: 'S', name: 'Small', adjustment: '− RM0.50' },
+    { code: 'L', name: 'Large', adjustment: '+ RM0.50' },
+];
 
 export default function MenuManagement({
     menuItems,
@@ -47,6 +51,7 @@ export default function MenuManagement({
         description: '',
         days: [],
         price: '',
+        sizes: [],
         image: null,
         is_available: true,
     });
@@ -73,6 +78,9 @@ export default function MenuManagement({
             description: item.description ?? '',
             days: item.days.map((day) => day.day_of_week),
             price: item.price,
+            sizes: item.sizes
+                .map((size) => size.size)
+                .filter((size) => size !== 'M'),
             image: null,
             is_available: Boolean(item.is_available),
         });
@@ -120,6 +128,15 @@ export default function MenuManagement({
         );
     };
 
+    const toggleSize = (size) => {
+        setData(
+            'sizes',
+            data.sizes.includes(size)
+                ? data.sizes.filter((selectedSize) => selectedSize !== size)
+                : [...data.sizes, size],
+        );
+    };
+
     const toggleSchool = (schoolId) => {
         setData(
             'school_ids',
@@ -152,6 +169,9 @@ export default function MenuManagement({
     const allSchoolsSelected =
         schools.length > 0 &&
         schools.every((school) => data.school_ids.includes(school.id));
+    const allSizesSelected = optionalSizes.every((size) =>
+        data.sizes.includes(size.code),
+    );
 
     const toggleAllDays = () => {
         setData('days', allDaysSelected ? [] : [...days]);
@@ -170,6 +190,13 @@ export default function MenuManagement({
         setData(
             'school_ids',
             allSchoolsSelected ? [] : schools.map((school) => school.id),
+        );
+    };
+
+    const toggleAllSizes = () => {
+        setData(
+            'sizes',
+            allSizesSelected ? [] : optionalSizes.map((size) => size.code),
         );
     };
 
@@ -391,6 +418,40 @@ export default function MenuManagement({
                                     message={errors.price}
                                     className="mt-2"
                                 />
+                                <p className="mt-1 text-xs text-gray-500">This is the Medium size price.</p>
+                            </div>
+
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    <InputLabel value="Additional Sizes" />
+                                    <button
+                                        type="button"
+                                        onClick={toggleAllSizes}
+                                        className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 hover:underline dark:text-indigo-400 dark:hover:text-indigo-300"
+                                    >
+                                        {allSizesSelected ? 'Clear all' : 'Select all'}
+                                    </button>
+                                </div>
+
+                                <div className="mt-2 grid grid-cols-2 gap-2">
+                                    {optionalSizes.map((size) => (
+                                        <label
+                                            key={size.code}
+                                            className="inline-flex items-center gap-2 rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-700 dark:text-gray-200"
+                                        >
+                                            <input
+                                                type="checkbox"
+                                                checked={data.sizes.includes(size.code)}
+                                                onChange={() => toggleSize(size.code)}
+                                                className="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500"
+                                            />
+                                            <span>{size.name} ({size.code})</span>
+                                            <span className="ml-auto text-xs text-gray-500">{size.adjustment}</span>
+                                        </label>
+                                    ))}
+                                </div>
+                                <p className="mt-1 text-xs text-gray-500">Medium is always available at the original price.</p>
+                                <InputError message={errors.sizes} className="mt-2" />
                             </div>
 
                             <div className="md:col-span-2">
@@ -570,6 +631,11 @@ export default function MenuManagement({
                                             <td className="px-4 py-3 text-center text-sm text-gray-900">
                                                 RM{' '}
                                                 {Number(item.price).toFixed(2)}
+                                                <span className="block text-xs text-gray-500">
+                                                    {item.sizes.length > 0
+                                                        ? item.sizes.map((size) => size.size).join(' / ')
+                                                        : 'M only'}
+                                                </span>
                                             </td>
                                             <td className="px-4 py-3 text-center text-sm">
                                                 <span
