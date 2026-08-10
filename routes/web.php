@@ -4,6 +4,7 @@ use App\Http\Controllers\ChildrenController;
 use App\Http\Controllers\CustomerOrderController;
 use App\Http\Controllers\MenuCategoryController;
 use App\Http\Controllers\MenuController;
+use App\Http\Controllers\MealCollectionController;
 use App\Http\Controllers\OperatorController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SchoolController;
@@ -30,12 +31,9 @@ Route::get('/dashboard', function () {
 Route::post('/stripe/webhook', [StripePaymentController::class, 'webhook'])->name('stripe.webhook');
 
 Route::middleware('auth')->group(function () {
-    Route::get('/scanner-test', function () {
-        $user = auth()->user();
-        abort_unless($user->hasRole('owner') || $user->hasRole('operator'), 403);
-
-        return Inertia::render('Owner/ScannerTest');
-    })->name('scanner.test');
+    Route::get('/meal-collection', [MealCollectionController::class, 'index'])->name('meal-collection.index');
+    Route::post('/meal-collection/scan', [MealCollectionController::class, 'scan'])->name('meal-collection.scan');
+    Route::post('/meal-collection/{orderItem}', [MealCollectionController::class, 'collect'])->name('meal-collection.collect');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');

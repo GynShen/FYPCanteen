@@ -74,6 +74,9 @@ export default function AuthenticatedLayout({ header, children }) {
                                         >
                                             Menu
                                         </NavLink>
+                                        <NavLink href={route('meal-collection.index')} active={route().current('meal-collection.*')}>
+                                            Meal Collection
+                                        </NavLink>
                                     </>
                                 )}
                                 {user.role === 'customer' && (
@@ -104,14 +107,10 @@ export default function AuthenticatedLayout({ header, children }) {
                                         </NavLink>
                                     </>
                                 )}
-                                {user.role === 'operator' && (
-                                    <NavLink
-                                        href={route('owner.student')}
-                                        active={route().current('owner.student*')}
-                                    >
-                                        Student
-                                    </NavLink>
-                                )}
+                                {user.role === 'operator' && (<>
+                                    <NavLink href={route('owner.student')} active={route().current('owner.student*')}>Student</NavLink>
+                                    <NavLink href={route('meal-collection.index')} active={route().current('meal-collection.*')}>Meal Collection</NavLink>
+                                </>)}
                             </div>
                         </div>
 
@@ -257,6 +256,9 @@ export default function AuthenticatedLayout({ header, children }) {
                                     >
                                         Menu
                                     </ResponsiveNavLink>
+                                    <ResponsiveNavLink href={route('meal-collection.index')}>
+                                        Meal Collection
+                                    </ResponsiveNavLink>
                                 </>
                             )}
                             {user.role === 'customer' && (
@@ -278,11 +280,10 @@ export default function AuthenticatedLayout({ header, children }) {
                                     </ResponsiveNavLink>
                                 </>
                             )}
-                            {user.role === 'operator' && (
-                                <ResponsiveNavLink href={route('owner.student')}>
-                                    Student
-                                </ResponsiveNavLink>
-                            )}
+                            {user.role === 'operator' && (<>
+                                <ResponsiveNavLink href={route('owner.student')}>Student</ResponsiveNavLink>
+                                <ResponsiveNavLink href={route('meal-collection.index')}>Meal Collection</ResponsiveNavLink>
+                            </>)}
                             <ResponsiveNavLink href={route('profile.edit')}>
                                 Profile
                             </ResponsiveNavLink>

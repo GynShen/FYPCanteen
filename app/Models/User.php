@@ -83,4 +83,9 @@ class User extends Authenticatable
     {
         return $this->belongsTo(School::class);
     }
+
+    public function mealCollections(): HasMany
+    {
+        return $this->hasMany(MealCollection::class, 'collected_by');
+    }
 }
