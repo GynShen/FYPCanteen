@@ -7,6 +7,7 @@ use App\Models\School;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 
@@ -56,8 +57,9 @@ class OperatorController extends Controller
             'phone_number' => ['required', 'string', 'max:255', Rule::unique(User::class)->ignore($operator->id)],
             'school_id' => ['required', 'integer', Rule::exists('schools', 'id')->where('is_active', true)],
         ]));
+        $this->clearSessions($operator);
 
-        return back()->with('success', 'Operator account updated successfully.');
+        return back()->with('success', 'Operator account updated. The operator must sign in again.');
     }
 
     public function toggleActive(Request $request, User $operator): RedirectResponse
@@ -65,10 +67,7 @@ class OperatorController extends Controller
         $this->authorizeOwner($request);
         $this->ensureOperator($operator);
         $operator->update(['is_active' => ! $operator->is_active]);
-
-        if (! $operator->is_active) {
-            $this->clearSessions($operator);
-        }
+        $this->clearSessions($operator);
 
         return back()->with('success', $operator->is_active ? 'Operator activated.' : 'Operator deactivated.');
     }
@@ -99,6 +98,7 @@ class OperatorController extends Controller
     private function clearSessions(User $operator): void
     {
         DB::table('sessions')->where('user_id', $operator->id)->delete();
+        $operator->forceFill(['remember_token' => Str::random(60)])->saveQuietly();
     }
 
     private function ensureOperator(User $operator): void
