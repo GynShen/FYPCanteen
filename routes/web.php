@@ -30,6 +30,13 @@ Route::get('/dashboard', function () {
 Route::post('/stripe/webhook', [StripePaymentController::class, 'webhook'])->name('stripe.webhook');
 
 Route::middleware('auth')->group(function () {
+    Route::get('/scanner-test', function () {
+        $user = auth()->user();
+        abort_unless($user->hasRole('owner') || $user->hasRole('operator'), 403);
+
+        return Inertia::render('Owner/ScannerTest');
+    })->name('scanner.test');
+
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::patch('/profile/deactivate', [ProfileController::class, 'deactivate'])->name('profile.deactivate');
