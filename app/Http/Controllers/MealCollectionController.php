@@ -68,7 +68,7 @@ class MealCollectionController extends Controller
         $this->authorizeManager($request);
         $validated = $request->validate([
             'quantity' => ['required', 'integer', 'min:1'],
-            'notes' => ['nullable', 'string', 'max:1000'],
+            'late_reason' => ['nullable', 'string', 'max:1000'],
         ]);
 
         $now = Carbon::now('Asia/Kuala_Lumpur');
@@ -79,11 +79,17 @@ class MealCollectionController extends Controller
         abort_unless($orderItem->scheduled_time->toDateString() === $now->toDateString(), 422, 'This meal is not scheduled for today.');
 
         $availability = $this->availability($orderItem, $now);
-        abort_unless($availability === 'open', 422, $availability === 'upcoming'
+        abort_unless(in_array($availability, ['open', 'grace_period'], true), 422, $availability === 'upcoming'
             ? 'This meal collection time has not started.'
-            : 'This meal collection time has ended.');
+            : 'This meal collection time and its 15-minute grace period have ended.');
 
-        $collection = DB::transaction(function () use ($request, $orderItem, $validated, $now): MealCollection {
+        if ($availability === 'grace_period' && blank($validated['late_reason'] ?? null)) {
+            throw ValidationException::withMessages([
+                'late_reason' => 'A reason is required for collection during the grace period.',
+            ]);
+        }
+
+        $collection = DB::transaction(function () use ($request, $orderItem, $validated, $now, $availability): MealCollection {
             $lockedItem = OrderItem::query()->lockForUpdate()->findOrFail($orderItem->id);
             $collection = MealCollection::query()->lockForUpdate()->firstOrNew([
                 'order_item_id' => $lockedItem->id,
@@ -100,9 +106,12 @@ class MealCollectionController extends Controller
             $collection->fill([
                 'collected_quantity' => $newQuantity,
                 'status' => $newQuantity === (int) $lockedItem->quantity ? 'collected' : 'partially_collected',
+                'is_late_collection' => $collection->is_late_collection || $availability === 'grace_period',
+                'late_reason' => $availability === 'grace_period'
+                    ? $validated['late_reason']
+                    : $collection->late_reason,
                 'collected_at' => $now,
                 'collected_by' => $request->user()->id,
-                'notes' => $validated['notes'] ?? null,
             ])->save();
 
             return $collection;
@@ -121,8 +130,12 @@ class MealCollectionController extends Controller
         $collected = (int) ($item->collection?->collected_quantity ?? 0);
         $availability = $this->availability($item, $now);
         $status = $collected >= (int) $item->quantity
-            ? 'collected'
-            : ($availability === 'missed' ? 'missed' : ($collected > 0 ? 'partially_collected' : $availability));
+            ? ($item->collection?->is_late_collection ? 'late_collected' : 'collected')
+            : ($availability === 'missed'
+                ? 'missed'
+                : ($collected > 0
+                    ? ($item->collection?->is_late_collection ? 'late_partially_collected' : 'partially_collected')
+                    : $availability));
 
         return [
             'id' => $item->id,
@@ -135,7 +148,9 @@ class MealCollectionController extends Controller
             'start_time' => $this->formatTime($item->menuItem?->available_start_time),
             'end_time' => $this->formatTime($item->menuItem?->available_end_time),
             'status' => $status,
-            'can_collect' => $status === 'open' || $status === 'partially_collected',
+            'can_collect' => in_array($availability, ['open', 'grace_period'], true) && $collected < (int) $item->quantity,
+            'requires_late_reason' => $availability === 'grace_period',
+            'late_reason' => $item->collection?->late_reason,
         ];
     }
 
@@ -152,7 +167,15 @@ class MealCollectionController extends Controller
         $start = Carbon::parse($date.' '.$startTime, 'Asia/Kuala_Lumpur');
         $end = Carbon::parse($date.' '.$endTime, 'Asia/Kuala_Lumpur');
 
-        return $now->lt($start) ? 'upcoming' : ($now->gt($end) ? 'missed' : 'open');
+        if ($now->lt($start)) {
+            return 'upcoming';
+        }
+
+        if ($now->lte($end)) {
+            return 'open';
+        }
+
+        return $now->lte($end->copy()->addMinutes(15)) ? 'grace_period' : 'missed';
     }
 
     private function formatTime(?string $time): ?string

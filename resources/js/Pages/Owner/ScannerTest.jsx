@@ -8,6 +8,9 @@ const statusStyles = {
     open: 'bg-blue-100 text-blue-800',
     upcoming: 'bg-amber-100 text-amber-800',
     partially_collected: 'bg-orange-100 text-orange-800',
+    grace_period: 'bg-amber-100 text-amber-800',
+    late_partially_collected: 'bg-orange-100 text-orange-800',
+    late_collected: 'bg-purple-100 text-purple-800',
     collected: 'bg-emerald-100 text-emerald-800',
     missed: 'bg-red-100 text-red-800',
 };
@@ -16,6 +19,9 @@ const statusLabels = {
     open: 'Ready to collect',
     upcoming: 'Upcoming',
     partially_collected: 'Partially collected',
+    grace_period: '15-minute grace period',
+    late_partially_collected: 'Late · partially collected',
+    late_collected: 'Late collected',
     collected: 'Collected',
     missed: 'Missed',
 };
@@ -27,6 +33,7 @@ export default function ScannerTest() {
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     const [quantities, setQuantities] = useState({});
+    const [lateReasons, setLateReasons] = useState({});
 
     const lookupStudent = async (qrCode) => {
         setLoading(true);
@@ -37,6 +44,7 @@ export default function ScannerTest() {
             const response = await axios.post(route('meal-collection.scan'), { qr_code: qrCode });
             setResult(response.data);
             setQuantities(Object.fromEntries(response.data.items.map((item) => [item.id, 1])));
+            setLateReasons({});
         } catch (requestError) {
             setError(requestError.response?.data?.errors?.qr_code?.[0] || requestError.response?.data?.message || 'The QR code could not be checked.');
         } finally {
@@ -75,16 +83,18 @@ export default function ScannerTest() {
         try {
             const response = await axios.post(route('meal-collection.collect', item.id), {
                 quantity: Number(quantities[item.id] || 1),
+                late_reason: lateReasons[item.id] || null,
             });
             setResult((current) => ({
                 ...current,
                 items: current.items.map((currentItem) => currentItem.id === item.id ? response.data.item : currentItem),
             }));
             setQuantities((current) => ({ ...current, [item.id]: 1 }));
+            setLateReasons((current) => ({ ...current, [item.id]: '' }));
             setSuccess(response.data.message);
         } catch (requestError) {
             const errors = requestError.response?.data?.errors;
-            setError(errors?.quantity?.[0] || requestError.response?.data?.message || 'Collection could not be recorded.');
+            setError(errors?.late_reason?.[0] || errors?.quantity?.[0] || requestError.response?.data?.message || 'Collection could not be recorded.');
         } finally {
             setLoading(false);
         }
@@ -134,14 +144,20 @@ export default function ScannerTest() {
                                                         <p className="mt-1 text-sm text-slate-700">Size: {item.size || 'M'}</p>
                                                         <p className="text-sm text-slate-700">Collection: {item.start_time && item.end_time ? `${item.start_time} – ${item.end_time}` : 'Any time today'}</p>
                                                         <p className="mt-1 text-sm font-semibold text-slate-900">Collected {item.collected_quantity} of {item.ordered_quantity} · Remaining {item.remaining_quantity}</p>
+                                                        {item.late_reason && <p className="mt-1 text-sm text-purple-700">Late reason: {item.late_reason}</p>}
                                                     </div>
                                                 </div>
 
                                                 {item.can_collect && (
-                                                    <div className="mt-4 flex flex-col gap-3 border-t border-slate-200 pt-4 sm:flex-row sm:items-end">
+                                                    <div className="mt-4 flex flex-col gap-3 border-t border-slate-200 pt-4 sm:flex-row sm:flex-wrap sm:items-end">
                                                         <label className="flex-1 text-sm font-semibold text-slate-800">Quantity to collect
                                                             <input type="number" min="1" max={item.remaining_quantity} value={quantities[item.id] || 1} onChange={(event) => setQuantities((current) => ({ ...current, [item.id]: event.target.value }))} className="mt-1 block w-full rounded-md border-slate-300 text-slate-900" />
                                                         </label>
+                                                        {item.requires_late_reason && (
+                                                            <label className="w-full text-sm font-semibold text-slate-800">Reason for late collection
+                                                                <textarea required rows="2" value={lateReasons[item.id] || ''} onChange={(event) => setLateReasons((current) => ({ ...current, [item.id]: event.target.value }))} placeholder="Example: Student arrived 2 minutes late" className="mt-1 block w-full rounded-md border-slate-300 text-slate-900" />
+                                                            </label>
+                                                        )}
                                                         <button type="button" disabled={loading} onClick={() => collect(item)} className="rounded-md bg-emerald-600 px-5 py-2.5 font-bold text-white hover:bg-emerald-700 disabled:opacity-50">Confirm Collection</button>
                                                     </div>
                                                 )}

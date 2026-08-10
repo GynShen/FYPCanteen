@@ -14,6 +14,8 @@ class MealCollection extends Model
         'order_item_id',
         'collected_quantity',
         'status',
+        'is_late_collection',
+        'late_reason',
         'collected_at',
         'collected_by',
         'notes',
@@ -21,7 +23,10 @@ class MealCollection extends Model
 
     protected function casts(): array
     {
-        return ['collected_at' => 'datetime'];
+        return [
+            'collected_at' => 'datetime',
+            'is_late_collection' => 'boolean',
+        ];
     }
 
     public function orderItem(): BelongsTo
