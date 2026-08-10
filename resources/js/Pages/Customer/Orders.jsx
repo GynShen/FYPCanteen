@@ -22,6 +22,10 @@ const priceForSize = (meal, size = 'M') => {
     const adjustment = meal.sizes?.find((option) => option.size === size)?.price_adjustment ?? 0;
     return Number(meal.price) + Number(adjustment);
 };
+const collectionWindow = (meal) =>
+    meal?.available_start_time && meal?.available_end_time
+        ? `${meal.available_start_time.slice(0, 5)}–${meal.available_end_time.slice(0, 5)}`
+        : 'Time not set';
 
 export default function Orders({ orders, menuItems }) {
     const errors = usePage().props.errors;
@@ -129,6 +133,7 @@ export default function Orders({ orders, menuItems }) {
                                                                         <button key={item.id} type="button" disabled={!item.can_edit} onClick={() => openEdit(item)} className={`mb-2 block w-full rounded-md border p-2 text-left ${item.can_edit ? 'border-emerald-300 bg-white hover:border-indigo-500 hover:shadow' : 'cursor-default border-slate-300 bg-white'}`}>
                                                                             <span className="block text-sm font-bold text-indigo-700">{item.menu_item.name}</span>
                                                                             <span className="mt-1 block text-xs text-slate-600">{new Date(item.scheduled_time).toLocaleDateString('en-MY')}</span>
+                                                                            <span className="block text-xs font-semibold text-slate-700">Collection: {collectionWindow(item.menu_item)}</span>
                                                                             <span className="block text-xs font-semibold text-slate-700">Size: {item.size ?? 'M'}</span>
                                                                             <span className="block text-xs font-semibold text-slate-700">Quantity: {item.quantity}</span>
                                                                             {item.deadline_locked && (
@@ -161,7 +166,7 @@ export default function Orders({ orders, menuItems }) {
                 {editingItem && (
                     <div className="bg-white p-6 text-slate-900">
                         <h3 className="text-xl font-bold text-slate-900">Change Ordered Meal</h3>
-                        <p className="mt-1 text-sm font-medium text-slate-600">{editingItem.student.name} · {new Date(editingItem.scheduled_time).toLocaleDateString('en-MY')} · Quantity {editingItem.quantity}</p>
+                        <p className="mt-1 text-sm font-medium text-slate-600">{editingItem.student.name} · {new Date(editingItem.scheduled_time).toLocaleDateString('en-MY')} · {collectionWindow(editingItem.menu_item)} · Quantity {editingItem.quantity}</p>
                         <div className="mt-5">
                             <label htmlFor="replacement-meal" className="block text-sm font-semibold text-slate-700">Replacement meal</label>
                             <select id="replacement-meal" value={replacementId} onChange={(event) => setReplacementId(event.target.value)} className="mt-1 block w-full rounded-md border-slate-300 text-slate-800">

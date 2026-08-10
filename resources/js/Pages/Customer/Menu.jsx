@@ -1,4 +1,5 @@
 import Modal from '@/Components/Modal';
+import MealTimeline from '@/Components/MealTimeline';
 import TablePagination, { TABLE_PAGE_SIZE } from '@/Components/TablePagination';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import useTablePagination from '@/Hooks/useTablePagination';
@@ -171,8 +172,10 @@ export default function CustomerMenu({ children, menuItems, cartItems }) {
         );
     };
 
-    const openMeal = (meal) => {
-        const date = nextDateForDays(meal.days.map((day) => day.day_of_week));
+    const openMeal = (meal, selectedDay = null) => {
+        const date = selectedDay
+            ? nextDateForDay(selectedDay)
+            : nextDateForDays(meal.days.map((day) => day.day_of_week));
         const draft = draftQuantities[`${selectedChildId}-${meal.id}-${date}`];
         const existingItem = cartItems.find(
             (item) =>
@@ -349,7 +352,19 @@ export default function CustomerMenu({ children, menuItems, cartItems }) {
 
                             {canOrderForSelectedChild && (
                             <section className="overflow-hidden bg-white shadow sm:rounded-lg dark:bg-gray-800">
-                                <div className="overflow-x-auto">
+                                <div className="p-4">
+                                    {visibleMeals.length > 0 ? (
+                                        <MealTimeline
+                                            menuItems={paginatedItems}
+                                            onMealClick={openMeal}
+                                            getSelection={cartItemFor}
+                                        />
+                                    ) : (
+                                        <div className="p-10 text-center text-sm text-gray-500">No meals are assigned to this child's school.</div>
+                                    )}
+                                    <TablePagination totalItems={visibleMeals.length} currentPage={currentPage} onPageChange={setCurrentPage} />
+                                </div>
+                                <div className="hidden">
                                     <table className="w-full min-w-[820px] table-fixed border-collapse border border-slate-300">
                                         <thead className="bg-slate-100">
                                             <tr>
