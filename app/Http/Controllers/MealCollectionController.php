@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\MealCollection;
 use App\Models\OrderItem;
 use App\Models\Student;
+use App\Models\StudentMealEvent;
+use App\Notifications\CustomerEventNotification;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -17,7 +19,7 @@ class MealCollectionController extends Controller
     {
         $this->authorizeManager($request);
 
-        return inertia('Owner/ScannerTest');
+        return inertia('Owner/MealCollection');
     }
 
     public function scan(Request $request): JsonResponse
@@ -45,7 +47,7 @@ class MealCollectionController extends Controller
             ->where('student_id', $student->id)
             ->whereDate('scheduled_time', $now->toDateString())
             ->whereHas('order.payment', fn ($query) => $query->where('status', 'paid'))
-            ->with(['menuItem:id,name,image_url,available_start_time,available_end_time', 'collection'])
+            ->with(['menuItem:id,name,image_url,available_start_time,available_end_time', 'collection', 'studentMealEvents:id,order_item_id,event_type'])
             ->orderBy('scheduled_time')
             ->get()
             ->map(fn (OrderItem $item) => $this->serializeItem($item, $now));
@@ -72,7 +74,7 @@ class MealCollectionController extends Controller
         ]);
 
         $now = Carbon::now('Asia/Kuala_Lumpur');
-        $orderItem->load(['student', 'menuItem', 'order.payment', 'collection']);
+        $orderItem->load(['student.child.user', 'menuItem', 'order.payment', 'collection', 'studentMealEvents:id,order_item_id,event_type']);
         $this->authorizeStudentAccess($request, $orderItem->student);
 
         abort_unless($orderItem->order?->payment?->status === 'paid', 422, 'Only paid meals can be collected.');
@@ -118,11 +120,55 @@ class MealCollectionController extends Controller
         });
 
         $orderItem->setRelation('collection', $collection);
+        $parent = $orderItem->student->child?->user;
+        $parent?->notify(new CustomerEventNotification([
+            'event' => 'meal_received',
+            'title' => 'Meal received',
+            'message' => $orderItem->student->name.' collected '.$validated['quantity'].' × '.$orderItem->menuItem->name.'.',
+            'student_id' => $orderItem->student_id,
+            'order_item_id' => $orderItem->id,
+            'meal_collection_id' => $collection->id,
+        ]));
 
         return response()->json([
             'message' => 'Meal collection recorded successfully.',
             'item' => $this->serializeItem($orderItem, $now),
         ]);
+    }
+
+    public function stillHungry(Request $request, OrderItem $orderItem): JsonResponse
+    {
+        $this->authorizeManager($request);
+        $orderItem->load(['student.child.user', 'menuItem', 'order.payment', 'collection']);
+        $this->authorizeStudentAccess($request, $orderItem->student);
+
+        abort_unless($orderItem->order?->payment?->status === 'paid', 422, 'This meal has not been paid.');
+        abort_unless($orderItem->collection && $orderItem->collection->collected_quantity >= $orderItem->quantity, 422, 'Still-hungry feedback is available only after the full meal is collected.');
+
+        $event = StudentMealEvent::firstOrCreate([
+            'order_item_id' => $orderItem->id,
+            'event_type' => 'still_hungry',
+        ], [
+            'student_id' => $orderItem->student_id,
+            'meal_collection_id' => $orderItem->collection->id,
+            'reported_by' => $request->user()->id,
+            'reported_at' => Carbon::now('Asia/Kuala_Lumpur'),
+        ]);
+
+        if (! $event->wasRecentlyCreated) {
+            throw ValidationException::withMessages(['feedback' => 'Still-hungry feedback was already sent for this meal.']);
+        }
+
+        $orderItem->student->child?->user?->notify(new CustomerEventNotification([
+            'event' => 'still_hungry',
+            'title' => 'Still hungry feedback',
+            'message' => $orderItem->student->name.' reported still being hungry after '.$orderItem->menuItem->name.' (size '.$orderItem->size.', quantity '.$orderItem->quantity.'). Consider a larger portion next time.',
+            'student_id' => $orderItem->student_id,
+            'order_item_id' => $orderItem->id,
+            'meal_collection_id' => $orderItem->collection->id,
+        ]));
+
+        return response()->json(['message' => 'The parent has been notified.', 'feedback_sent' => true]);
     }
 
     private function serializeItem(OrderItem $item, Carbon $now): array
@@ -151,6 +197,7 @@ class MealCollectionController extends Controller
             'can_collect' => in_array($availability, ['open', 'grace_period'], true) && $collected < (int) $item->quantity,
             'requires_late_reason' => $availability === 'grace_period',
             'late_reason' => $item->collection?->late_reason,
+            'feedback_sent' => $item->studentMealEvents?->contains('event_type', 'still_hungry') ?? false,
         ];
     }
 

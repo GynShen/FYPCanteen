@@ -59,4 +59,9 @@ class Student extends Model
     {
         return $this->belongsTo(User::class, 'reviewed_by');
     }
+
+    public function mealEvents(): HasMany
+    {
+        return $this->hasMany(StudentMealEvent::class);
+    }
 }

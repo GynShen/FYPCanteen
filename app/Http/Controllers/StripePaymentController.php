@@ -6,6 +6,7 @@ use App\Models\Cart;
 use App\Models\CartItem;
 use App\Models\Order;
 use App\Models\Payment;
+use App\Notifications\CustomerEventNotification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -187,6 +188,14 @@ class StripePaymentController extends Controller
                 'stripe_session_id' => $session->id,
                 'stripe_payment_intent_id' => is_string($session->payment_intent) ? $session->payment_intent : $session->payment_intent?->id,
             ]);
+
+            $order->user->notify(new CustomerEventNotification([
+                'event' => 'payment_completed',
+                'title' => 'Payment completed',
+                'message' => 'Payment of RM '.number_format((float) $order->total_amount, 2).' for Order #'.$order->id.' was successful.',
+                'order_id' => $order->id,
+                'amount' => (string) $order->total_amount,
+            ]));
 
             $cart = Cart::query()->where('user_id', $order->user_id)->first();
             foreach ($order->orderItems as $item) {

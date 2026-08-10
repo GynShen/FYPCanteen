@@ -26,7 +26,7 @@ const statusLabels = {
     missed: 'Missed',
 };
 
-export default function ScannerTest() {
+export default function MealCollection() {
     const [result, setResult] = useState(null);
     const [scannerKey, setScannerKey] = useState(0);
     const [loading, setLoading] = useState(false);
@@ -100,6 +100,23 @@ export default function ScannerTest() {
         }
     };
 
+    const reportStillHungry = async (item) => {
+        if (!window.confirm(`Notify the parent that ${result.student.name} is still hungry after ${item.meal}?`)) return;
+        setLoading(true);
+        setError('');
+        setSuccess('');
+
+        try {
+            const response = await axios.post(route('meal-collection.still-hungry', item.id));
+            setResult((current) => ({ ...current, items: current.items.map((currentItem) => currentItem.id === item.id ? { ...currentItem, feedback_sent: true } : currentItem) }));
+            setSuccess(response.data.message);
+        } catch (requestError) {
+            setError(requestError.response?.data?.errors?.feedback?.[0] || requestError.response?.data?.message || 'Feedback could not be sent.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <AuthenticatedLayout header={<h2 className="text-xl font-semibold text-gray-100">Meal Collection</h2>}>
             <Head title="Meal Collection" />
@@ -159,6 +176,13 @@ export default function ScannerTest() {
                                                             </label>
                                                         )}
                                                         <button type="button" disabled={loading} onClick={() => collect(item)} className="rounded-md bg-emerald-600 px-5 py-2.5 font-bold text-white hover:bg-emerald-700 disabled:opacity-50">Confirm Collection</button>
+                                                    </div>
+                                                )}
+                                                {(item.status === 'collected' || item.status === 'late_collected') && (
+                                                    <div className="mt-4 border-t border-slate-200 pt-4">
+                                                        <button type="button" disabled={loading || item.feedback_sent} onClick={() => reportStillHungry(item)} className="w-full rounded-md bg-amber-500 px-5 py-2.5 font-bold text-slate-900 hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-50">
+                                                            {item.feedback_sent ? 'Still Hungry Feedback Sent' : 'Student Is Still Hungry'}
+                                                        </button>
                                                     </div>
                                                 )}
                                             </div>

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ChildrenController;
+use App\Http\Controllers\CustomerNotificationController;
 use App\Http\Controllers\CustomerOrderController;
 use App\Http\Controllers\MenuCategoryController;
 use App\Http\Controllers\MenuController;
@@ -34,6 +35,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/meal-collection', [MealCollectionController::class, 'index'])->name('meal-collection.index');
     Route::post('/meal-collection/scan', [MealCollectionController::class, 'scan'])->name('meal-collection.scan');
     Route::post('/meal-collection/{orderItem}', [MealCollectionController::class, 'collect'])->name('meal-collection.collect');
+    Route::post('/meal-collection/{orderItem}/still-hungry', [MealCollectionController::class, 'stillHungry'])->name('meal-collection.still-hungry');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
@@ -59,6 +61,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/customer/checkout/cancel/{order}', [StripePaymentController::class, 'cancel'])->name('customer.checkout.cancel');
     Route::get('/customer/orders', [CustomerOrderController::class, 'orders'])->name('customer.orders');
     Route::patch('/customer/orders/items/{orderItem}', [CustomerOrderController::class, 'updateOrderedMeal'])->name('customer.orders.items.update');
+    Route::get('/customer/notifications', [CustomerNotificationController::class, 'index'])->name('customer.notifications');
+    Route::patch('/customer/notifications/read-all', [CustomerNotificationController::class, 'markAllRead'])->name('customer.notifications.read-all');
+    Route::patch('/customer/notifications/{notification}', [CustomerNotificationController::class, 'markRead'])->name('customer.notifications.read');
 
     // Manage schools
     Route::get('/owner/school', [SchoolController::class, 'index'])->name('owner.school');
