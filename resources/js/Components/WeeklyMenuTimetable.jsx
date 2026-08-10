@@ -1,7 +1,6 @@
 import MealTimeline from '@/Components/MealTimeline';
 import Modal from '@/Components/Modal';
-import TablePagination, { TABLE_PAGE_SIZE } from '@/Components/TablePagination';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 
 export default function WeeklyMenuTimetable({ menuItems, schools, initialSchoolId = null, onEdit }) {
     const [selectedSchool, setSelectedSchool] = useState(() => {
@@ -9,12 +8,8 @@ export default function WeeklyMenuTimetable({ menuItems, schools, initialSchoolI
         return String(requested?.id ?? schools[0]?.id ?? '');
     });
     const [selectedMeal, setSelectedMeal] = useState(null);
-    const [currentPage, setCurrentPage] = useState(1);
     const visibleMeals = useMemo(() => menuItems.filter((meal) =>
         meal.schools.some((school) => school.id === Number(selectedSchool))), [menuItems, selectedSchool]);
-    const paginatedMeals = visibleMeals.slice((currentPage - 1) * TABLE_PAGE_SIZE, currentPage * TABLE_PAGE_SIZE);
-
-    useEffect(() => setCurrentPage(1), [menuItems, selectedSchool]);
 
     const editMeal = () => {
         const meal = selectedMeal;
@@ -40,9 +35,8 @@ export default function WeeklyMenuTimetable({ menuItems, schools, initialSchoolI
             </div>
 
             {visibleMeals.length > 0
-                ? <MealTimeline menuItems={paginatedMeals} onMealClick={(meal) => setSelectedMeal(meal)} />
+                ? <MealTimeline menuItems={visibleMeals} onMealClick={(meal) => setSelectedMeal(meal)} />
                 : <div className="rounded-lg bg-white p-10 text-center text-sm text-slate-500 shadow">No meals are assigned to this school.</div>}
-            <TablePagination totalItems={visibleMeals.length} currentPage={currentPage} onPageChange={setCurrentPage} />
 
             <Modal show={selectedMeal !== null} maxWidth="2xl" onClose={() => setSelectedMeal(null)}>
                 {selectedMeal && (

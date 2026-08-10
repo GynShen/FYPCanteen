@@ -1,13 +1,13 @@
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
+import ManagementFilters from '@/Components/ManagementFilters';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import TablePagination from '@/Components/TablePagination';
-import WeeklyMenuTimetable from '@/Components/WeeklyMenuTimetable';
 import useTablePagination from '@/Hooks/useTablePagination';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, useForm } from '@inertiajs/react';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 const days = [
     'monday',
@@ -27,9 +27,11 @@ export default function MenuManagement({
     menuItems,
     categories,
     schools,
-    previewSchoolId,
+    filters,
+    editMenuId,
 }) {
     const [editingId, setEditingId] = useState(null);
+    const [showForm, setShowForm] = useState(false);
     const { currentPage, setCurrentPage, paginatedItems } =
         useTablePagination(menuItems);
     const fileInput = useRef(null);
@@ -69,6 +71,7 @@ export default function MenuManagement({
     };
 
     const startEdit = (item) => {
+        setShowForm(true);
         clearErrors();
         setEditingId(item.id);
         setData({
@@ -92,16 +95,19 @@ export default function MenuManagement({
         if (fileInput.current) {
             fileInput.current.value = '';
         }
-    };
 
-    const editFromPreview = (item) => {
-        startEdit(item);
         window.setTimeout(() => {
             document
                 .getElementById('menu-form')
                 ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }, 50);
+        }, 350);
     };
+
+    useEffect(() => {
+        if (!editMenuId) return;
+        const item = menuItems.find((menuItem) => menuItem.id === Number(editMenuId));
+        if (item) startEdit(item);
+    }, [editMenuId]);
 
     const submit = (event) => {
         event.preventDefault();
@@ -235,9 +241,19 @@ export default function MenuManagement({
 
             <div className="py-12">
                 <div className="mx-auto max-w-7xl space-y-6 sm:px-6 lg:px-8">
+                    <ManagementFilters routeName="owner.menu" filters={filters} fields={[
+                        { name: 'search', label: 'Search', placeholder: 'Menu ID, meal name or description' },
+                        { name: 'category_id', label: 'Category', type: 'select', options: categories.map((category) => ({ value: category.id, label: category.name })) },
+                        { name: 'filter_school_id', label: 'Available school', type: 'select', options: schools.map((school) => ({ value: school.id, label: school.name })) },
+                        { name: 'day', label: 'Available day', type: 'select', options: days.map((day) => ({ value: day, label: day.charAt(0).toUpperCase() + day.slice(1) })) },
+                        { name: 'is_available', label: 'Availability', type: 'select', options: [{ value: 'yes', label: 'Available' }, { value: 'no', label: 'Unavailable' }] },
+                    ]} />
+                    <button type="button" onClick={() => setShowForm((current) => !current)} className="flex w-full items-center justify-between rounded-lg bg-white px-6 py-4 text-left font-bold text-slate-900 shadow dark:bg-gray-800 dark:text-white">
+                        <span>{editingId ? `Edit Meal #${editingId}` : 'Add Meal'}</span><span className="text-xl">{showForm ? '⌃' : '⌄'}</span>
+                    </button>
                     <div
                         id="menu-form"
-                        className="scroll-mt-6 bg-white p-4 shadow sm:rounded-lg sm:p-8 dark:bg-gray-800"
+                        className={`${showForm ? '!mt-0 block rounded-t-none' : 'hidden'} scroll-mt-6 bg-white p-4 shadow sm:rounded-lg sm:p-8 dark:bg-gray-800`}
                     >
                         <h3 className="mb-6 text-lg font-medium text-gray-900 dark:text-gray-100">
                             {editingId ? 'Edit Meal' : 'Add Meal'}
@@ -721,12 +737,6 @@ export default function MenuManagement({
                         <TablePagination totalItems={menuItems.length} currentPage={currentPage} onPageChange={setCurrentPage} />
                     </div>
 
-                    <WeeklyMenuTimetable
-                        menuItems={menuItems}
-                        schools={schools}
-                        initialSchoolId={previewSchoolId}
-                        onEdit={editFromPreview}
-                    />
                 </div>
             </div>
         </AuthenticatedLayout>

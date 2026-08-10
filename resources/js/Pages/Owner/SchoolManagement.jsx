@@ -1,5 +1,6 @@
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
+import ManagementFilters from '@/Components/ManagementFilters';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import TablePagination from '@/Components/TablePagination';
@@ -8,8 +9,9 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, router, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 
-export default function SchoolManagement({ schools }) {
+export default function SchoolManagement({ schools, filters }) {
     const [editingId, setEditingId] = useState(null);
+    const [showForm, setShowForm] = useState(false);
     const { currentPage, setCurrentPage, paginatedItems } =
         useTablePagination(schools);
 
@@ -28,12 +30,14 @@ export default function SchoolManagement({ schools }) {
     });
 
     const startEdit = (school) => {
+        setShowForm(true);
         clearErrors();
         setEditingId(school.id);
         setData({
             name: school.name,
             address: school.address,
         });
+        window.setTimeout(() => document.getElementById('school-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
     };
 
     const cancelEdit = () => {
@@ -100,7 +104,11 @@ export default function SchoolManagement({ schools }) {
 
             <div className="py-12">
                 <div className="mx-auto max-w-7xl space-y-6 sm:px-6 lg:px-8">
-                    <div className="bg-white p-4 shadow sm:rounded-lg sm:p-8 dark:bg-gray-800">
+                    <ManagementFilters routeName="owner.school" filters={filters} fields={[{ name: 'search', label: 'Search', placeholder: 'School name or address' }]} />
+                    <button type="button" onClick={() => setShowForm((current) => !current)} className="flex w-full items-center justify-between rounded-lg bg-white px-6 py-4 text-left font-bold text-slate-900 shadow dark:bg-gray-800 dark:text-white">
+                        <span>{editingId ? `Edit School #${editingId}` : 'Add School'}</span><span className="text-xl">{showForm ? '⌃' : '⌄'}</span>
+                    </button>
+                    <div id="school-form" className={`${showForm ? '!mt-0 block rounded-t-none' : 'hidden'} scroll-mt-6 bg-white p-4 shadow sm:rounded-lg sm:p-8 dark:bg-gray-800`}>
                         <form onSubmit={submit} className="space-y-4">
                             <div>
                                 <InputLabel

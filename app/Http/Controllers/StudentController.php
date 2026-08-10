@@ -20,19 +20,32 @@ class StudentController extends Controller
         $operatorSchoolId = $request->user()->hasRole('operator')
             ? $request->user()->school_id
             : null;
+        $filters = $request->only(['search', 'class', 'school_id', 'status']);
+        $applyFilters = function ($query) use ($request, $operatorSchoolId): void {
+            $query->when($operatorSchoolId, fn ($query) => $query->where('school_id', $operatorSchoolId))
+                ->when($request->filled('search'), function ($query) use ($request): void {
+                    $search = '%'.$request->string('search')->trim().'%';
+                    $query->where(fn ($query) => $query->where('name', 'like', $search)->orWhere('student_code', 'like', $search));
+                })
+                ->when($request->filled('class'), fn ($query) => $query->where('class', $request->input('class')))
+                ->when($request->filled('school_id') && ! $operatorSchoolId, fn ($query) => $query->where('school_id', $request->integer('school_id')))
+                ->when($request->filled('status'), fn ($query) => $query->where('approval_status', $request->input('status')));
+        };
 
         return inertia('Owner/StudentManagement', [
             'students' => Student::query()
                 ->with('school')
-                ->when($operatorSchoolId, fn ($query) => $query->where('school_id', $operatorSchoolId))
+                ->tap($applyFilters)
                 ->latest()
                 ->get(),
             'pendingStudents' => Student::query()
                 ->where('approval_status', 'pending')
-                ->when($operatorSchoolId, fn ($query) => $query->where('school_id', $operatorSchoolId))
+                ->tap($applyFilters)
                 ->with(['school:id,name', 'child.user:id,name,email'])
                 ->oldest()
                 ->get(),
+            'classes' => Student::query()->when($operatorSchoolId, fn ($query) => $query->where('school_id', $operatorSchoolId))->distinct()->orderBy('class')->pluck('class'),
+            'filters' => $filters,
             'schools' => School::query()
                 ->where('is_active', true)
                 ->when($operatorSchoolId, fn ($query) => $query->whereKey($operatorSchoolId))

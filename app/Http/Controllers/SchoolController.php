@@ -12,7 +12,11 @@ class SchoolController extends Controller
         abort_unless($request->user()->hasRole('owner'), 403);
 
         return inertia('Owner/SchoolManagement', [
-            'schools' => School::latest()->get(),
+            'schools' => School::query()->when($request->filled('search'), function ($query) use ($request): void {
+                $search = '%'.$request->string('search')->trim().'%';
+                $query->where(fn ($query) => $query->where('name', 'like', $search)->orWhere('address', 'like', $search));
+            })->latest()->get(),
+            'filters' => $request->only('search'),
         ]);
     }
 

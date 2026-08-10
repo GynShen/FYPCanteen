@@ -1,5 +1,6 @@
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
+import ManagementFilters from '@/Components/ManagementFilters';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import TablePagination from '@/Components/TablePagination';
@@ -8,8 +9,9 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 
-export default function MenuCategoriesManagement({ menuCategories }) {
+export default function MenuCategoriesManagement({ menuCategories, filters }) {
   const [editingId, setEditingId] = useState(null);
+  const [showForm, setShowForm] = useState(false);
   const { currentPage, setCurrentPage, paginatedItems } = useTablePagination(menuCategories);
 
   const { data, setData, post, patch, delete: destroy, processing, errors, reset, clearErrors } = useForm({
@@ -19,11 +21,13 @@ export default function MenuCategoriesManagement({ menuCategories }) {
   const isEditingDeletedMenuCategories = editingId !== null && !menuCategories.some((menuCategories) => menuCategories.id === editingId);
 
   const startEdit = (menuCategories) => {
+    setShowForm(true);
     clearErrors();
     setEditingId(menuCategories.id);
     setData({
       name: menuCategories.name,
     });
+    window.setTimeout(() => document.getElementById('menu-category-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
   };
 
   const cancelEdit = () => {
@@ -86,7 +90,11 @@ export default function MenuCategoriesManagement({ menuCategories }) {
 
       <div className="py-12">
         <div className="mx-auto max-w-7xl space-y-6 sm:px-6 lg:px-8">
-          <div className="bg-white p-4 shadow sm:rounded-lg sm:p-8 dark:bg-gray-800">
+          <ManagementFilters routeName="owner.menuCategory" filters={filters} fields={[{ name: 'search', label: 'Search', placeholder: 'Category ID or name' }]} />
+          <button type="button" onClick={() => setShowForm((current) => !current)} className="flex w-full items-center justify-between rounded-lg bg-white px-6 py-4 text-left font-bold text-slate-900 shadow dark:bg-gray-800 dark:text-white">
+            <span>{editingId ? `Edit Menu Category #${editingId}` : 'Add Menu Category'}</span><span className="text-xl">{showForm ? '⌃' : '⌄'}</span>
+          </button>
+          <div id="menu-category-form" className={`${showForm ? '!mt-0 block rounded-t-none' : 'hidden'} scroll-mt-6 bg-white p-4 shadow sm:rounded-lg sm:p-8 dark:bg-gray-800`}>
             <form onSubmit={submit} className="space-y-4">
               <div>
                 <InputLabel htmlFor="name" value="Menu Category Name" className="text-gray-800 dark:text-gray-200" />

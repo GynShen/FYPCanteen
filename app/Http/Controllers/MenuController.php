@@ -20,15 +20,24 @@ class MenuController extends Controller
     public function index(Request $request)
     {
         $this->authorizeOwner($request);
+        $filters = $request->only(['search', 'category_id', 'filter_school_id', 'day', 'is_available']);
 
         return inertia('Owner/MenuManagement', [
-            'menuItems' => MenuItem::with(['menuCategories', 'days', 'schools', 'sizes'])->latest()->get(),
+            'menuItems' => MenuItem::query()
+                ->with(['menuCategories', 'days', 'schools', 'sizes'])
+                ->when($request->filled('search'), function ($query) use ($request): void {
+                    $search = '%'.$request->string('search')->trim().'%';
+                    $query->where(fn ($query) => $query->where('name', 'like', $search)->orWhere('description', 'like', $search)->orWhere('id', $request->input('search')));
+                })
+                ->when($request->filled('category_id'), fn ($query) => $query->whereHas('menuCategories', fn ($query) => $query->whereKey($request->integer('category_id'))))
+                ->when($request->filled('filter_school_id'), fn ($query) => $query->whereHas('schools', fn ($query) => $query->whereKey($request->integer('filter_school_id'))))
+                ->when($request->filled('day'), fn ($query) => $query->whereHas('days', fn ($query) => $query->where('day_of_week', $request->input('day'))))
+                ->when($request->filled('is_available'), fn ($query) => $query->where('is_available', $request->input('is_available') === 'yes'))
+                ->latest()->get(),
             'categories' => MenuCategory::orderBy('name')->get(),
             'schools' => School::where('is_active', true)->orderBy('name')->get(),
-            'previewSchoolId' => $request->filled('school_id')
-                && School::whereKey($request->integer('school_id'))->where('is_active', true)->exists()
-                    ? $request->integer('school_id')
-                    : 'all',
+            'filters' => $filters,
+            'editMenuId' => $request->filled('edit') ? $request->integer('edit') : null,
         ]);
     }
 

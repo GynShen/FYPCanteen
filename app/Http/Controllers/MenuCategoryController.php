@@ -13,7 +13,11 @@ class MenuCategoryController extends Controller
         abort_unless($request->user()->hasRole('owner'), 403);
 
         return inertia('Owner/MenuCategoryManagement', [
-            'menuCategories' => MenuCategory::orderBy('name')->get(),
+            'menuCategories' => MenuCategory::query()->when($request->filled('search'), function ($query) use ($request): void {
+                $search = '%'.$request->string('search')->trim().'%';
+                $query->where(fn ($query) => $query->where('name', 'like', $search)->orWhere('id', $request->input('search')));
+            })->orderBy('name')->get(),
+            'filters' => $request->only('search'),
         ]);
     }
 

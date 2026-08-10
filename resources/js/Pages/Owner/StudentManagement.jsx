@@ -1,6 +1,7 @@
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import Modal from '@/Components/Modal';
+import ManagementFilters from '@/Components/ManagementFilters';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import TablePagination from '@/Components/TablePagination';
@@ -9,8 +10,10 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, router, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 
-export default function StudentManagement({ students, pendingStudents, schools }) {
+export default function StudentManagement({ students, pendingStudents, schools, classes, filters }) {
     const [editingId, setEditingId] = useState(null);
+    const [showForm, setShowForm] = useState(false);
+    const [showApprovals, setShowApprovals] = useState(false);
     const { currentPage, setCurrentPage, paginatedItems } =
         useTablePagination(students);
     const {
@@ -43,6 +46,7 @@ export default function StudentManagement({ students, pendingStudents, schools }
     };
 
     const startEdit = (student) => {
+        setShowForm(true);
         clearErrors();
         setEditingId(student.id);
         setData({
@@ -50,6 +54,7 @@ export default function StudentManagement({ students, pendingStudents, schools }
             name: student.name,
             class: student.class,
         });
+        window.setTimeout(() => document.getElementById('student-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
     };
 
     const submit = (event) => {
@@ -109,7 +114,6 @@ export default function StudentManagement({ students, pendingStudents, schools }
 
     const editPending = (student) => {
         startEdit(student);
-        window.setTimeout(() => document.getElementById('student-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
     };
 
     return (
@@ -124,7 +128,16 @@ export default function StudentManagement({ students, pendingStudents, schools }
 
             <div className="py-12">
                 <div className="mx-auto max-w-7xl space-y-6 sm:px-6 lg:px-8">
-                    <div id="student-form" className="scroll-mt-6 bg-white p-4 shadow sm:rounded-lg sm:p-8 dark:bg-gray-800">
+                    <ManagementFilters routeName="owner.student" filters={filters} fields={[
+                        { name: 'search', label: 'Search', placeholder: 'Student name or student ID' },
+                        { name: 'class', label: 'Class', type: 'select', options: classes.map((value) => ({ value, label: value })) },
+                        { name: 'school_id', label: 'School', type: 'select', options: schools.map((school) => ({ value: school.id, label: school.name })) },
+                        { name: 'status', label: 'Approval status', type: 'select', options: [{ value: 'approved', label: 'Approved' }, { value: 'pending', label: 'Pending' }, { value: 'rejected', label: 'Rejected' }] },
+                    ]} />
+                    <button type="button" onClick={() => setShowForm((current) => !current)} className="flex w-full items-center justify-between rounded-lg bg-white px-6 py-4 text-left font-bold text-slate-900 shadow dark:bg-gray-800 dark:text-white">
+                        <span>{editingId ? `Edit Student ${editingId}` : 'Add Student'}</span><span className="text-xl">{showForm ? '⌃' : '⌄'}</span>
+                    </button>
+                    <div id="student-form" className={`${showForm ? '!mt-0 block rounded-t-none' : 'hidden'} scroll-mt-6 bg-white p-4 shadow sm:rounded-lg sm:p-8 dark:bg-gray-800`}>
                         <h3 className="mb-6 text-lg font-medium text-gray-900 dark:text-gray-100">
                             {editingId ? 'Edit Student' : 'Add Student'}
                         </h3>
@@ -243,14 +256,18 @@ export default function StudentManagement({ students, pendingStudents, schools }
                     </div>
 
                     <div className="overflow-hidden bg-white shadow sm:rounded-lg dark:bg-gray-800">
-                        <div className="border-b border-gray-200 p-5">
-                            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                                Pending Student Approvals
-                            </h3>
-                            <p className="mt-1 text-sm text-gray-500">
-                                Verify parent-submitted student details before enabling meal ordering.
-                            </p>
-                        </div>
+                        <button type="button" onClick={() => setShowApprovals((current) => !current)} className={`flex w-full items-center justify-between p-5 text-left ${showApprovals ? 'border-b border-gray-200' : ''}`} aria-expanded={showApprovals}>
+                            <div>
+                                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                                    Pending Student Approvals ({pendingStudents.length})
+                                </h3>
+                                <p className="mt-1 text-sm text-gray-500">
+                                    Verify parent-submitted student details before enabling meal ordering.
+                                </p>
+                            </div>
+                            <span className="text-xl font-bold text-gray-700 dark:text-gray-200">{showApprovals ? '⌃' : '⌄'}</span>
+                        </button>
+                        {showApprovals && <>
                         <div className="overflow-x-auto">
                             <table className="min-w-full divide-y divide-gray-200">
                                 <thead className="bg-slate-100">
@@ -277,6 +294,7 @@ export default function StudentManagement({ students, pendingStudents, schools }
                             </table>
                         </div>
                         <TablePagination totalItems={pendingStudents.length} currentPage={approvalPage} onPageChange={setApprovalPage} />
+                        </>}
                     </div>
 
                     <div className="overflow-hidden bg-white shadow sm:rounded-lg dark:bg-gray-800">

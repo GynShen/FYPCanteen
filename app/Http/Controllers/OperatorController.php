@@ -16,14 +16,22 @@ class OperatorController extends Controller
     public function index(Request $request)
     {
         $this->authorizeOwner($request);
+        $filters = $request->only(['search', 'school_id', 'status']);
 
         return inertia('Owner/OperatorManagement', [
             'operators' => User::query()
                 ->where('role', 'operator')
+                ->when($request->filled('search'), function ($query) use ($request): void {
+                    $search = '%'.$request->string('search')->trim().'%';
+                    $query->where(fn ($query) => $query->where('name', 'like', $search)->orWhere('email', 'like', $search)->orWhere('phone_number', 'like', $search)->orWhere('id', $request->input('search')));
+                })
+                ->when($request->filled('school_id'), fn ($query) => $query->where('school_id', $request->integer('school_id')))
+                ->when($request->filled('status'), fn ($query) => $query->where('is_active', $request->input('status') === 'active'))
                 ->orderBy('name')
                 ->with('school:id,name')
                 ->get(['id', 'name', 'email', 'phone_number', 'school_id', 'is_active', 'created_at']),
             'schools' => School::where('is_active', true)->orderBy('name')->get(['id', 'name']),
+            'filters' => $filters,
         ]);
     }
 

@@ -1,6 +1,7 @@
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import Modal from '@/Components/Modal';
+import ManagementFilters from '@/Components/ManagementFilters';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import TablePagination from '@/Components/TablePagination';
@@ -9,8 +10,9 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, router, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 
-export default function OperatorManagement({ operators, schools }) {
+export default function OperatorManagement({ operators, schools, filters }) {
     const [editingId, setEditingId] = useState(null);
+    const [showForm, setShowForm] = useState(false);
     const [passwordOperator, setPasswordOperator] = useState(null);
     const { currentPage, setCurrentPage, paginatedItems } =
         useTablePagination(operators);
@@ -33,6 +35,7 @@ export default function OperatorManagement({ operators, schools }) {
         form.clearErrors();
     };
     const startEdit = (operator) => {
+        setShowForm(true);
         setEditingId(operator.id);
         form.setData({
             name: operator.name,
@@ -43,7 +46,7 @@ export default function OperatorManagement({ operators, schools }) {
             password_confirmation: '',
         });
         form.clearErrors();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        window.setTimeout(() => document.getElementById('operator-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
     };
     const submit = (event) => {
         event.preventDefault();
@@ -91,7 +94,15 @@ export default function OperatorManagement({ operators, schools }) {
             <Head title="Operator Management" />
             <div className="py-12">
                 <div className="mx-auto max-w-7xl space-y-6 sm:px-6 lg:px-8">
-                    <section className="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
+                    <ManagementFilters routeName="owner.operators" filters={filters} fields={[
+                        { name: 'search', label: 'Search', placeholder: 'ID, name, email or phone' },
+                        { name: 'school_id', label: 'School', type: 'select', options: schools.map((school) => ({ value: school.id, label: school.name })) },
+                        { name: 'status', label: 'Status', type: 'select', options: [{ value: 'active', label: 'Active' }, { value: 'inactive', label: 'Inactive' }] },
+                    ]} />
+                    <button type="button" onClick={() => setShowForm((current) => !current)} className="flex w-full items-center justify-between rounded-lg bg-white px-6 py-4 text-left font-bold text-slate-900 shadow dark:bg-gray-800 dark:text-white">
+                        <span>{editingId ? `Edit Operator #${editingId}` : 'Add Operator'}</span><span className="text-xl">{showForm ? '⌃' : '⌄'}</span>
+                    </button>
+                    <section id="operator-form" className={`${showForm ? '!mt-0 block rounded-t-none' : 'hidden'} scroll-mt-6 rounded-lg bg-white p-6 shadow dark:bg-gray-800`}>
                         <h3 className="text-lg font-bold text-gray-900 dark:text-white">{editingId ? `Edit Operator #${editingId}` : 'Create Operator Account'}</h3>
                         <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Only owners can create privileged operator accounts. Give the password to the operator securely.</p>
                         <form onSubmit={submit} className="mt-6 grid gap-5 md:grid-cols-2">
