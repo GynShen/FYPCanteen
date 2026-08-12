@@ -113,7 +113,9 @@ class DashboardController extends Controller
                     'remaining' => 0,
                     'missed' => 0,
                     'days' => [],
+                    'time_slots' => [],
                     'meal_workload' => [],
+                    'size_preparation' => [],
                     'student_workload' => [],
                 ],
             ]);
@@ -124,7 +126,7 @@ class DashboardController extends Controller
             ->whereBetween('scheduled_time', [$start, $end])
             ->whereHas('order.payment', fn ($query) => $query->where('status', 'paid'))
             ->whereHas('student', fn ($query) => $query->where('school_id', $schoolId))
-            ->with(['student:id,student_code,name,class,school_id', 'menuItem:id,name,available_end_time', 'collection'])
+            ->with(['student:id,student_code,name,class,school_id', 'menuItem:id,name,available_start_time,available_end_time', 'collection'])
             ->orderBy('scheduled_time')
             ->get()
             ->map(function (OrderItem $item) use ($now): array {
@@ -132,7 +134,9 @@ class DashboardController extends Controller
                 $collected = min($quantity, (int) ($item->collection?->collected_quantity ?? 0));
                 $uncollected = max(0, $quantity - $collected);
                 $date = $item->scheduled_time->copy()->timezone('Asia/Kuala_Lumpur')->toDateString();
+                $startTime = $item->menuItem?->available_start_time ?: $item->scheduled_time->copy()->timezone('Asia/Kuala_Lumpur')->format('H:i:s');
                 $endTime = $item->menuItem?->available_end_time ?: '23:59:59';
+                $sessionStart = Carbon::parse($date.' '.$startTime, 'Asia/Kuala_Lumpur');
                 $deadline = Carbon::parse($date.' '.$endTime, 'Asia/Kuala_Lumpur')->addMinutes(15);
                 $missed = $now->gt($deadline) ? $uncollected : 0;
 
@@ -141,12 +145,18 @@ class DashboardController extends Controller
                     'date' => $date,
                     'day' => $item->scheduled_time->copy()->timezone('Asia/Kuala_Lumpur')->format('l'),
                     'time' => $item->scheduled_time->copy()->timezone('Asia/Kuala_Lumpur')->format('g:i A'),
+                    'start_time' => Carbon::parse($startTime)->format('g:i A'),
+                    'end_time' => Carbon::parse($endTime)->format('g:i A'),
+                    'session_start' => $sessionStart->toIso8601String(),
+                    'session_end' => Carbon::parse($date.' '.$endTime, 'Asia/Kuala_Lumpur')->toIso8601String(),
+                    'grace_end' => $deadline->toIso8601String(),
                     'student_id' => $item->student_id,
                     'student_code' => $item->student?->student_code,
                     'student_name' => $item->student?->name,
                     'class' => $item->student?->class,
                     'meal_id' => $item->menu_item_id,
                     'meal_name' => $item->menuItem?->name,
+                    'size' => strtoupper($item->size ?: 'M'),
                     'ordered' => $quantity,
                     'collected' => $collected,
                     'remaining' => $now->lte($deadline) ? $uncollected : 0,
@@ -178,13 +188,48 @@ class DashboardController extends Controller
             ], $aggregate($rows));
         })->values();
 
+        $timeSlots = $items->groupBy(fn ($item) => $item['date'].'-'.$item['session_start'].'-'.$item['session_end'])->map(function ($rows) use ($aggregate): array {
+            $first = $rows->first();
+
+            return array_merge([
+                'key' => $first['date'].'-'.$first['session_start'].'-'.$first['session_end'],
+                'date' => $first['date'],
+                'day' => $first['day'],
+                'start_time' => $first['start_time'],
+                'end_time' => $first['end_time'],
+                'session_start' => $first['session_start'],
+                'session_end' => $first['session_end'],
+                'grace_end' => $first['grace_end'],
+                'meals' => $rows->unique('meal_id')->count(),
+                'students' => $rows->unique('student_id')->count(),
+            ], $aggregate($rows));
+        })->values();
+
+        $sizePreparation = $items->groupBy(fn ($item) => $item['date'].'-'.$item['meal_id'])->map(function ($rows): array {
+            $first = $rows->first();
+
+            return [
+                'key' => $first['date'].'-'.$first['meal_id'],
+                'date' => $first['date'],
+                'day' => $first['day'],
+                'time' => $first['start_time'].' – '.$first['end_time'],
+                'meal_name' => $first['meal_name'],
+                'S' => $rows->where('size', 'S')->sum('ordered'),
+                'M' => $rows->where('size', 'M')->sum('ordered'),
+                'L' => $rows->where('size', 'L')->sum('ordered'),
+                'total' => $rows->sum('ordered'),
+            ];
+        })->values();
+
         return inertia('Dashboard', [
             'filters' => ['period' => $period],
             'report' => array_merge([
                 'type' => 'operator',
                 'school' => School::query()->find($schoolId, ['id', 'name']),
                 'days' => $days,
+                'time_slots' => $timeSlots,
                 'meal_workload' => $meals,
+                'size_preparation' => $sizePreparation,
                 'student_workload' => $items->values(),
             ], $aggregate($items)),
         ]);

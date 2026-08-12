@@ -20,6 +20,31 @@ function MealTable({ title, rows }) {
 }
 
 function OperatorReport({ report, period, update }) {
+    const [now, setNow] = useState(Date.now());
+
+    useEffect(() => {
+        const timer = window.setInterval(() => setNow(Date.now()), 1000);
+        return () => window.clearInterval(timer);
+    }, []);
+
+    const sessionState = (slot) => {
+        const start = new Date(slot.session_start).getTime();
+        const end = new Date(slot.session_end).getTime();
+        const graceEnd = new Date(slot.grace_end).getTime();
+        if (now < start) return { label: `Starts in ${formatDuration(start - now)}`, color: '#60a5fa' };
+        if (now <= end) return { label: `Open · ${formatDuration(end - now)} remaining`, color: '#34d399' };
+        if (now <= graceEnd) return { label: `Grace period · ${formatDuration(graceEnd - now)} remaining`, color: '#fbbf24' };
+        return { label: 'Closed', color: '#f87171' };
+    };
+
+    const formatDuration = (milliseconds) => {
+        const seconds = Math.max(0, Math.floor(milliseconds / 1000));
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        const remainder = seconds % 60;
+        return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m ${String(remainder).padStart(2, '0')}s`;
+    };
+
     const cards = [
         ['Meals to collect', report.ordered, '#818cf8'],
         ['Collected', report.collected, '#34d399'],
@@ -41,12 +66,36 @@ function OperatorReport({ report, period, update }) {
                     </select>
                 </label>
             </div>
-            <p className="mt-4 text-xs text-slate-400">The report refreshes automatically after 500 ms.</p>
         </section>
 
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {cards.map(([label, value, accent]) => <div key={label} className="rounded-2xl border border-slate-700 border-t-4 bg-slate-800 p-5 shadow-lg" style={{ borderTopColor: accent }}><p className="text-sm font-semibold text-slate-300">{label}</p><p className="mt-2 text-3xl font-bold" style={{ color: accent }}>{value}</p></div>)}
         </div>
+
+        <section className="overflow-hidden rounded-2xl border border-slate-700 bg-slate-800 shadow-lg">
+            <h3 className="border-b border-slate-700 px-5 py-4 text-lg font-bold text-white">Collection progress by time slot</h3>
+            <div className="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-3">
+                {report.time_slots.map((slot) => {
+                    const state = sessionState(slot);
+                    const progress = slot.ordered ? Math.min(100, slot.collected / slot.ordered * 100) : 0;
+                    return <article key={slot.key} className="rounded-xl border border-slate-600 bg-slate-900/40 p-4">
+                        <div className="flex items-start justify-between gap-3"><div><p className="font-bold text-white">{slot.day}, {slot.date}</p><p className="mt-1 text-sm text-slate-300">{slot.start_time} – {slot.end_time}</p></div><span className="rounded-full px-3 py-1 text-xs font-bold" style={{ color: state.color, backgroundColor: `${state.color}20`, border: `1px solid ${state.color}` }}>{state.label}</span></div>
+                        <div className="mt-4 flex justify-between text-sm text-slate-200"><span>{slot.collected} / {slot.ordered} collected</span><span>{Math.round(progress)}%</span></div>
+                        <div className="mt-2 h-3 overflow-hidden rounded-full bg-slate-700"><div className="h-full rounded-full" style={{ width: `${progress}%`, backgroundColor: '#10b981' }} /></div>
+                        <div className="mt-3 flex gap-4 text-xs text-slate-400"><span>{slot.students} students</span><span>{slot.meals} meal types</span><span className="text-red-400">{slot.missed} missed</span></div>
+                    </article>;
+                })}
+                {report.time_slots.length === 0 && <p className="py-6 text-center text-sm text-slate-400 md:col-span-2 xl:col-span-3">No collection sessions in this period.</p>}
+            </div>
+        </section>
+
+        <section className="overflow-hidden rounded-2xl border border-slate-700 bg-slate-800 shadow-lg">
+            <h3 className="border-b border-slate-700 px-5 py-4 text-lg font-bold text-white">Meal preparation by size</h3>
+            <div className="overflow-x-auto"><table className="w-full min-w-[750px]">
+                <thead className="bg-slate-700 text-xs uppercase tracking-wide text-slate-200"><tr><th className="px-5 py-3 text-left">Date</th><th className="px-5 py-3 text-left">Collection time</th><th className="px-5 py-3 text-left">Meal</th><th className="px-5 py-3 text-right">Small</th><th className="px-5 py-3 text-right">Medium</th><th className="px-5 py-3 text-right">Large</th><th className="px-5 py-3 text-right">Total</th></tr></thead>
+                <tbody className="divide-y divide-slate-700">{report.size_preparation.map((meal) => <tr key={meal.key} className="text-sm text-slate-200 hover:bg-slate-700/50"><td className="px-5 py-4">{meal.day}<br/><span className="text-xs text-slate-400">{meal.date}</span></td><td className="px-5 py-4">{meal.time}</td><td className="px-5 py-4 font-semibold text-white">{meal.meal_name}</td><td className="px-5 py-4 text-right">{meal.S}</td><td className="px-5 py-4 text-right">{meal.M}</td><td className="px-5 py-4 text-right">{meal.L}</td><td className="px-5 py-4 text-right font-bold text-indigo-300">{meal.total}</td></tr>)}{report.size_preparation.length === 0 && <tr><td colSpan="7" className="px-5 py-10 text-center text-sm text-slate-400">No meals need preparation in this period.</td></tr>}</tbody>
+            </table></div>
+        </section>
 
         <section className="overflow-hidden rounded-2xl border border-slate-700 bg-slate-800 shadow-lg">
             <h3 className="border-b border-slate-700 px-5 py-4 text-lg font-bold text-white">Daily collection summary</h3>

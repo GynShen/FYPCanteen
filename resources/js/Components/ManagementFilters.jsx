@@ -44,7 +44,6 @@ export default function ManagementFilters({ routeName, filters = {}, fields = []
                         </label>
                     ))}
                 </div>}
-                <p className="text-xs text-slate-400">Results update automatically after 0.5 seconds.</p>
             </div>
         </div>
     );
