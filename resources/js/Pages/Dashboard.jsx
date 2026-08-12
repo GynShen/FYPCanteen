@@ -123,6 +123,81 @@ function OperatorReport({ report, period, update }) {
     </>;
 }
 
+function CustomerReport({ report, month, childId, update }) {
+    const monthDate = new Date(`${month}-01T00:00:00`);
+    const daysInMonth = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0).getDate();
+    const mondayOffset = (monthDate.getDay() + 6) % 7;
+    const calendarEntries = new Map(report.calendar_days.map((entry) => [entry.date, entry.meals]));
+    const mealColors = ['#818cf8', '#34d399', '#fbbf24', '#f472b6', '#22d3ee', '#c084fc', '#fb7185'];
+    const colorForMeal = (mealId) => mealColors[Number(mealId) % mealColors.length];
+    const calendarCells = [
+        ...Array.from({ length: mondayOffset }, () => null),
+        ...Array.from({ length: daysInMonth }, (_, index) => index + 1),
+    ];
+
+    return <>
+        <section className="rounded-2xl border border-slate-700 bg-slate-800 p-5 shadow-lg">
+            <h3 className="text-lg font-bold text-white">Upcoming meals by child</h3>
+            <p className="mt-1 text-sm text-slate-400">The next paid meal for each child, independent of the monthly report filter.</p>
+            {report.upcoming_meals.length > 0 ? <div className="mt-4 space-y-3">{report.upcoming_meals.map((meal) => <article key={meal.id} className="grid gap-4 rounded-xl border border-indigo-500/50 bg-indigo-500/10 p-4 sm:grid-cols-2 lg:grid-cols-4 lg:items-center"><div><p className="text-xs uppercase text-slate-400">Child</p><p className="text-lg font-bold text-white">{meal.student_name}</p><p className="text-xs text-slate-400">{meal.school_name}</p></div><div><p className="text-xs uppercase text-slate-400">Meal</p><p className="font-bold text-white">{meal.meal_name}</p></div><div><p className="text-xs uppercase text-slate-400">Collection</p><p className="font-bold text-white">{meal.date}</p><p className="text-xs text-slate-300">{meal.time}</p></div><div><p className="text-xs uppercase text-slate-400">Order</p><p className="font-bold text-white">Qty {meal.quantity} · Size {meal.size}</p></div></article>)}</div> : <p className="mt-4 rounded-xl bg-slate-700/50 p-6 text-center text-sm text-slate-400">No upcoming paid meals.</p>}
+        </section>
+        <section className="rounded-2xl border border-slate-700 bg-slate-800 p-5 shadow-lg">
+            <div className="grid items-end gap-4 sm:grid-cols-2">
+                <div><h2 className="text-xl font-bold text-white">Family Meal Summary</h2><p className="mt-1 text-sm text-slate-400">Review spending and meal collection for your children.</p></div>
+                <label className="text-sm font-semibold text-slate-200 sm:w-64 sm:justify-self-end">Month
+                    <select value={month} onChange={(event) => update('month', event.target.value)} className="mt-1 block w-full rounded-md border-slate-300 bg-white text-slate-900">
+                        {report.available_months.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                        {report.available_months.length === 0 && <option value={month}>{report.month_label}</option>}
+                    </select>
+                </label>
+            </div>
+        </section>
+
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+            {[
+                ['Total paid', money(report.spent), '#34d399'], ['Meals ordered', report.ordered, '#818cf8'],
+                ['Received', report.collected, '#22d3ee'], ['Missed', report.missed, '#f87171'], ['Upcoming', report.upcoming_count, '#fbbf24'],
+            ].map(([label, value, accent]) => <div key={label} className="rounded-2xl border border-slate-700 border-t-4 bg-slate-800 p-5 shadow-lg" style={{ borderTopColor: accent }}><p className="text-sm font-semibold text-slate-300">{label}</p><p className="mt-2 text-3xl font-bold" style={{ color: accent }}>{value}</p></div>)}
+        </div>
+
+        <section className="overflow-hidden rounded-2xl border border-slate-700 bg-slate-800 shadow-lg">
+            <h3 className="border-b border-slate-700 px-5 py-4 text-lg font-bold text-white">Summary by child</h3>
+            <div className="overflow-x-auto"><table className="w-full min-w-[850px]"><thead className="bg-slate-700 text-xs uppercase text-slate-200"><tr><th className="px-5 py-3 text-left">Child</th><th className="px-5 py-3 text-left">School</th><th className="px-5 py-3 text-right">Paid</th><th className="px-5 py-3 text-right">Ordered</th><th className="px-5 py-3 text-right">Received</th><th className="px-5 py-3 text-right">Missed</th><th className="px-5 py-3 text-right">Upcoming</th><th className="px-5 py-3 text-right">Still Hungry</th></tr></thead><tbody className="divide-y divide-slate-700">{report.children.map((child) => <tr key={child.id} className="text-sm text-slate-200"><td className="px-5 py-4 font-bold text-white">{child.name}</td><td className="px-5 py-4">{child.school}</td><td className="px-5 py-4 text-right text-emerald-400">{money(child.spent)}</td><td className="px-5 py-4 text-right">{child.ordered}</td><td className="px-5 py-4 text-right text-cyan-400">{child.collected}</td><td className="px-5 py-4 text-right text-red-400">{child.missed}</td><td className="px-5 py-4 text-right text-amber-400">{child.upcoming}</td><td className="px-5 py-4 text-right font-bold text-orange-400">{child.still_hungry}</td></tr>)}{report.children.length === 0 && <tr><td colSpan="8" className="px-5 py-10 text-center text-slate-400">No paid meals in this month.</td></tr>}</tbody></table></div>
+        </section>
+
+        <section className="overflow-hidden rounded-2xl border border-slate-700 bg-slate-800 shadow-lg"><h3 className="border-b border-slate-700 px-5 py-4 text-lg font-bold text-white">Still-hungry history</h3><div className="divide-y divide-slate-700">{report.still_hungry.map((item) => <div key={item.id} className="grid gap-2 px-5 py-4 text-sm sm:grid-cols-4"><span className="font-bold text-white">{item.student_name}</span><span className="text-slate-200">{item.meal_name}</span><span className="text-slate-300">{item.date} · {item.time}</span><span className="font-semibold text-amber-400 sm:text-right">Qty {item.quantity} · Size {item.size}</span></div>)}{report.still_hungry.length === 0 && <p className="px-5 py-10 text-center text-sm text-slate-400">No still-hungry feedback in this month.</p>}</div></section>
+
+        <div className="grid gap-6 lg:grid-cols-2">
+            <section className="rounded-2xl border border-slate-700 bg-slate-800 p-5 shadow-lg lg:col-span-2">
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div><h3 className="text-lg font-bold text-white">Monthly Meal Calendar</h3><p className="mt-1 text-sm text-slate-400">Repeated colours help you notice when the same meal is ordered frequently.</p></div>
+                    <div className="flex flex-wrap items-end gap-3">
+                        <label className="text-xs font-semibold text-slate-300">Child
+                            <select value={childId} onChange={(event) => update('child_id', event.target.value)} className="mt-1 block w-52 rounded-md border-slate-300 bg-white py-1.5 text-sm text-slate-900">
+                                <option value="">All children</option>
+                                {report.linked_children.map((child) => <option key={child.id} value={child.id}>{child.name}</option>)}
+                            </select>
+                        </label>
+                        <span className="mb-1 rounded-full bg-indigo-500/20 px-3 py-1 text-sm font-bold text-indigo-300">{report.month_label}</span>
+                    </div>
+                </div>
+                <div className="mt-5 overflow-x-auto"><div className="min-w-[760px] overflow-hidden rounded-xl border border-slate-600">
+                    <div className="grid grid-cols-7 bg-slate-700">{['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day) => <div key={day} className="border-r border-slate-600 px-2 py-3 text-center text-xs font-bold uppercase text-slate-200 last:border-r-0">{day}</div>)}</div>
+                    <div className="grid grid-cols-7 bg-slate-900/30">{calendarCells.map((day, index) => {
+                        if (!day) return <div key={`empty-${index}`} className="min-h-28 border-r border-t border-slate-700 bg-slate-900/20" />;
+                        const date = `${month}-${String(day).padStart(2, '0')}`;
+                        const meals = calendarEntries.get(date) ?? [];
+                        return <div key={date} className="min-h-28 border-r border-t border-slate-700 p-2"><p className="text-sm font-bold text-slate-300">{day}</p><div className="mt-2 space-y-1.5">{meals.map((meal) => <div key={meal.id} className="rounded-md px-2 py-1.5 text-xs font-semibold text-slate-950" style={{ backgroundColor: colorForMeal(meal.id) }}><span className="block truncate" title={meal.name}>{meal.name}</span><span className="text-[10px] opacity-80">Qty {meal.quantity} · {meal.sizes.map((size) => `${size.size} ×${size.quantity}`).join(', ')}</span></div>)}</div></div>;
+                    })}</div>
+                </div></div>
+                {report.most_ordered.length > 0 && <div className="mt-4 flex flex-wrap gap-2">{report.most_ordered.map((meal) => <span key={meal.id} className="rounded-full border border-slate-600 px-3 py-1 text-xs font-semibold text-slate-200"><span className="mr-2 inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: colorForMeal(meal.id) }} />{meal.name}: {meal.quantity} portions / {meal.order_days} days</span>)}</div>}
+                {report.most_ordered[0]?.order_days >= 3 && <p className="mt-4 rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm font-semibold text-amber-300">{report.most_ordered[0].name} was ordered repeatedly this month. Consider choosing a wider variety of meals.</p>}
+            </section>
+        </div>
+
+    </>;
+}
+
 export default function Dashboard({ report, schools = [], filters = {} }) {
     const user = usePage().props.auth.user;
     const [form, setForm] = useState({
@@ -130,6 +205,8 @@ export default function Dashboard({ report, schools = [], filters = {} }) {
         school_id: filters.school_id ?? '',
         start_date: filters.start_date ?? '',
         end_date: filters.end_date ?? '',
+        month: filters.month ?? '',
+        child_id: filters.child_id ?? '',
     });
 
     const update = (name, value) => setForm((current) => ({ ...current, [name]: value }));
@@ -147,7 +224,7 @@ export default function Dashboard({ report, schools = [], filters = {} }) {
         }, 500);
 
         return () => window.clearTimeout(timer);
-    }, [form.period, form.school_id, form.start_date, form.end_date]);
+    }, [form.period, form.school_id, form.start_date, form.end_date, form.month, form.child_id]);
 
     const isOwnerReport = report?.type === 'owner';
     const maxRevenue = isOwnerReport ? Math.max(1, ...report.revenue_trend.map((point) => Number(point.revenue))) : 1;
@@ -164,6 +241,7 @@ export default function Dashboard({ report, schools = [], filters = {} }) {
                     </div>
 
                     {report?.type === 'operator' && <OperatorReport report={report} period={form.period} update={update} />}
+                    {report?.type === 'customer' && <CustomerReport report={report} month={form.month} childId={form.child_id} update={update} />}
 
                     {isOwnerReport && <>
                         <section className="rounded-xl border border-slate-700 bg-slate-800 p-5 shadow-sm">

@@ -17,6 +17,10 @@ class DashboardController extends Controller
             return $this->operatorDashboard($request);
         }
 
+        if ($request->user()->hasRole('customer')) {
+            return $this->customerDashboard($request);
+        }
+
         if (! $request->user()->hasRole('owner')) {
             return inertia('Dashboard', ['report' => null]);
         }
@@ -89,6 +93,128 @@ class DashboardController extends Controller
                 'most_ordered' => $mealOccurrences->sortByDesc('quantity')->take(5)->values(),
                 'least_ordered' => $mealOccurrences->sortBy('quantity')->take(5)->values(),
                 'still_hungry' => $stillHungry,
+            ],
+        ]);
+    }
+
+    private function customerDashboard(Request $request)
+    {
+        $validated = $request->validate([
+            'month' => ['nullable', 'date_format:Y-m'],
+            'child_id' => ['nullable', 'integer'],
+        ]);
+        $userId = (int) $request->user()->id;
+        $linkedChildren = DB::table('children as c')
+            ->join('students as s', 's.id', '=', 'c.student_id')
+            ->where('c.user_id', $userId)
+            ->orderBy('s.name')
+            ->get(['s.id', 's.name']);
+        $selectedChildId = isset($validated['child_id']) && $linkedChildren->contains('id', (int) $validated['child_id'])
+            ? (int) $validated['child_id']
+            : null;
+        $base = DB::table('order_items as oi')
+            ->join('orders as o', 'o.id', '=', 'oi.order_id')
+            ->join('payments as p', 'p.order_id', '=', 'o.id')
+            ->join('students as s', 's.id', '=', 'oi.student_id')
+            ->join('children as c', 'c.student_id', '=', 's.id')
+            ->where('c.user_id', $userId)
+            ->where('p.status', 'paid');
+
+        $availableMonths = (clone $base)
+            ->selectRaw("DATE_FORMAT(oi.scheduled_time, '%Y-%m') as value")
+            ->distinct()->orderByDesc('value')->pluck('value');
+        $currentMonth = Carbon::now('Asia/Kuala_Lumpur')->format('Y-m');
+        $month = $validated['month'] ?? ($availableMonths->contains($currentMonth) ? $currentMonth : ($availableMonths->first() ?? $currentMonth));
+        $monthStart = Carbon::createFromFormat('Y-m', $month, 'Asia/Kuala_Lumpur')->startOfMonth();
+        $monthEnd = $monthStart->copy()->endOfMonth();
+        $items = OrderItem::query()
+            ->whereBetween('scheduled_time', [$monthStart, $monthEnd])
+            ->whereHas('order.payment', fn ($query) => $query->where('status', 'paid'))
+            ->whereHas('student.child', fn ($query) => $query->where('user_id', $userId))
+            ->with(['student:id,name,student_code,school_id', 'student.school:id,name', 'menuItem:id,name,available_end_time', 'collection', 'studentMealEvents'])
+            ->orderBy('scheduled_time')->get();
+        $now = Carbon::now('Asia/Kuala_Lumpur');
+
+        $mapItem = function (OrderItem $item) use ($now): array {
+            $quantity = (int) $item->quantity;
+            $collected = min($quantity, (int) ($item->collection?->collected_quantity ?? 0));
+            $date = $item->scheduled_time->copy()->timezone('Asia/Kuala_Lumpur')->toDateString();
+            $deadline = Carbon::parse($date.' '.($item->menuItem?->available_end_time ?: '23:59:59'), 'Asia/Kuala_Lumpur')->addMinutes(15);
+            $missed = $now->gt($deadline) ? max(0, $quantity - $collected) : 0;
+
+            return [
+                'id' => $item->id, 'student_id' => $item->student_id,
+                'student_name' => $item->student?->name, 'school_name' => $item->student?->school?->name,
+                'meal_id' => $item->menu_item_id, 'meal_name' => $item->menuItem?->name,
+                'date' => $date, 'time' => $item->scheduled_time->copy()->timezone('Asia/Kuala_Lumpur')->format('g:i A'),
+                'scheduled_at' => $item->scheduled_time->toIso8601String(), 'quantity' => $quantity,
+                'size' => strtoupper($item->size ?: 'M'), 'spent' => round((float) $item->unit_price * $quantity, 2),
+                'collected' => $collected, 'missed' => $missed,
+                'upcoming' => $now->lte($deadline) ? max(0, $quantity - $collected) : 0,
+                'still_hungry' => $item->studentMealEvents->contains('event_type', 'still_hungry'),
+            ];
+        };
+        $rows = $items->map($mapItem);
+        $upcomingMeals = OrderItem::query()
+            ->where('scheduled_time', '>=', $now)
+            ->whereHas('order.payment', fn ($query) => $query->where('status', 'paid'))
+            ->whereHas('student.child', fn ($query) => $query->where('user_id', $userId))
+            ->with(['student:id,name,student_code,school_id', 'student.school:id,name', 'menuItem:id,name,available_end_time', 'collection', 'studentMealEvents'])
+            ->orderBy('scheduled_time')
+            ->get()
+            ->map($mapItem)
+            ->filter(fn ($row) => $row['upcoming'] > 0)
+            ->groupBy('student_id')
+            ->map(fn ($childRows) => $childRows->first())
+            ->values();
+
+        $children = $rows->groupBy('student_id')->map(function ($childRows): array {
+            $first = $childRows->first();
+            return [
+                'id' => $first['student_id'], 'name' => $first['student_name'], 'school' => $first['school_name'],
+                'spent' => round($childRows->sum('spent'), 2), 'ordered' => $childRows->sum('quantity'),
+                'collected' => $childRows->sum('collected'), 'missed' => $childRows->sum('missed'),
+                'upcoming' => $childRows->sum('upcoming'),
+                'still_hungry' => $childRows->where('still_hungry', true)->count(),
+            ];
+        })->values();
+        $calendarRows = $selectedChildId ? $rows->where('student_id', $selectedChildId) : $rows;
+        $mostOrdered = $calendarRows->groupBy('meal_id')->map(function ($mealRows): array {
+            return [
+                'id' => $mealRows->first()['meal_id'],
+                'name' => $mealRows->first()['meal_name'],
+                'quantity' => $mealRows->sum('quantity'),
+                'order_days' => $mealRows->pluck('date')->unique()->count(),
+            ];
+        })->sortByDesc('quantity')->take(5)->values();
+        $calendarDays = $calendarRows->groupBy('date')->map(function ($dayRows, $date): array {
+            return [
+                'date' => $date,
+                'meals' => $dayRows->groupBy('meal_id')->map(function ($mealRows): array {
+                    return [
+                        'id' => $mealRows->first()['meal_id'],
+                        'name' => $mealRows->first()['meal_name'],
+                        'quantity' => $mealRows->sum('quantity'),
+                        'sizes' => $mealRows->groupBy('size')->map(fn ($sizeRows, $size) => [
+                            'size' => $size,
+                            'quantity' => $sizeRows->sum('quantity'),
+                        ])->values(),
+                    ];
+                })->values(),
+            ];
+        })->values();
+        return inertia('Dashboard', [
+            'filters' => ['month' => $month, 'child_id' => $selectedChildId],
+            'report' => [
+                'type' => 'customer',
+                'linked_children' => $linkedChildren,
+                'available_months' => $availableMonths->map(fn ($value) => ['value' => $value, 'label' => Carbon::createFromFormat('Y-m', $value)->format('F Y')]),
+                'month_label' => $monthStart->format('F Y'), 'spent' => round($rows->sum('spent'), 2),
+                'ordered' => $rows->sum('quantity'), 'collected' => $rows->sum('collected'),
+                'missed' => $rows->sum('missed'), 'upcoming_count' => $rows->sum('upcoming'),
+                'children' => $children, 'most_ordered' => $mostOrdered, 'calendar_days' => $calendarDays,
+                'still_hungry' => $rows->where('still_hungry', true)->values(),
+                'upcoming_meals' => $upcomingMeals,
             ],
         ]);
     }
