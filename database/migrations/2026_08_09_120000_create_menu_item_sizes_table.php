@@ -16,20 +16,10 @@ return new class extends Migration
             $table->timestamps();
             $table->unique(['menu_item_id', 'size']);
         });
-
-        Schema::table('cart_items', function (Blueprint $table): void {
-            $table->string('size', 1)->default('M')->after('menu_item_id');
-        });
-
-        Schema::table('order_items', function (Blueprint $table): void {
-            $table->string('size', 1)->default('M')->after('menu_item_id');
-        });
     }
 
     public function down(): void
     {
-        Schema::table('order_items', fn (Blueprint $table) => $table->dropColumn('size'));
-        Schema::table('cart_items', fn (Blueprint $table) => $table->dropColumn('size'));
         Schema::dropIfExists('menu_item_sizes');
     }
 };

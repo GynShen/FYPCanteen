@@ -16,6 +16,8 @@ return new class extends Migration
             $table->string('name');
             $table->text('description')->nullable();
             $table->decimal('price', 10, 2);
+            $table->time('available_start_time')->nullable();
+            $table->time('available_end_time')->nullable();
             $table->text('image_url')->nullable();
             $table->string('image_drive_id')->nullable();
             $table->boolean('is_available')->default(false);
