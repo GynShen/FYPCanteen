@@ -28,6 +28,7 @@ Route::get('/', function () {
 });
 
 Route::get('/dashboard', [DashboardController::class, 'index'])->middleware(['auth', 'verified'])->name('dashboard');
+Route::patch('/dashboard/meal-preparation', [DashboardController::class, 'togglePreparation'])->middleware(['auth', 'verified'])->name('dashboard.meal-preparation');
 
 Route::post('/stripe/webhook', [StripePaymentController::class, 'webhook'])->name('stripe.webhook');
 

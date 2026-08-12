@@ -19,13 +19,19 @@ function MealTable({ title, rows }) {
     );
 }
 
-function OperatorReport({ report, period, update }) {
+function OperatorReport({ report, weekDate, update }) {
     const [now, setNow] = useState(Date.now());
+    const [preparationStates, setPreparationStates] = useState({});
+    const [savingPreparation, setSavingPreparation] = useState(null);
 
     useEffect(() => {
         const timer = window.setInterval(() => setNow(Date.now()), 1000);
         return () => window.clearInterval(timer);
     }, []);
+
+    useEffect(() => {
+        setPreparationStates(Object.fromEntries(report.size_preparation.map((meal) => [meal.key, meal.is_completed])));
+    }, [report.size_preparation]);
 
     const sessionState = (slot) => {
         const start = new Date(slot.session_start).getTime();
@@ -51,6 +57,31 @@ function OperatorReport({ report, period, update }) {
         ['Still remaining', report.remaining, '#fbbf24'],
         ['Missed', report.missed, '#f87171'],
     ];
+    const today = new Date();
+    const mondayOffset = (today.getDay() + 6) % 7;
+    const weekMonday = new Date(today);
+    weekMonday.setHours(0, 0, 0, 0);
+    weekMonday.setDate(today.getDate() - mondayOffset);
+    const localDate = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    const todayValue = localDate(today);
+    const weekDates = Array.from({ length: 7 }, (_, index) => {
+        const date = new Date(weekMonday);
+        date.setDate(weekMonday.getDate() + index);
+        return { value: localDate(date), label: date.toLocaleDateString('en-MY', { weekday: 'long', day: '2-digit', month: 'short' }) };
+    });
+    const togglePreparation = (meal) => {
+        const previous = Boolean(preparationStates[meal.key]);
+        setPreparationStates((current) => ({ ...current, [meal.key]: !previous }));
+        setSavingPreparation(meal.key);
+        router.patch(route('dashboard.meal-preparation'), {
+            menu_item_id: meal.menu_item_id,
+            preparation_date: meal.date,
+        }, {
+            preserveScroll: true,
+            onError: () => setPreparationStates((current) => ({ ...current, [meal.key]: previous })),
+            onFinish: () => setSavingPreparation(null),
+        });
+    };
 
     return <>
         <section className="rounded-2xl border border-slate-700 bg-slate-800 p-5 shadow-lg">
@@ -59,10 +90,10 @@ function OperatorReport({ report, period, update }) {
                     <h2 className="text-lg font-bold text-white">Collection workload</h2>
                     <p className="mt-1 text-sm text-slate-400">{report.school ? `${report.school.name} only` : 'No school has been assigned to this operator.'}</p>
                 </div>
-                <label className="text-sm font-semibold text-slate-200 sm:justify-self-end sm:w-64">Period
-                    <select value={period} onChange={(event) => update('period', event.target.value)} className="mt-1 block w-full rounded-md border-slate-300 bg-white text-slate-900">
-                        <option value="today">Today</option>
-                        <option value="week">This week</option>
+                <label className="text-sm font-semibold text-slate-200 sm:w-72 sm:justify-self-end">Week date
+                    <select value={weekDate} onChange={(event) => update('week_date', event.target.value)} className="mt-1 block w-full rounded-md border-slate-300 bg-white text-slate-900">
+                        <option value="">Overall — whole week</option>
+                        {weekDates.map((date) => <option key={date.value} value={date.value}>{date.label}{date.value === todayValue ? ' (Today)' : ''}</option>)}
                     </select>
                 </label>
             </div>
@@ -90,10 +121,10 @@ function OperatorReport({ report, period, update }) {
         </section>
 
         <section className="overflow-hidden rounded-2xl border border-slate-700 bg-slate-800 shadow-lg">
-            <h3 className="border-b border-slate-700 px-5 py-4 text-lg font-bold text-white">Meal preparation by size</h3>
+            <div className="border-b border-slate-700 px-5 py-4"><h3 className="text-lg font-bold text-white">Meal preparation by size</h3><p className="mt-1 text-sm text-slate-400">Mark a meal batch as prepared after all portions are ready. Click the completed status again to undo it.</p></div>
             <div className="overflow-x-auto"><table className="w-full min-w-[750px]">
-                <thead className="bg-slate-700 text-xs uppercase tracking-wide text-slate-200"><tr><th className="px-5 py-3 text-left">Date</th><th className="px-5 py-3 text-left">Collection time</th><th className="px-5 py-3 text-left">Meal</th><th className="px-5 py-3 text-right">Small</th><th className="px-5 py-3 text-right">Medium</th><th className="px-5 py-3 text-right">Large</th><th className="px-5 py-3 text-right">Total</th></tr></thead>
-                <tbody className="divide-y divide-slate-700">{report.size_preparation.map((meal) => <tr key={meal.key} className="text-sm text-slate-200 hover:bg-slate-700/50"><td className="px-5 py-4">{meal.day}<br/><span className="text-xs text-slate-400">{meal.date}</span></td><td className="px-5 py-4">{meal.time}</td><td className="px-5 py-4 font-semibold text-white">{meal.meal_name}</td><td className="px-5 py-4 text-right">{meal.S}</td><td className="px-5 py-4 text-right">{meal.M}</td><td className="px-5 py-4 text-right">{meal.L}</td><td className="px-5 py-4 text-right font-bold text-indigo-300">{meal.total}</td></tr>)}{report.size_preparation.length === 0 && <tr><td colSpan="7" className="px-5 py-10 text-center text-sm text-slate-400">No meals need preparation in this period.</td></tr>}</tbody>
+                <thead className="bg-slate-700 text-xs uppercase tracking-wide text-slate-200"><tr><th className="px-5 py-3 text-left">Date</th><th className="px-5 py-3 text-left">Collection time</th><th className="px-5 py-3 text-left">Meal</th><th className="px-5 py-3 text-right">Small</th><th className="px-5 py-3 text-right">Medium</th><th className="px-5 py-3 text-right">Large</th><th className="px-5 py-3 text-right">Total</th><th className="px-5 py-3 text-center">Preparation</th></tr></thead>
+                <tbody className="divide-y divide-slate-700">{report.size_preparation.map((meal) => { const completed = Boolean(preparationStates[meal.key]); const saving = savingPreparation === meal.key; return <tr key={meal.key} className="text-sm text-slate-200 hover:bg-slate-700/50"><td className="px-5 py-4">{meal.day}<br/><span className="text-xs text-slate-400">{meal.date}</span></td><td className="px-5 py-4">{meal.time}</td><td className="px-5 py-4 font-semibold text-white">{meal.meal_name}</td><td className="px-5 py-4 text-right">{meal.S}</td><td className="px-5 py-4 text-right">{meal.M}</td><td className="px-5 py-4 text-right">{meal.L}</td><td className="px-5 py-4 text-right font-bold text-indigo-300">{meal.total}</td><td className="px-5 py-4 text-center"><button type="button" disabled={saving} onClick={() => togglePreparation(meal)} className="min-w-40 rounded-lg px-4 py-2 text-xs font-bold text-white disabled:cursor-wait disabled:opacity-70" style={{ backgroundColor: completed ? '#059669' : '#4f46e5' }}>{saving ? 'Saving...' : completed ? 'Prepared ✓' : 'Complete Preparation'}</button></td></tr>; })}{report.size_preparation.length === 0 && <tr><td colSpan="8" className="px-5 py-10 text-center text-sm text-slate-400">No meals need preparation in this period.</td></tr>}</tbody>
             </table></div>
         </section>
 
@@ -207,6 +238,7 @@ export default function Dashboard({ report, schools = [], filters = {} }) {
         end_date: filters.end_date ?? '',
         month: filters.month ?? '',
         child_id: filters.child_id ?? '',
+        week_date: filters.week_date ?? '',
     });
 
     const update = (name, value) => setForm((current) => ({ ...current, [name]: value }));
@@ -224,7 +256,7 @@ export default function Dashboard({ report, schools = [], filters = {} }) {
         }, 500);
 
         return () => window.clearTimeout(timer);
-    }, [form.period, form.school_id, form.start_date, form.end_date, form.month, form.child_id]);
+    }, [form.period, form.school_id, form.start_date, form.end_date, form.month, form.child_id, form.week_date]);
 
     const isOwnerReport = report?.type === 'owner';
     const maxRevenue = isOwnerReport ? Math.max(1, ...report.revenue_trend.map((point) => Number(point.revenue))) : 1;
@@ -240,7 +272,7 @@ export default function Dashboard({ report, schools = [], filters = {} }) {
                         <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{report ? 'Review canteen performance and meal activity.' : 'You are logged in to FYPCanteen.'}</p>
                     </div>
 
-                    {report?.type === 'operator' && <OperatorReport report={report} period={form.period} update={update} />}
+                    {report?.type === 'operator' && <OperatorReport report={report} weekDate={form.week_date} update={update} />}
                     {report?.type === 'customer' && <CustomerReport report={report} month={form.month} childId={form.child_id} update={update} />}
 
                     {isOwnerReport && <>

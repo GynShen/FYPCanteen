@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\OrderItem;
+use App\Models\MealPreparation;
 use App\Models\School;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -11,6 +12,26 @@ use Illuminate\Validation\Rule;
 
 class DashboardController extends Controller
 {
+    public function togglePreparation(Request $request)
+    {
+        abort_unless($request->user()->hasRole('operator'), 403);
+        $validated = $request->validate([
+            'menu_item_id' => ['required', 'integer', 'exists:menu_items,id'],
+            'preparation_date' => ['required', 'date'],
+        ]);
+        $preparation = MealPreparation::query()->firstOrNew([
+            'school_id' => $request->user()->school_id,
+            'menu_item_id' => $validated['menu_item_id'],
+            'preparation_date' => $validated['preparation_date'],
+        ]);
+        $preparation->fill($preparation->completed_at
+            ? ['completed_at' => null, 'completed_by' => null]
+            : ['completed_at' => now(), 'completed_by' => $request->user()->id]);
+        $preparation->save();
+
+        return back();
+    }
+
     public function index(Request $request)
     {
         if ($request->user()->hasRole('operator')) {
@@ -222,15 +243,27 @@ class DashboardController extends Controller
     private function operatorDashboard(Request $request)
     {
         $validated = $request->validate([
-            'period' => ['nullable', Rule::in(['today', 'week'])],
+            'week_date' => ['nullable', 'date'],
         ]);
-        $period = $validated['period'] ?? 'today';
-        [$start, $end] = $this->dateRange($period, []);
+        $period = 'week';
+        $weekStart = Carbon::now('Asia/Kuala_Lumpur')->startOfWeek();
+        $weekEnd = Carbon::now('Asia/Kuala_Lumpur')->endOfWeek();
+        $start = $weekStart->copy()->startOfDay();
+        $end = $weekEnd->copy()->endOfDay();
+        $weekDate = null;
+        if (! empty($validated['week_date'])) {
+            $selectedDate = Carbon::parse($validated['week_date'], 'Asia/Kuala_Lumpur');
+            if ($selectedDate->betweenIncluded($weekStart, $weekEnd)) {
+            $weekDate = $selectedDate->toDateString();
+            $start = $selectedDate->copy()->startOfDay();
+            $end = $selectedDate->copy()->endOfDay();
+            }
+        }
         $schoolId = (int) $request->user()->school_id;
 
         if (! $schoolId) {
             return inertia('Dashboard', [
-                'filters' => ['period' => $period],
+                'filters' => ['period' => $period, 'week_date' => $weekDate],
                 'report' => [
                     'type' => 'operator',
                     'school' => null,
@@ -306,6 +339,7 @@ class DashboardController extends Controller
 
             return array_merge([
                 'key' => $first['date'].'-'.$first['meal_id'],
+                'menu_item_id' => $first['meal_id'],
                 'date' => $first['date'],
                 'day' => $first['day'],
                 'time' => $first['time'],
@@ -336,6 +370,7 @@ class DashboardController extends Controller
 
             return [
                 'key' => $first['date'].'-'.$first['meal_id'],
+                'menu_item_id' => $first['meal_id'],
                 'date' => $first['date'],
                 'day' => $first['day'],
                 'time' => $first['start_time'].' – '.$first['end_time'],
@@ -346,9 +381,19 @@ class DashboardController extends Controller
                 'total' => $rows->sum('ordered'),
             ];
         })->values();
+        $completedPreparations = MealPreparation::query()
+            ->where('school_id', $schoolId)
+            ->whereBetween('preparation_date', [$start->toDateString(), $end->toDateString()])
+            ->whereNotNull('completed_at')
+            ->get()
+            ->keyBy(fn ($item) => $item->preparation_date->toDateString().'-'.$item->menu_item_id);
+        $sizePreparation = $sizePreparation->map(function ($meal) use ($completedPreparations): array {
+            $meal['is_completed'] = $completedPreparations->has($meal['key']);
+            return $meal;
+        });
 
         return inertia('Dashboard', [
-            'filters' => ['period' => $period],
+            'filters' => ['period' => $period, 'week_date' => $weekDate],
             'report' => array_merge([
                 'type' => 'operator',
                 'school' => School::query()->find($schoolId, ['id', 'name']),
