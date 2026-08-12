@@ -4,12 +4,12 @@ import { useEffect, useState } from 'react';
 
 const money = (value) => `RM ${Number(value).toFixed(2)}`;
 
-function MealTable({ title, rows }) {
+function MealTable({ title, rows, sortDirection, onSort }) {
     return (
         <section className="overflow-hidden rounded-2xl border border-slate-700 bg-slate-800 shadow-lg">
             <h3 className="border-b border-slate-700 px-5 py-4 text-lg font-bold text-white">{title}</h3>
             <table className="w-full">
-                <thead className="bg-slate-700/80 text-xs uppercase tracking-wide text-slate-200"><tr><th className="px-5 py-3 text-left">Meal</th><th className="px-5 py-3 text-right">Quantity</th><th className="px-5 py-3 text-right">Revenue</th></tr></thead>
+                <thead className="bg-slate-700/80 text-xs uppercase tracking-wide text-slate-200"><tr><th className="px-5 py-3 text-left">Meal</th><th className="px-5 py-3 text-right"><button type="button" onClick={onSort} className="inline-flex items-center gap-2 font-bold text-slate-100 hover:text-white" title="Sort by quantity">Quantity <span aria-hidden="true">{sortDirection === 'desc' ? '↓' : '↑'}</span></button></th><th className="px-5 py-3 text-right">Revenue</th></tr></thead>
                 <tbody className="divide-y divide-slate-700">
                     {rows.map((meal) => <tr key={meal.id} className="bg-slate-800 text-sm text-slate-200 hover:bg-slate-700/50"><td className="px-5 py-4 font-semibold text-white">{meal.name}</td><td className="px-5 py-4 text-right">{meal.quantity}</td><td className="px-5 py-4 text-right font-semibold text-emerald-400">{money(meal.revenue)}</td></tr>)}
                     {rows.length === 0 && <tr><td colSpan="3" className="px-4 py-10 text-center text-sm text-slate-400">No paid meal orders in this period.</td></tr>}
@@ -240,6 +240,7 @@ export default function Dashboard({ report, schools = [], filters = {} }) {
         child_id: filters.child_id ?? '',
         week_date: filters.week_date ?? '',
     });
+    const [mealSortDirection, setMealSortDirection] = useState('desc');
 
     const update = (name, value) => setForm((current) => ({ ...current, [name]: value }));
 
@@ -261,6 +262,11 @@ export default function Dashboard({ report, schools = [], filters = {} }) {
     const isOwnerReport = report?.type === 'owner';
     const maxRevenue = isOwnerReport ? Math.max(1, ...report.revenue_trend.map((point) => Number(point.revenue))) : 1;
     const collectionTotal = isOwnerReport ? report.collected + report.missed : 0;
+    const sortedMealRankings = isOwnerReport
+        ? [...report.meal_rankings].sort((first, second) => mealSortDirection === 'desc'
+            ? Number(second.quantity) - Number(first.quantity)
+            : Number(first.quantity) - Number(second.quantity))
+        : [];
 
     return (
         <AuthenticatedLayout header={<h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">Dashboard</h2>}>
@@ -298,6 +304,25 @@ export default function Dashboard({ report, schools = [], filters = {} }) {
                             ].map(([label, value, accent]) => <div key={label} className="rounded-2xl border border-slate-700 border-t-4 bg-slate-800 p-5 shadow-lg" style={{ borderTopColor: accent }}><p className="text-sm font-semibold text-slate-300">{label}</p><p className="mt-2 text-3xl font-bold" style={{ color: accent }}>{value}</p></div>)}
                         </div>
 
+                        <section className="overflow-hidden rounded-2xl border border-slate-700 bg-slate-800 shadow-lg">
+                            <div className="border-b border-slate-700 px-5 py-4">
+                                <h3 className="text-lg font-bold text-white">Today&apos;s preparation status by school</h3>
+                                <p className="mt-1 text-sm text-slate-400">{report.preparation_date} · Operators update preparation from their own dashboard.</p>
+                            </div>
+                            <div className="overflow-x-auto"><table className="w-full min-w-[720px]">
+                                <thead className="bg-slate-700 text-xs uppercase tracking-wide text-slate-200"><tr><th className="px-5 py-3 text-left">School</th><th className="px-5 py-3 text-right">Portions</th><th className="px-5 py-3 text-right">Meal batches</th><th className="px-5 py-3 text-right">Prepared</th><th className="px-5 py-3 text-right">Remaining</th><th className="px-5 py-3 text-center">Status</th></tr></thead>
+                                <tbody className="divide-y divide-slate-700">{report.preparation_status.map((school) => {
+                                    const status = {
+                                        completed: ['Completed', '#34d399', '#064e3b'],
+                                        in_progress: ['In progress', '#fbbf24', '#78350f'],
+                                        not_started: ['Not started', '#f87171', '#7f1d1d'],
+                                        no_meals: ['No meals today', '#94a3b8', '#334155'],
+                                    }[school.status];
+                                    return <tr key={school.id} className="text-sm text-slate-200 hover:bg-slate-700/50"><td className="px-5 py-4 font-semibold text-white">{school.name}</td><td className="px-5 py-4 text-right font-bold text-indigo-300">{school.portions}</td><td className="px-5 py-4 text-right">{school.batches}</td><td className="px-5 py-4 text-right" style={{ color: '#34d399' }}>{school.prepared}</td><td className="px-5 py-4 text-right" style={{ color: school.remaining ? '#f87171' : '#94a3b8' }}>{school.remaining}</td><td className="px-5 py-4 text-center"><span className="inline-flex rounded-full border px-3 py-1 text-xs font-bold" style={{ color: status[1], backgroundColor: status[2], borderColor: status[1] }}>{status[0]}</span></td></tr>;
+                                })}{report.preparation_status.length === 0 && <tr><td colSpan="6" className="px-5 py-10 text-center text-sm text-slate-400">No schools found.</td></tr>}</tbody>
+                            </table></div>
+                        </section>
+
                         <div className="grid gap-6 lg:grid-cols-3">
                             <section className="rounded-2xl border border-slate-700 bg-slate-800 p-5 shadow-lg lg:col-span-2">
                                 <h3 className="text-lg font-bold text-white">Revenue trend</h3>
@@ -317,7 +342,7 @@ export default function Dashboard({ report, schools = [], filters = {} }) {
                             </section>
                         </div>
 
-                        <div className="grid gap-6 lg:grid-cols-2"><MealTable title="Most ordered meals" rows={report.most_ordered} /><MealTable title="Least ordered meals" rows={report.least_ordered} /></div>
+                        <MealTable title="Meal ordering ranking" rows={sortedMealRankings} sortDirection={mealSortDirection} onSort={() => setMealSortDirection((current) => current === 'desc' ? 'asc' : 'desc')} />
 
                         <section className="overflow-hidden rounded-2xl border border-slate-700 bg-slate-800 shadow-lg">
                             <h3 className="border-b border-slate-700 px-5 py-4 text-lg font-bold text-white">Still-hungry reports</h3>

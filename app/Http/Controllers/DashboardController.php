@@ -95,6 +95,43 @@ class DashboardController extends Controller
             ->limit(10)
             ->get();
 
+        $today = Carbon::now('Asia/Kuala_Lumpur');
+        $todayBatches = DB::table('order_items as oi')
+            ->join('orders as o', 'o.id', '=', 'oi.order_id')
+            ->join('payments as p', 'p.order_id', '=', 'o.id')
+            ->join('students as s', 's.id', '=', 'oi.student_id')
+            ->where('p.status', 'paid')
+            ->whereBetween('oi.scheduled_time', [$today->copy()->startOfDay(), $today->copy()->endOfDay()])
+            ->when($schoolId, fn ($query) => $query->where('s.school_id', $schoolId))
+            ->selectRaw('s.school_id, oi.menu_item_id, SUM(oi.quantity) as portions')
+            ->groupBy('s.school_id', 'oi.menu_item_id')
+            ->get();
+        $preparedBatchKeys = MealPreparation::query()
+            ->whereDate('preparation_date', $today->toDateString())
+            ->whereNotNull('completed_at')
+            ->when($schoolId, fn ($query) => $query->where('school_id', $schoolId))
+            ->get(['school_id', 'menu_item_id'])
+            ->mapWithKeys(fn ($preparation) => [$preparation->school_id.'-'.$preparation->menu_item_id => true]);
+        $preparationSchools = School::query()
+            ->when($schoolId, fn ($query) => $query->whereKey($schoolId))
+            ->orderBy('name')
+            ->get(['id', 'name'])
+            ->map(function (School $school) use ($todayBatches, $preparedBatchKeys): array {
+                $batches = $todayBatches->where('school_id', $school->id);
+                $prepared = $batches->filter(fn ($batch) => $preparedBatchKeys->has($school->id.'-'.$batch->menu_item_id))->count();
+                $totalBatches = $batches->count();
+
+                return [
+                    'id' => $school->id,
+                    'name' => $school->name,
+                    'portions' => (int) $batches->sum('portions'),
+                    'batches' => $totalBatches,
+                    'prepared' => $prepared,
+                    'remaining' => $totalBatches - $prepared,
+                    'status' => $totalBatches === 0 ? 'no_meals' : ($prepared === $totalBatches ? 'completed' : ($prepared > 0 ? 'in_progress' : 'not_started')),
+                ];
+            });
+
         return inertia('Dashboard', [
             'schools' => School::query()->orderBy('name')->get(['id', 'name']),
             'filters' => [
@@ -111,9 +148,10 @@ class DashboardController extends Controller
                 'missed' => $missed,
                 'collection_rate' => $collectionBase > 0 ? round($collected / $collectionBase * 100, 1) : 0,
                 'revenue_trend' => $revenueTrend,
-                'most_ordered' => $mealOccurrences->sortByDesc('quantity')->take(5)->values(),
-                'least_ordered' => $mealOccurrences->sortBy('quantity')->take(5)->values(),
+                'meal_rankings' => $mealOccurrences->sortByDesc('quantity')->values(),
                 'still_hungry' => $stillHungry,
+                'preparation_status' => $preparationSchools,
+                'preparation_date' => $today->toDateString(),
             ],
         ]);
     }
