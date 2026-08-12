@@ -13,6 +13,10 @@ class DashboardController extends Controller
 {
     public function index(Request $request)
     {
+        if ($request->user()->hasRole('operator')) {
+            return $this->operatorDashboard($request);
+        }
+
         if (! $request->user()->hasRole('owner')) {
             return inertia('Dashboard', ['report' => null]);
         }
@@ -75,6 +79,7 @@ class DashboardController extends Controller
                 'end_date' => $end->toDateString(),
             ],
             'report' => [
+                'type' => 'owner',
                 'revenue' => round((float) $summary->revenue, 2),
                 'ordered' => (int) $summary->ordered,
                 'collected' => $collected,
@@ -85,6 +90,103 @@ class DashboardController extends Controller
                 'least_ordered' => $mealOccurrences->sortBy('quantity')->take(5)->values(),
                 'still_hungry' => $stillHungry,
             ],
+        ]);
+    }
+
+    private function operatorDashboard(Request $request)
+    {
+        $validated = $request->validate([
+            'period' => ['nullable', Rule::in(['today', 'week'])],
+        ]);
+        $period = $validated['period'] ?? 'today';
+        [$start, $end] = $this->dateRange($period, []);
+        $schoolId = (int) $request->user()->school_id;
+
+        if (! $schoolId) {
+            return inertia('Dashboard', [
+                'filters' => ['period' => $period],
+                'report' => [
+                    'type' => 'operator',
+                    'school' => null,
+                    'ordered' => 0,
+                    'collected' => 0,
+                    'remaining' => 0,
+                    'missed' => 0,
+                    'days' => [],
+                    'meal_workload' => [],
+                    'student_workload' => [],
+                ],
+            ]);
+        }
+
+        $now = Carbon::now('Asia/Kuala_Lumpur');
+        $items = OrderItem::query()
+            ->whereBetween('scheduled_time', [$start, $end])
+            ->whereHas('order.payment', fn ($query) => $query->where('status', 'paid'))
+            ->whereHas('student', fn ($query) => $query->where('school_id', $schoolId))
+            ->with(['student:id,student_code,name,class,school_id', 'menuItem:id,name,available_end_time', 'collection'])
+            ->orderBy('scheduled_time')
+            ->get()
+            ->map(function (OrderItem $item) use ($now): array {
+                $quantity = (int) $item->quantity;
+                $collected = min($quantity, (int) ($item->collection?->collected_quantity ?? 0));
+                $uncollected = max(0, $quantity - $collected);
+                $date = $item->scheduled_time->copy()->timezone('Asia/Kuala_Lumpur')->toDateString();
+                $endTime = $item->menuItem?->available_end_time ?: '23:59:59';
+                $deadline = Carbon::parse($date.' '.$endTime, 'Asia/Kuala_Lumpur')->addMinutes(15);
+                $missed = $now->gt($deadline) ? $uncollected : 0;
+
+                return [
+                    'id' => $item->id,
+                    'date' => $date,
+                    'day' => $item->scheduled_time->copy()->timezone('Asia/Kuala_Lumpur')->format('l'),
+                    'time' => $item->scheduled_time->copy()->timezone('Asia/Kuala_Lumpur')->format('g:i A'),
+                    'student_id' => $item->student_id,
+                    'student_code' => $item->student?->student_code,
+                    'student_name' => $item->student?->name,
+                    'class' => $item->student?->class,
+                    'meal_id' => $item->menu_item_id,
+                    'meal_name' => $item->menuItem?->name,
+                    'ordered' => $quantity,
+                    'collected' => $collected,
+                    'remaining' => $now->lte($deadline) ? $uncollected : 0,
+                    'missed' => $missed,
+                ];
+            });
+
+        $aggregate = fn ($rows) => [
+            'ordered' => $rows->sum('ordered'),
+            'collected' => $rows->sum('collected'),
+            'remaining' => $rows->sum('remaining'),
+            'missed' => $rows->sum('missed'),
+        ];
+
+        $days = $items->groupBy('date')->map(function ($rows, $date) use ($aggregate): array {
+            return array_merge(['date' => $date, 'day' => $rows->first()['day']], $aggregate($rows));
+        })->values();
+
+        $meals = $items->groupBy(fn ($item) => $item['date'].'-'.$item['meal_id'])->map(function ($rows) use ($aggregate): array {
+            $first = $rows->first();
+
+            return array_merge([
+                'key' => $first['date'].'-'.$first['meal_id'],
+                'date' => $first['date'],
+                'day' => $first['day'],
+                'time' => $first['time'],
+                'meal_name' => $first['meal_name'],
+                'students' => $rows->unique('student_id')->count(),
+            ], $aggregate($rows));
+        })->values();
+
+        return inertia('Dashboard', [
+            'filters' => ['period' => $period],
+            'report' => array_merge([
+                'type' => 'operator',
+                'school' => School::query()->find($schoolId, ['id', 'name']),
+                'days' => $days,
+                'meal_workload' => $meals,
+                'student_workload' => $items->values(),
+            ], $aggregate($items)),
         ]);
     }
 

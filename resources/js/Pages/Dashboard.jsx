@@ -19,6 +19,61 @@ function MealTable({ title, rows }) {
     );
 }
 
+function OperatorReport({ report, period, update }) {
+    const cards = [
+        ['Meals to collect', report.ordered, '#818cf8'],
+        ['Collected', report.collected, '#34d399'],
+        ['Still remaining', report.remaining, '#fbbf24'],
+        ['Missed', report.missed, '#f87171'],
+    ];
+
+    return <>
+        <section className="rounded-2xl border border-slate-700 bg-slate-800 p-5 shadow-lg">
+            <div className="grid items-end gap-4 sm:grid-cols-2">
+                <div>
+                    <h2 className="text-lg font-bold text-white">Collection workload</h2>
+                    <p className="mt-1 text-sm text-slate-400">{report.school ? `${report.school.name} only` : 'No school has been assigned to this operator.'}</p>
+                </div>
+                <label className="text-sm font-semibold text-slate-200 sm:justify-self-end sm:w-64">Period
+                    <select value={period} onChange={(event) => update('period', event.target.value)} className="mt-1 block w-full rounded-md border-slate-300 bg-white text-slate-900">
+                        <option value="today">Today</option>
+                        <option value="week">This week</option>
+                    </select>
+                </label>
+            </div>
+            <p className="mt-4 text-xs text-slate-400">The report refreshes automatically after 500 ms.</p>
+        </section>
+
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {cards.map(([label, value, accent]) => <div key={label} className="rounded-2xl border border-slate-700 border-t-4 bg-slate-800 p-5 shadow-lg" style={{ borderTopColor: accent }}><p className="text-sm font-semibold text-slate-300">{label}</p><p className="mt-2 text-3xl font-bold" style={{ color: accent }}>{value}</p></div>)}
+        </div>
+
+        <section className="overflow-hidden rounded-2xl border border-slate-700 bg-slate-800 shadow-lg">
+            <h3 className="border-b border-slate-700 px-5 py-4 text-lg font-bold text-white">Daily collection summary</h3>
+            <div className="overflow-x-auto"><table className="w-full min-w-[700px]">
+                <thead className="bg-slate-700 text-xs uppercase tracking-wide text-slate-200"><tr><th className="px-5 py-3 text-left">Day</th><th className="px-5 py-3 text-left">Date</th><th className="px-5 py-3 text-right">Required</th><th className="px-5 py-3 text-right">Collected</th><th className="px-5 py-3 text-right">Remaining</th><th className="px-5 py-3 text-right">Missed</th></tr></thead>
+                <tbody className="divide-y divide-slate-700">{report.days.map((day) => <tr key={day.date} className="text-sm text-slate-200 hover:bg-slate-700/50"><td className="px-5 py-4 font-semibold text-white">{day.day}</td><td className="px-5 py-4">{day.date}</td><td className="px-5 py-4 text-right">{day.ordered}</td><td className="px-5 py-4 text-right text-emerald-400">{day.collected}</td><td className="px-5 py-4 text-right text-amber-400">{day.remaining}</td><td className="px-5 py-4 text-right text-red-400">{day.missed}</td></tr>)}{report.days.length === 0 && <tr><td colSpan="6" className="px-5 py-10 text-center text-sm text-slate-400">No paid meals require collection in this period.</td></tr>}</tbody>
+            </table></div>
+        </section>
+
+        <section className="overflow-hidden rounded-2xl border border-slate-700 bg-slate-800 shadow-lg">
+            <h3 className="border-b border-slate-700 px-5 py-4 text-lg font-bold text-white">Meals to prepare and collect</h3>
+            <div className="overflow-x-auto"><table className="w-full min-w-[850px]">
+                <thead className="bg-slate-700 text-xs uppercase tracking-wide text-slate-200"><tr><th className="px-4 py-3 text-left">Date</th><th className="px-4 py-3 text-left">Time</th><th className="px-4 py-3 text-left">Meal</th><th className="px-4 py-3 text-right">Students</th><th className="px-4 py-3 text-right">Required</th><th className="px-4 py-3 text-right">Collected</th><th className="px-4 py-3 text-right">Remaining</th><th className="px-4 py-3 text-right">Missed</th></tr></thead>
+                <tbody className="divide-y divide-slate-700">{report.meal_workload.map((meal) => <tr key={meal.key} className="text-sm text-slate-200 hover:bg-slate-700/50"><td className="px-4 py-4">{meal.day}<br/><span className="text-xs text-slate-400">{meal.date}</span></td><td className="px-4 py-4">{meal.time}</td><td className="px-4 py-4 font-semibold text-white">{meal.meal_name}</td><td className="px-4 py-4 text-right">{meal.students}</td><td className="px-4 py-4 text-right">{meal.ordered}</td><td className="px-4 py-4 text-right text-emerald-400">{meal.collected}</td><td className="px-4 py-4 text-right text-amber-400">{meal.remaining}</td><td className="px-4 py-4 text-right text-red-400">{meal.missed}</td></tr>)}{report.meal_workload.length === 0 && <tr><td colSpan="8" className="px-5 py-10 text-center text-sm text-slate-400">No meal workload in this period.</td></tr>}</tbody>
+            </table></div>
+        </section>
+
+        <section className="overflow-hidden rounded-2xl border border-slate-700 bg-slate-800 shadow-lg">
+            <h3 className="border-b border-slate-700 px-5 py-4 text-lg font-bold text-white">Collection by student</h3>
+            <div className="max-h-[560px] overflow-auto"><table className="w-full min-w-[950px]">
+                <thead className="sticky top-0 bg-slate-700 text-xs uppercase tracking-wide text-slate-200"><tr><th className="px-4 py-3 text-left">Date / Time</th><th className="px-4 py-3 text-left">Student</th><th className="px-4 py-3 text-left">Class</th><th className="px-4 py-3 text-left">Meal</th><th className="px-4 py-3 text-right">Required</th><th className="px-4 py-3 text-right">Collected</th><th className="px-4 py-3 text-right">Remaining</th><th className="px-4 py-3 text-right">Missed</th></tr></thead>
+                <tbody className="divide-y divide-slate-700">{report.student_workload.map((item) => <tr key={item.id} className="text-sm text-slate-200 hover:bg-slate-700/50"><td className="px-4 py-4">{item.date}<br/><span className="text-xs text-slate-400">{item.time}</span></td><td className="px-4 py-4 font-semibold text-white">{item.student_name}<br/><span className="text-xs font-normal text-slate-400">{item.student_code}</span></td><td className="px-4 py-4">{item.class}</td><td className="px-4 py-4">{item.meal_name}</td><td className="px-4 py-4 text-right">{item.ordered}</td><td className="px-4 py-4 text-right text-emerald-400">{item.collected}</td><td className="px-4 py-4 text-right text-amber-400">{item.remaining}</td><td className="px-4 py-4 text-right text-red-400">{item.missed}</td></tr>)}{report.student_workload.length === 0 && <tr><td colSpan="8" className="px-5 py-10 text-center text-sm text-slate-400">No students require meal collection in this period.</td></tr>}</tbody>
+            </table></div>
+        </section>
+    </>;
+}
+
 export default function Dashboard({ report, schools = [], filters = {} }) {
     const user = usePage().props.auth.user;
     const [form, setForm] = useState({
@@ -45,8 +100,9 @@ export default function Dashboard({ report, schools = [], filters = {} }) {
         return () => window.clearTimeout(timer);
     }, [form.period, form.school_id, form.start_date, form.end_date]);
 
-    const maxRevenue = report ? Math.max(1, ...report.revenue_trend.map((point) => Number(point.revenue))) : 1;
-    const collectionTotal = report ? report.collected + report.missed : 0;
+    const isOwnerReport = report?.type === 'owner';
+    const maxRevenue = isOwnerReport ? Math.max(1, ...report.revenue_trend.map((point) => Number(point.revenue))) : 1;
+    const collectionTotal = isOwnerReport ? report.collected + report.missed : 0;
 
     return (
         <AuthenticatedLayout header={<h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">Dashboard</h2>}>
@@ -58,7 +114,9 @@ export default function Dashboard({ report, schools = [], filters = {} }) {
                         <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{report ? 'Review canteen performance and meal activity.' : 'You are logged in to FYPCanteen.'}</p>
                     </div>
 
-                    {report && <>
+                    {report?.type === 'operator' && <OperatorReport report={report} period={form.period} update={update} />}
+
+                    {isOwnerReport && <>
                         <section className="rounded-xl border border-slate-700 bg-slate-800 p-5 shadow-sm">
                             <div className="mb-4">
                                 <h2 className="text-lg font-bold text-white">Report filters</h2>
