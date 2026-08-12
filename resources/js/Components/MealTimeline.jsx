@@ -29,7 +29,7 @@ const layoutMeals = (meals) => {
         });
 };
 
-export default function MealTimeline({ menuItems, onMealClick, getSelection }) {
+export default function MealTimeline({ menuItems, onMealClick, getSelection, dayDates = {} }) {
     const configuredMeals = menuItems.filter(
         (meal) => meal.available_start_time && meal.available_end_time,
     );
@@ -74,7 +74,10 @@ export default function MealTimeline({ menuItems, onMealClick, getSelection }) {
 
                         return (
                             <div key={day} className="flex border-b border-slate-300 last:border-b-0">
-                                <div className="sticky left-0 z-20 flex w-28 shrink-0 items-center justify-center border-r border-slate-300 bg-amber-50 px-2 text-sm font-bold text-slate-800" style={{ height: rowHeight }}>{dayName(day)}</div>
+                                <div className="sticky left-0 z-20 flex w-28 shrink-0 flex-col items-center justify-center border-r border-slate-300 bg-amber-50 px-2 text-center text-sm font-bold text-slate-800" style={{ height: rowHeight }}>
+                                    <span>{dayName(day)}</span>
+                                    {dayDates[day] && <span className="mt-1 text-xs font-semibold text-slate-600">{dayDates[day]}</span>}
+                                </div>
                                 <div className="relative bg-slate-50" style={{ width: canvasWidth, height: rowHeight }}>
                                     {hours.map((hour, index) => <span key={hour} className="absolute inset-y-0 border-r border-dashed border-slate-300" style={{ left: (index + 1) * hourWidth }} />)}
                                     {entries.map(({ meal, start, end, lane }) => {

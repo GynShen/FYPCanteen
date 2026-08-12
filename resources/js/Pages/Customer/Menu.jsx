@@ -358,6 +358,9 @@ export default function CustomerMenu({ children, menuItems, cartItems }) {
                                             menuItems={paginatedItems}
                                             onMealClick={openMeal}
                                             getSelection={cartItemFor}
+                                            dayDates={Object.fromEntries(
+                                                weekDays.map((day) => [day, shortDate(day)]),
+                                            )}
                                         />
                                     ) : (
                                         <div className="p-10 text-center text-sm text-gray-500">No meals are assigned to this child's school.</div>
