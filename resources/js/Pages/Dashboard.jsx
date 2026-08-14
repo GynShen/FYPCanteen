@@ -4,12 +4,12 @@ import { useEffect, useState } from 'react';
 
 const money = (value) => `RM ${Number(value).toFixed(2)}`;
 
-function MealTable({ title, rows, sortDirection, onSort }) {
+function MealTable({ title, rows }) {
     return (
         <section className="overflow-hidden rounded-2xl border border-slate-700 bg-slate-800 shadow-lg">
             <h3 className="border-b border-slate-700 px-5 py-4 text-lg font-bold text-white">{title}</h3>
             <table className="w-full">
-                <thead className="bg-slate-700/80 text-xs uppercase tracking-wide text-slate-200"><tr><th className="px-5 py-3 text-left">Meal</th><th className="px-5 py-3 text-right"><button type="button" onClick={onSort} className="inline-flex items-center gap-2 font-bold text-slate-100 hover:text-white" title="Sort by quantity">Quantity <span aria-hidden="true">{sortDirection === 'desc' ? '↓' : '↑'}</span></button></th><th className="px-5 py-3 text-right">Revenue</th></tr></thead>
+                <thead className="bg-slate-700/80 text-xs uppercase tracking-wide text-slate-200"><tr><th className="px-5 py-3 text-left">Meal</th><th className="px-5 py-3 text-right">Quantity</th><th className="px-5 py-3 text-right">Revenue</th></tr></thead>
                 <tbody className="divide-y divide-slate-700">
                     {rows.map((meal) => <tr key={meal.id} className="bg-slate-800 text-sm text-slate-200 hover:bg-slate-700/50"><td className="px-5 py-4 font-semibold text-white">{meal.name}</td><td className="px-5 py-4 text-right">{meal.quantity}</td><td className="px-5 py-4 text-right font-semibold text-emerald-400">{money(meal.revenue)}</td></tr>)}
                     {rows.length === 0 && <tr><td colSpan="3" className="px-4 py-10 text-center text-sm text-slate-400">No paid meal orders in this period.</td></tr>}
@@ -124,7 +124,7 @@ function OperatorReport({ report, weekDate, update }) {
             <div className="border-b border-slate-700 px-5 py-4"><h3 className="text-lg font-bold text-white">Meal preparation by size</h3><p className="mt-1 text-sm text-slate-400">Mark a meal batch as prepared after all portions are ready. Click the completed status again to undo it.</p></div>
             <div className="overflow-x-auto"><table className="w-full min-w-[750px]">
                 <thead className="bg-slate-700 text-xs uppercase tracking-wide text-slate-200"><tr><th className="px-5 py-3 text-left">Date</th><th className="px-5 py-3 text-left">Collection time</th><th className="px-5 py-3 text-left">Meal</th><th className="px-5 py-3 text-right">Small</th><th className="px-5 py-3 text-right">Medium</th><th className="px-5 py-3 text-right">Large</th><th className="px-5 py-3 text-right">Total</th><th className="px-5 py-3 text-center">Preparation</th></tr></thead>
-                <tbody className="divide-y divide-slate-700">{report.size_preparation.map((meal) => { const completed = Boolean(preparationStates[meal.key]); const saving = savingPreparation === meal.key; return <tr key={meal.key} className="text-sm text-slate-200 hover:bg-slate-700/50"><td className="px-5 py-4">{meal.day}<br/><span className="text-xs text-slate-400">{meal.date}</span></td><td className="px-5 py-4">{meal.time}</td><td className="px-5 py-4 font-semibold text-white">{meal.meal_name}</td><td className="px-5 py-4 text-right">{meal.S}</td><td className="px-5 py-4 text-right">{meal.M}</td><td className="px-5 py-4 text-right">{meal.L}</td><td className="px-5 py-4 text-right font-bold text-indigo-300">{meal.total}</td><td className="px-5 py-4 text-center"><button type="button" disabled={saving} onClick={() => togglePreparation(meal)} className="min-w-40 rounded-lg px-4 py-2 text-xs font-bold text-white disabled:cursor-wait disabled:opacity-70" style={{ backgroundColor: completed ? '#059669' : '#4f46e5' }}>{saving ? 'Saving...' : completed ? 'Prepared ✓' : 'Complete Preparation'}</button></td></tr>; })}{report.size_preparation.length === 0 && <tr><td colSpan="8" className="px-5 py-10 text-center text-sm text-slate-400">No meals need preparation in this period.</td></tr>}</tbody>
+                <tbody className="divide-y divide-slate-700">{report.size_preparation.map((meal) => { const completed = Boolean(preparationStates[meal.key]); const saving = savingPreparation === meal.key; return <tr key={meal.key} className="text-sm text-slate-200 hover:bg-slate-700/50"><td className="px-5 py-4">{meal.day}<br /><span className="text-xs text-slate-400">{meal.date}</span></td><td className="px-5 py-4">{meal.time}</td><td className="px-5 py-4 font-semibold text-white">{meal.meal_name}</td><td className="px-5 py-4 text-right">{meal.S}</td><td className="px-5 py-4 text-right">{meal.M}</td><td className="px-5 py-4 text-right">{meal.L}</td><td className="px-5 py-4 text-right font-bold text-indigo-300">{meal.total}</td><td className="px-5 py-4 text-center"><button type="button" disabled={saving} onClick={() => togglePreparation(meal)} className="min-w-40 rounded-lg px-4 py-2 text-xs font-bold text-white disabled:cursor-wait disabled:opacity-70" style={{ backgroundColor: completed ? '#059669' : '#4f46e5' }}>{saving ? 'Saving...' : completed ? 'Prepared ✓' : 'Complete Preparation'}</button></td></tr>; })}{report.size_preparation.length === 0 && <tr><td colSpan="8" className="px-5 py-10 text-center text-sm text-slate-400">No meals need preparation in this period.</td></tr>}</tbody>
             </table></div>
         </section>
 
@@ -140,7 +140,7 @@ function OperatorReport({ report, weekDate, update }) {
             <h3 className="border-b border-slate-700 px-5 py-4 text-lg font-bold text-white">Meals to prepare and collect</h3>
             <div className="overflow-x-auto"><table className="w-full min-w-[850px]">
                 <thead className="bg-slate-700 text-xs uppercase tracking-wide text-slate-200"><tr><th className="px-4 py-3 text-left">Date</th><th className="px-4 py-3 text-left">Time</th><th className="px-4 py-3 text-left">Meal</th><th className="px-4 py-3 text-right">Students</th><th className="px-4 py-3 text-right">Required</th><th className="px-4 py-3 text-right">Collected</th><th className="px-4 py-3 text-right">Remaining</th><th className="px-4 py-3 text-right">Missed</th></tr></thead>
-                <tbody className="divide-y divide-slate-700">{report.meal_workload.map((meal) => <tr key={meal.key} className="text-sm text-slate-200 hover:bg-slate-700/50"><td className="px-4 py-4">{meal.day}<br/><span className="text-xs text-slate-400">{meal.date}</span></td><td className="px-4 py-4">{meal.time}</td><td className="px-4 py-4 font-semibold text-white">{meal.meal_name}</td><td className="px-4 py-4 text-right">{meal.students}</td><td className="px-4 py-4 text-right">{meal.ordered}</td><td className="px-4 py-4 text-right text-emerald-400">{meal.collected}</td><td className="px-4 py-4 text-right text-amber-400">{meal.remaining}</td><td className="px-4 py-4 text-right text-red-400">{meal.missed}</td></tr>)}{report.meal_workload.length === 0 && <tr><td colSpan="8" className="px-5 py-10 text-center text-sm text-slate-400">No meal workload in this period.</td></tr>}</tbody>
+                <tbody className="divide-y divide-slate-700">{report.meal_workload.map((meal) => <tr key={meal.key} className="text-sm text-slate-200 hover:bg-slate-700/50"><td className="px-4 py-4">{meal.day}<br /><span className="text-xs text-slate-400">{meal.date}</span></td><td className="px-4 py-4">{meal.time}</td><td className="px-4 py-4 font-semibold text-white">{meal.meal_name}</td><td className="px-4 py-4 text-right">{meal.students}</td><td className="px-4 py-4 text-right">{meal.ordered}</td><td className="px-4 py-4 text-right text-emerald-400">{meal.collected}</td><td className="px-4 py-4 text-right text-amber-400">{meal.remaining}</td><td className="px-4 py-4 text-right text-red-400">{meal.missed}</td></tr>)}{report.meal_workload.length === 0 && <tr><td colSpan="8" className="px-5 py-10 text-center text-sm text-slate-400">No meal workload in this period.</td></tr>}</tbody>
             </table></div>
         </section>
 
@@ -148,7 +148,7 @@ function OperatorReport({ report, weekDate, update }) {
             <h3 className="border-b border-slate-700 px-5 py-4 text-lg font-bold text-white">Collection by student</h3>
             <div className="max-h-[560px] overflow-auto"><table className="w-full min-w-[950px]">
                 <thead className="sticky top-0 bg-slate-700 text-xs uppercase tracking-wide text-slate-200"><tr><th className="px-4 py-3 text-left">Date / Time</th><th className="px-4 py-3 text-left">Student</th><th className="px-4 py-3 text-left">Class</th><th className="px-4 py-3 text-left">Meal</th><th className="px-4 py-3 text-right">Required</th><th className="px-4 py-3 text-right">Collected</th><th className="px-4 py-3 text-right">Remaining</th><th className="px-4 py-3 text-right">Missed</th></tr></thead>
-                <tbody className="divide-y divide-slate-700">{report.student_workload.map((item) => <tr key={item.id} className="text-sm text-slate-200 hover:bg-slate-700/50"><td className="px-4 py-4">{item.date}<br/><span className="text-xs text-slate-400">{item.time}</span></td><td className="px-4 py-4 font-semibold text-white">{item.student_name}<br/><span className="text-xs font-normal text-slate-400">{item.student_code}</span></td><td className="px-4 py-4">{item.class}</td><td className="px-4 py-4">{item.meal_name}</td><td className="px-4 py-4 text-right">{item.ordered}</td><td className="px-4 py-4 text-right text-emerald-400">{item.collected}</td><td className="px-4 py-4 text-right text-amber-400">{item.remaining}</td><td className="px-4 py-4 text-right text-red-400">{item.missed}</td></tr>)}{report.student_workload.length === 0 && <tr><td colSpan="8" className="px-5 py-10 text-center text-sm text-slate-400">No students require meal collection in this period.</td></tr>}</tbody>
+                <tbody className="divide-y divide-slate-700">{report.student_workload.map((item) => <tr key={item.id} className="text-sm text-slate-200 hover:bg-slate-700/50"><td className="px-4 py-4">{item.date}<br /><span className="text-xs text-slate-400">{item.time}</span></td><td className="px-4 py-4 font-semibold text-white">{item.student_name}<br /><span className="text-xs font-normal text-slate-400">{item.student_code}</span></td><td className="px-4 py-4">{item.class}</td><td className="px-4 py-4">{item.meal_name}</td><td className="px-4 py-4 text-right">{item.ordered}</td><td className="px-4 py-4 text-right text-emerald-400">{item.collected}</td><td className="px-4 py-4 text-right text-amber-400">{item.remaining}</td><td className="px-4 py-4 text-right text-red-400">{item.missed}</td></tr>)}{report.student_workload.length === 0 && <tr><td colSpan="8" className="px-5 py-10 text-center text-sm text-slate-400">No students require meal collection in this period.</td></tr>}</tbody>
             </table></div>
         </section>
     </>;
@@ -240,9 +240,22 @@ export default function Dashboard({ report, schools = [], filters = {} }) {
         child_id: filters.child_id ?? '',
         week_date: filters.week_date ?? '',
     });
-    const [mealSortDirection, setMealSortDirection] = useState('desc');
 
     const update = (name, value) => setForm((current) => ({ ...current, [name]: value }));
+    const updateExactPeriod = (name, value) => setForm((current) => ({
+        ...current,
+        period: 'custom',
+        [name]: value,
+    }));
+
+    useEffect(() => {
+        if (report?.type !== 'owner' || form.period === 'custom') return;
+        setForm((current) => ({
+            ...current,
+            start_date: filters.start_date ?? current.start_date,
+            end_date: filters.end_date ?? current.end_date,
+        }));
+    }, [filters.start_date, filters.end_date]);
 
     useEffect(() => {
         if (!report) return undefined;
@@ -262,11 +275,10 @@ export default function Dashboard({ report, schools = [], filters = {} }) {
     const isOwnerReport = report?.type === 'owner';
     const maxRevenue = isOwnerReport ? Math.max(1, ...report.revenue_trend.map((point) => Number(point.revenue))) : 1;
     const collectionTotal = isOwnerReport ? report.collected + report.missed : 0;
-    const sortedMealRankings = isOwnerReport
-        ? [...report.meal_rankings].sort((first, second) => mealSortDirection === 'desc'
-            ? Number(second.quantity) - Number(first.quantity)
-            : Number(first.quantity) - Number(second.quantity))
-        : [];
+    const sortedMealRankings = isOwnerReport ? [...report.meal_rankings].sort((first, second) => Number(second.quantity) - Number(first.quantity)) : [];
+    const rankingSplit = Math.ceil(sortedMealRankings.length / 2);
+    const famousMeals = sortedMealRankings.slice(0, rankingSplit);
+    const lessFamousMeals = sortedMealRankings.slice(rankingSplit).reverse();
 
     return (
         <AuthenticatedLayout header={<h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">Dashboard</h2>}>
@@ -288,9 +300,9 @@ export default function Dashboard({ report, schools = [], filters = {} }) {
                                 <p className="text-sm text-slate-400">The report refreshes automatically after you change a filter.</p>
                             </div>
                             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                                <label className="text-sm font-semibold text-slate-200">Period<select value={form.period} onChange={(event) => update('period', event.target.value)} className="mt-1 block w-full rounded-md border-slate-300 bg-white text-slate-900"><option value="today">Today</option><option value="week">This week</option><option value="month">This month</option><option value="custom">Custom dates</option></select></label>
                                 <label className="text-sm font-semibold text-slate-200">School<select value={form.school_id} onChange={(event) => update('school_id', event.target.value)} className="mt-1 block w-full rounded-md border-slate-300 bg-white text-slate-900"><option value="">All schools</option>{schools.map((school) => <option key={school.id} value={school.id}>{school.name}</option>)}</select></label>
-                                {form.period === 'custom' && <><label className="text-sm font-semibold text-slate-200">Start date<input type="date" value={form.start_date} onChange={(event) => update('start_date', event.target.value)} className="mt-1 block w-full rounded-md border-slate-300 text-slate-900" /></label><label className="text-sm font-semibold text-slate-200">End date<input type="date" value={form.end_date} onChange={(event) => update('end_date', event.target.value)} className="mt-1 block w-full rounded-md border-slate-300 text-slate-900" /></label></>}
+                                <label className="text-sm font-semibold text-slate-200">Period<select value={form.period} onChange={(event) => update('period', event.target.value)} className="mt-1 block w-full rounded-md border-slate-300 bg-white text-slate-900"><option value="today">Today</option><option value="week">This week</option><option value="month">This month</option><option value="custom">Exact period</option></select></label>
+                                <label className="text-sm font-semibold text-slate-200">Start date<input type="date" value={form.start_date} onChange={(event) => updateExactPeriod('start_date', event.target.value)} className="mt-1 block w-full rounded-md border-slate-300 bg-white text-slate-900" /></label><label className="text-sm font-semibold text-slate-200">End date<input type="date" value={form.end_date} onChange={(event) => updateExactPeriod('end_date', event.target.value)} className="mt-1 block w-full rounded-md border-slate-300 bg-white text-slate-900" /></label>
                             </div>
                         </section>
 
@@ -303,6 +315,17 @@ export default function Dashboard({ report, schools = [], filters = {} }) {
                                 ['Collection rate', `${report.collection_rate}%`, '#a78bfa'],
                             ].map(([label, value, accent]) => <div key={label} className="rounded-2xl border border-slate-700 border-t-4 bg-slate-800 p-5 shadow-lg" style={{ borderTopColor: accent }}><p className="text-sm font-semibold text-slate-300">{label}</p><p className="mt-2 text-3xl font-bold" style={{ color: accent }}>{value}</p></div>)}
                         </div>
+
+                        <section className="overflow-hidden rounded-2xl border border-slate-700 bg-slate-800 shadow-lg">
+                            <div className="border-b border-slate-700 px-5 py-4">
+                                <h3 className="text-lg font-bold text-white">Meals to prepare for next week</h3>
+                                <p className="mt-1 text-sm text-slate-400">{report.next_week_start} – {report.next_week_end} · Paid orders grouped by school, meal, and size.</p>
+                            </div>
+                            <div className="overflow-x-auto"><table className="w-full min-w-[900px]">
+                                <thead className="bg-slate-700 text-xs uppercase tracking-wide text-slate-200"><tr><th className="px-5 py-3 text-left">School</th><th className="px-5 py-3 text-left">Date</th><th className="px-5 py-3 text-left">Collection time</th><th className="px-5 py-3 text-left">Meal</th><th className="px-5 py-3 text-right">Small</th><th className="px-5 py-3 text-right">Medium</th><th className="px-5 py-3 text-right">Large</th><th className="px-5 py-3 text-right">Total</th></tr></thead>
+                                <tbody className="divide-y divide-slate-700">{report.next_week_preparation.map((meal) => <tr key={meal.key} className="text-sm text-slate-200 hover:bg-slate-700/50"><td className="px-5 py-4 font-semibold text-white">{meal.school}</td><td className="px-5 py-4">{meal.day}<br /><span className="text-xs text-slate-400">{meal.date}</span></td><td className="px-5 py-4">{meal.time}</td><td className="px-5 py-4 font-semibold text-white">{meal.meal}</td><td className="px-5 py-4 text-right">{meal.S}</td><td className="px-5 py-4 text-right">{meal.M}</td><td className="px-5 py-4 text-right">{meal.L}</td><td className="px-5 py-4 text-right font-bold text-indigo-300">{meal.total}</td></tr>)}{report.next_week_preparation.length === 0 && <tr><td colSpan="8" className="px-5 py-10 text-center text-sm text-slate-400">No paid meals need preparation next week.</td></tr>}</tbody>
+                            </table></div>
+                        </section>
 
                         <section className="overflow-hidden rounded-2xl border border-slate-700 bg-slate-800 shadow-lg">
                             <div className="border-b border-slate-700 px-5 py-4">
@@ -342,7 +365,7 @@ export default function Dashboard({ report, schools = [], filters = {} }) {
                             </section>
                         </div>
 
-                        <MealTable title="Meal ordering ranking" rows={sortedMealRankings} sortDirection={mealSortDirection} onSort={() => setMealSortDirection((current) => current === 'desc' ? 'asc' : 'desc')} />
+                        <div className="grid gap-6 lg:grid-cols-2"><MealTable title="Famous meals" rows={famousMeals} /><MealTable title="Less-famous meals" rows={lessFamousMeals} /></div>
 
                         <section className="overflow-hidden rounded-2xl border border-slate-700 bg-slate-800 shadow-lg">
                             <h3 className="border-b border-slate-700 px-5 py-4 text-lg font-bold text-white">Still-hungry reports</h3>

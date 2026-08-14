@@ -132,6 +132,47 @@ class DashboardController extends Controller
                 ];
             });
 
+        $nextWeekStart = $today->copy()->addWeek()->startOfWeek()->startOfDay();
+        $nextWeekEnd = $nextWeekStart->copy()->endOfWeek()->endOfDay();
+        $nextWeekPreparation = DB::table('order_items as oi')
+            ->join('orders as o', 'o.id', '=', 'oi.order_id')
+            ->join('payments as p', 'p.order_id', '=', 'o.id')
+            ->join('students as s', 's.id', '=', 'oi.student_id')
+            ->join('schools as sc', 'sc.id', '=', 's.school_id')
+            ->join('menu_items as mi', 'mi.id', '=', 'oi.menu_item_id')
+            ->where('p.status', 'paid')
+            ->whereBetween('oi.scheduled_time', [$nextWeekStart, $nextWeekEnd])
+            ->when($schoolId, fn ($query) => $query->where('s.school_id', $schoolId))
+            ->get([
+                's.school_id', 'sc.name as school_name', 'oi.menu_item_id', 'mi.name as meal_name',
+                'mi.available_start_time', 'mi.available_end_time', 'oi.scheduled_time', 'oi.size', 'oi.quantity',
+            ])
+            ->groupBy(function ($item): string {
+                $date = Carbon::parse($item->scheduled_time, 'Asia/Kuala_Lumpur')->toDateString();
+
+                return $item->school_id.'-'.$date.'-'.$item->menu_item_id;
+            })
+            ->map(function ($items): array {
+                $first = $items->first();
+                $date = Carbon::parse($first->scheduled_time, 'Asia/Kuala_Lumpur');
+                $formatTime = fn ($time) => $time ? Carbon::parse($time)->format('g:i A') : '-';
+
+                return [
+                    'key' => $first->school_id.'-'.$date->toDateString().'-'.$first->menu_item_id,
+                    'school' => $first->school_name,
+                    'date' => $date->toDateString(),
+                    'day' => $date->format('l'),
+                    'time' => $formatTime($first->available_start_time).' – '.$formatTime($first->available_end_time),
+                    'meal' => $first->meal_name,
+                    'S' => (int) $items->where('size', 'S')->sum('quantity'),
+                    'M' => (int) $items->where('size', 'M')->sum('quantity'),
+                    'L' => (int) $items->where('size', 'L')->sum('quantity'),
+                    'total' => (int) $items->sum('quantity'),
+                ];
+            })
+            ->sortBy(fn ($item) => $item['date'].'-'.$item['school'].'-'.$item['time'].'-'.$item['meal'])
+            ->values();
+
         return inertia('Dashboard', [
             'schools' => School::query()->orderBy('name')->get(['id', 'name']),
             'filters' => [
@@ -152,6 +193,9 @@ class DashboardController extends Controller
                 'still_hungry' => $stillHungry,
                 'preparation_status' => $preparationSchools,
                 'preparation_date' => $today->toDateString(),
+                'next_week_preparation' => $nextWeekPreparation,
+                'next_week_start' => $nextWeekStart->toDateString(),
+                'next_week_end' => $nextWeekEnd->toDateString(),
             ],
         ]);
     }
@@ -452,8 +496,12 @@ class DashboardController extends Controller
             'today' => [$now->copy()->startOfDay(), $now->copy()->endOfDay()],
             'week' => [$now->copy()->startOfWeek(), $now->copy()->endOfWeek()],
             'custom' => [
-                Carbon::parse($validated['start_date'] ?? $now->toDateString(), 'Asia/Kuala_Lumpur')->startOfDay(),
-                Carbon::parse($validated['end_date'] ?? $now->toDateString(), 'Asia/Kuala_Lumpur')->endOfDay(),
+                isset($validated['start_date'])
+                    ? Carbon::parse($validated['start_date'], 'Asia/Kuala_Lumpur')->startOfDay()
+                    : $now->copy()->startOfDay(),
+                isset($validated['end_date'])
+                    ? Carbon::parse($validated['end_date'], 'Asia/Kuala_Lumpur')->endOfDay()
+                    : $now->copy()->endOfDay(),
             ],
             default => [$now->copy()->startOfMonth(), $now->copy()->endOfMonth()],
         };
