@@ -29,7 +29,7 @@ class MealCollectionController extends Controller
 
         $student = Student::query()
             ->where('qr_code', trim($validated['qr_code']))
-            ->with('school:id,name,is_active')
+            ->with(['school:id,name,is_active', 'child.user'])
             ->first();
 
         if (! $student) {
@@ -49,8 +49,60 @@ class MealCollectionController extends Controller
             ->whereHas('order.payment', fn ($query) => $query->where('status', 'paid'))
             ->with(['menuItem:id,name,image_url,available_start_time,available_end_time', 'collection', 'studentMealEvents:id,order_item_id,event_type'])
             ->orderBy('scheduled_time')
-            ->get()
-            ->map(fn (OrderItem $item) => $this->serializeItem($item, $now));
+            ->get();
+
+        $collectedNow = [];
+        DB::transaction(function () use ($items, $request, $now, &$collectedNow): void {
+            foreach ($items as $item) {
+                $availability = $this->availability($item, $now);
+                $alreadyCollected = (int) ($item->collection?->collected_quantity ?? 0);
+
+                if (! in_array($availability, ['open', 'grace_period'], true) || $alreadyCollected >= (int) $item->quantity) {
+                    continue;
+                }
+
+                $lockedItem = OrderItem::query()->lockForUpdate()->findOrFail($item->id);
+                $collection = MealCollection::query()->lockForUpdate()->firstOrNew(['order_item_id' => $lockedItem->id]);
+                $previousQuantity = (int) ($collection->collected_quantity ?? 0);
+
+                if ($previousQuantity >= (int) $lockedItem->quantity) {
+                    continue;
+                }
+
+                $collection->fill([
+                    'collected_quantity' => (int) $lockedItem->quantity,
+                    'status' => 'collected',
+                    'is_late_collection' => $collection->is_late_collection || $availability === 'grace_period',
+                    'late_reason' => $collection->late_reason,
+                    'collected_at' => $now,
+                    'collected_by' => $request->user()->id,
+                ])->save();
+
+                $collectedNow[$item->id] = [
+                    'quantity' => (int) $lockedItem->quantity - $previousQuantity,
+                    'collection_id' => $collection->id,
+                ];
+            }
+        });
+
+        $items->each(function (OrderItem $item) use ($student, $collectedNow): void {
+            $item->load('collection');
+            if (! isset($collectedNow[$item->id])) {
+                return;
+            }
+
+            $student->child?->user?->notify(new CustomerEventNotification([
+                'event' => 'meal_received',
+                'title' => 'Meal received',
+                'message' => $student->name.' collected '.$collectedNow[$item->id]['quantity'].' × '.$item->menuItem->name.'.',
+                'student_id' => $student->id,
+                'order_item_id' => $item->id,
+                'meal_collection_id' => $collectedNow[$item->id]['collection_id'],
+            ]));
+        });
+
+        $serializedItems = $items->map(fn (OrderItem $item) => $this->serializeItem($item, $now));
+        $collectedQuantity = collect($collectedNow)->sum('quantity');
 
         return response()->json([
             'student' => [
@@ -61,7 +113,11 @@ class MealCollectionController extends Controller
                 'school' => $student->school?->name,
             ],
             'date' => $now->format('d/m/Y'),
-            'items' => $items,
+            'items' => $serializedItems,
+            'collected_quantity' => $collectedQuantity,
+            'message' => $collectedQuantity > 0
+                ? $collectedQuantity.' meal(s) automatically marked as collected.'
+                : 'No currently collectible meals were changed.',
         ]);
     }
 
@@ -70,7 +126,6 @@ class MealCollectionController extends Controller
         $this->authorizeManager($request);
         $validated = $request->validate([
             'quantity' => ['required', 'integer', 'min:1'],
-            'late_reason' => ['nullable', 'string', 'max:1000'],
         ]);
 
         $now = Carbon::now('Asia/Kuala_Lumpur');
@@ -84,12 +139,6 @@ class MealCollectionController extends Controller
         abort_unless(in_array($availability, ['open', 'grace_period'], true), 422, $availability === 'upcoming'
             ? 'This meal collection time has not started.'
             : 'This meal collection time and its 15-minute grace period have ended.');
-
-        if ($availability === 'grace_period' && blank($validated['late_reason'] ?? null)) {
-            throw ValidationException::withMessages([
-                'late_reason' => 'A reason is required for collection during the grace period.',
-            ]);
-        }
 
         $collection = DB::transaction(function () use ($request, $orderItem, $validated, $now, $availability): MealCollection {
             $lockedItem = OrderItem::query()->lockForUpdate()->findOrFail($orderItem->id);
@@ -109,9 +158,7 @@ class MealCollectionController extends Controller
                 'collected_quantity' => $newQuantity,
                 'status' => $newQuantity === (int) $lockedItem->quantity ? 'collected' : 'partially_collected',
                 'is_late_collection' => $collection->is_late_collection || $availability === 'grace_period',
-                'late_reason' => $availability === 'grace_period'
-                    ? $validated['late_reason']
-                    : $collection->late_reason,
+                'late_reason' => $collection->late_reason,
                 'collected_at' => $now,
                 'collected_by' => $request->user()->id,
             ])->save();
@@ -195,7 +242,7 @@ class MealCollectionController extends Controller
             'end_time' => $this->formatTime($item->menuItem?->available_end_time),
             'status' => $status,
             'can_collect' => in_array($availability, ['open', 'grace_period'], true) && $collected < (int) $item->quantity,
-            'requires_late_reason' => $availability === 'grace_period',
+            'requires_late_reason' => false,
             'late_reason' => $item->collection?->late_reason,
             'feedback_sent' => $item->studentMealEvents?->contains('event_type', 'still_hungry') ?? false,
         ];
