@@ -8,13 +8,13 @@ function MealTable({ title, rows }) {
     return (
         <section className="overflow-hidden rounded-2xl border border-slate-700 bg-slate-800 shadow-lg">
             <h3 className="border-b border-slate-700 px-5 py-4 text-lg font-bold text-white">{title}</h3>
-            <table className="w-full">
-                <thead className="bg-slate-700/80 text-xs uppercase tracking-wide text-slate-200"><tr><th className="px-5 py-3 text-left">Meal</th><th className="px-5 py-3 text-right">Quantity</th><th className="px-5 py-3 text-right">Revenue</th></tr></thead>
+            <div className="max-h-[307px] overflow-auto"><table className="w-full">
+                <thead className="sticky top-0 z-10 bg-slate-700 text-xs uppercase tracking-wide text-slate-200"><tr><th className="px-5 py-3 text-left">Meal</th><th className="px-5 py-3 text-right">Quantity</th><th className="px-5 py-3 text-right">Revenue</th></tr></thead>
                 <tbody className="divide-y divide-slate-700">
                     {rows.map((meal) => <tr key={meal.id} className="bg-slate-800 text-sm text-slate-200 hover:bg-slate-700/50"><td className="px-5 py-4 font-semibold text-white">{meal.name}</td><td className="px-5 py-4 text-right">{meal.quantity}</td><td className="px-5 py-4 text-right font-semibold text-emerald-400">{money(meal.revenue)}</td></tr>)}
                     {rows.length === 0 && <tr><td colSpan="3" className="px-4 py-10 text-center text-sm text-slate-400">No paid meal orders in this period.</td></tr>}
                 </tbody>
-            </table>
+            </table></div>
         </section>
     );
 }
@@ -332,8 +332,8 @@ export default function Dashboard({ report, schools = [], filters = {} }) {
                                 <h3 className="text-lg font-bold text-white">Meals to prepare for next week</h3>
                                 <p className="mt-1 text-sm text-slate-400">{report.next_week_start} – {report.next_week_end} · Paid orders grouped by school, meal, and size.</p>
                             </div>
-                            <div className="overflow-x-auto"><table className="w-full min-w-[900px]">
-                                <thead className="bg-slate-700 text-xs uppercase tracking-wide text-slate-200"><tr><th className="px-5 py-3 text-left">School</th><th className="px-5 py-3 text-left">Date</th><th className="px-5 py-3 text-left">Collection time</th><th className="px-5 py-3 text-left">Meal</th><th className="px-5 py-3 text-right">Small</th><th className="px-5 py-3 text-right">Medium</th><th className="px-5 py-3 text-right">Large</th><th className="px-5 py-3 text-right">Total</th></tr></thead>
+                            <div className="max-h-[420px] overflow-auto"><table className="w-full min-w-[900px]">
+                                <thead className="sticky top-0 z-10 bg-slate-700 text-xs uppercase tracking-wide text-slate-200"><tr><th className="px-5 py-3 text-left">School</th><th className="px-5 py-3 text-left">Date</th><th className="px-5 py-3 text-left">Collection time</th><th className="px-5 py-3 text-left">Meal</th><th className="px-5 py-3 text-right">Small</th><th className="px-5 py-3 text-right">Medium</th><th className="px-5 py-3 text-right">Large</th><th className="px-5 py-3 text-right">Total</th></tr></thead>
                                 <tbody className="divide-y divide-slate-700">{report.next_week_preparation.map((meal) => <tr key={meal.key} className="text-sm text-slate-200 hover:bg-slate-700/50"><td className="px-5 py-4 font-semibold text-white">{meal.school}</td><td className="px-5 py-4">{meal.day}<br /><span className="text-xs text-slate-400">{meal.date}</span></td><td className="px-5 py-4">{meal.time}</td><td className="px-5 py-4 font-semibold text-white">{meal.meal}</td><td className="px-5 py-4 text-right">{meal.S}</td><td className="px-5 py-4 text-right">{meal.M}</td><td className="px-5 py-4 text-right">{meal.L}</td><td className="px-5 py-4 text-right font-bold text-indigo-300">{meal.total}</td></tr>)}{report.next_week_preparation.length === 0 && <tr><td colSpan="8" className="px-5 py-10 text-center text-sm text-slate-400">No paid meals need preparation next week.</td></tr>}</tbody>
                             </table></div>
                         </section>
@@ -380,7 +380,7 @@ export default function Dashboard({ report, schools = [], filters = {} }) {
 
                         <section className="overflow-hidden rounded-2xl border border-slate-700 bg-slate-800 shadow-lg">
                             <h3 className="border-b border-slate-700 px-5 py-4 text-lg font-bold text-white">Still-hungry reports</h3>
-                            <table className="w-full"><thead className="bg-amber-500/15 text-xs uppercase tracking-wide text-amber-300"><tr><th className="px-5 py-3 text-left">Meal</th><th className="px-5 py-3 text-right">Reports</th></tr></thead><tbody className="divide-y divide-slate-700">{report.still_hungry.map((meal) => <tr key={meal.id} className="bg-slate-800 text-sm text-slate-200 hover:bg-slate-700/50"><td className="px-5 py-4 font-semibold text-white">{meal.name}</td><td className="px-5 py-4 text-right font-bold text-amber-400">{meal.reports}</td></tr>)}{report.still_hungry.length === 0 && <tr><td colSpan="2" className="px-4 py-10 text-center text-sm text-slate-400">No still-hungry feedback in this period.</td></tr>}</tbody></table>
+                            <div className="max-h-[420px] overflow-auto"><table className="w-full"><thead className="sticky top-0 z-10 bg-amber-950 text-xs uppercase tracking-wide text-amber-300"><tr><th className="px-5 py-3 text-left">Meal</th><th className="px-5 py-3 text-right">Reports</th></tr></thead><tbody className="divide-y divide-slate-700">{report.still_hungry.map((meal) => <tr key={meal.id} className="bg-slate-800 text-sm text-slate-200 hover:bg-slate-700/50"><td className="px-5 py-4 font-semibold text-white">{meal.name}</td><td className="px-5 py-4 text-right font-bold text-amber-400">{meal.reports}</td></tr>)}{report.still_hungry.length === 0 && <tr><td colSpan="2" className="px-4 py-10 text-center text-sm text-slate-400">No still-hungry feedback in this period.</td></tr>}</tbody></table></div>
                         </section>
                     </>}
                 </div>
