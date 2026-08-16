@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\School;
+use App\Rules\MalaysianPhoneNumber;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -38,10 +39,13 @@ class OperatorController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $this->authorizeOwner($request);
+        $request->merge([
+            'phone_number' => MalaysianPhoneNumber::normalize($request->input('phone_number')),
+        ]);
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'username' => ['required', 'string', 'min:3', 'max:50', 'alpha_dash', Rule::unique(User::class)],
-            'phone_number' => ['required', 'string', 'max:255', Rule::unique(User::class)],
+            'phone_number' => ['required', new MalaysianPhoneNumber, Rule::unique(User::class)],
             'password' => ['required', 'confirmed', Password::defaults()],
             'school_id' => ['required', 'integer', Rule::exists('schools', 'id')->where('is_active', true)],
         ]);
@@ -60,10 +64,13 @@ class OperatorController extends Controller
     {
         $this->authorizeOwner($request);
         $this->ensureOperator($operator);
+        $request->merge([
+            'phone_number' => MalaysianPhoneNumber::normalize($request->input('phone_number')),
+        ]);
         $operator->update($request->validate([
             'name' => ['required', 'string', 'max:255'],
             'username' => ['required', 'string', 'min:3', 'max:50', 'alpha_dash', Rule::unique(User::class)->ignore($operator->id)],
-            'phone_number' => ['required', 'string', 'max:255', Rule::unique(User::class)->ignore($operator->id)],
+            'phone_number' => ['required', new MalaysianPhoneNumber, Rule::unique(User::class)->ignore($operator->id)],
             'school_id' => ['required', 'integer', Rule::exists('schools', 'id')->where('is_active', true)],
         ]) + ['email' => null]);
         $this->clearSessions($operator);

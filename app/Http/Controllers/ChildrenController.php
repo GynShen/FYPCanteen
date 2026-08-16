@@ -18,6 +18,8 @@ class ChildrenController extends Controller
     public function index(Request $request)
     {
         $this->authorizeCustomer($request);
+        $this->linkStudentsByGuardianPhone($request);
+
         return inertia('Customer/ChildrenManagement', [
             'children' => $request->user()->children()->with('student.school')->latest()->get(),
             'schools' => School::where('is_active', true)->orderBy('name')->get(['id', 'name']),
@@ -29,7 +31,11 @@ class ChildrenController extends Controller
         $this->authorizeCustomer($request);
         $validated = $this->validateDetails($request);
         DB::transaction(function () use ($request, $validated): void {
-            $student = Student::create([...$validated, 'qr_code' => (string) Str::uuid()]);
+            $student = Student::create([
+                ...$validated,
+                'guardian_phone_number' => $request->user()->phone_number,
+                'qr_code' => (string) Str::uuid(),
+            ]);
             $request->user()->children()->create(['student_id' => $student->id]);
         });
         return back()->with('success', 'Child added and ready for meal ordering.');
@@ -45,7 +51,14 @@ class ChildrenController extends Controller
     public function destroy(Request $request, Children $child): RedirectResponse
     {
         $this->authorizeCustomer($request); $this->authorizeOwnership($request, $child);
-        $child->delete();
+
+        DB::transaction(function () use ($child): void {
+            // Keep the official student record, QR code, and historical orders, but
+            // remove the phone match so this relationship is not recreated on refresh.
+            $child->student()->update(['guardian_phone_number' => null]);
+            $child->delete();
+        });
+
         return back()->with('success', 'Child removed from your account.');
     }
 
@@ -67,4 +80,50 @@ class ChildrenController extends Controller
 
     private function authorizeCustomer(Request $request): void { abort_unless($request->user()?->hasRole('customer'), 403); }
     private function authorizeOwnership(Request $request, Children $child): void { abort_unless($child->user_id === $request->user()->id, 403); }
+
+    private function linkStudentsByGuardianPhone(Request $request): void
+    {
+        $phoneNumbers = $this->phoneNumberVariants($request->user()->phone_number);
+
+        if ($phoneNumbers === []) {
+            return;
+        }
+
+        $normalizedGuardianPhone = "REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(guardian_phone_number, '-', ''), ' ', ''), '+', ''), '(', ''), ')', '')";
+
+        $studentIds = Student::query()
+            ->whereNotNull('guardian_phone_number')
+            ->whereRaw($normalizedGuardianPhone.' in ('.implode(', ', array_fill(0, count($phoneNumbers), '?')).')', $phoneNumbers)
+            ->whereDoesntHave('child')
+            ->pluck('id');
+
+        foreach ($studentIds as $studentId) {
+            Children::query()->firstOrCreate([
+                'user_id' => $request->user()->id,
+                'student_id' => $studentId,
+            ]);
+        }
+    }
+
+    private function phoneNumberVariants(?string $phoneNumber): array
+    {
+        $digits = preg_replace('/\D+/', '', (string) $phoneNumber);
+
+        if ($digits === '') {
+            return [];
+        }
+
+        if (str_starts_with($digits, '60')) {
+            $local = '0'.substr($digits, 2);
+            $international = $digits;
+        } elseif (str_starts_with($digits, '0')) {
+            $local = $digits;
+            $international = '60'.substr($digits, 1);
+        } else {
+            $local = '0'.$digits;
+            $international = '60'.$digits;
+        }
+
+        return array_values(array_unique([$local, $international]));
+    }
 }

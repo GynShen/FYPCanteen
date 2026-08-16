@@ -7,6 +7,20 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, router, useForm } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
 
+const formatPhoneNumber = (value) => {
+    let digits = String(value ?? '').replace(/\D/g, '');
+
+    if (digits.startsWith('60')) {
+        digits = `0${digits.slice(2)}`;
+    }
+
+    if (digits.length <= 3) {
+        return digits;
+    }
+
+    return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+};
+
 export default function StudentManagement({
     students,
     schools,
@@ -23,6 +37,7 @@ export default function StudentManagement({
         name: '',
         class: '',
         school_id: schools[0]?.id ?? '',
+        guardian_phone_number: '',
     });
 
     useEffect(() => {
@@ -59,6 +74,9 @@ export default function StudentManagement({
             name: student.name,
             class: student.class,
             school_id: student.school_id,
+            guardian_phone_number: formatPhoneNumber(
+                student.guardian_phone_number,
+            ),
         });
         window.setTimeout(
             () =>
@@ -70,6 +88,23 @@ export default function StudentManagement({
     };
     const submit = (event) => {
         event.preventDefault();
+
+        const normalizePhone = (value) => {
+            const digits = String(value ?? '').replace(/\D/g, '');
+            return digits.startsWith('60') ? `0${digits.slice(2)}` : digits;
+        };
+
+        if (
+            editing?.child &&
+            normalizePhone(editing.guardian_phone_number) !==
+                normalizePhone(form.data.guardian_phone_number) &&
+            !window.confirm(
+                'Changing the guardian phone number will unlink this student from the current parent. Continue?',
+            )
+        ) {
+            return;
+        }
+
         const options = { preserveScroll: true, onSuccess: resetForm };
         editing
             ? form.patch(route('owner.student.update', editing.id), options)
@@ -143,7 +178,7 @@ export default function StudentManagement({
                         >
                             <form
                                 onSubmit={submit}
-                                className="grid gap-4 md:grid-cols-3"
+                                className="grid gap-4 md:grid-cols-2"
                             >
                                 <div>
                                     <InputLabel value="Student Name" />
@@ -198,7 +233,34 @@ export default function StudentManagement({
                                         message={form.errors.school_id}
                                     />
                                 </div>
-                                <div className="flex gap-3 md:col-span-3">
+                                <div>
+                                    <InputLabel
+                                        htmlFor="guardian_phone_number"
+                                        value="Guardian phone number"
+                                    />
+                                    <TextInput
+                                        id="guardian_phone_number"
+                                        value={form.data.guardian_phone_number}
+                                        onChange={(e) =>
+                                            form.setData(
+                                                'guardian_phone_number',
+                                                e.target.value,
+                                            )
+                                        }
+                                        placeholder="Example: 012-3456789"
+                                        className="mt-1 w-full"
+                                    />
+                                    <p className="mt-1 text-xs text-slate-400">
+                                        Used to automatically match this student
+                                        with a customer account.
+                                    </p>
+                                    <InputError
+                                        message={
+                                            form.errors.guardian_phone_number
+                                        }
+                                    />
+                                </div>
+                                <div className="flex gap-3 md:col-span-2">
                                     <PrimaryButton disabled={form.processing}>
                                         {editing
                                             ? 'Update Student'
@@ -238,7 +300,7 @@ export default function StudentManagement({
                                         <th className="px-3 py-3 text-center">Class</th>
                                         <th className="px-3 py-3 text-center">School</th>
                                         <th className="px-3 py-3 text-center">Parent</th>
-                                        <th className="px-3 py-3 text-center">Parent phone</th>
+                                        <th className="px-3 py-3 text-center">Guardian phone</th>
                                         <th className="px-3 py-3 text-center">QR</th>
                                         <th className="px-3 py-3 text-center">Actions</th>
                                     </tr>
@@ -256,11 +318,12 @@ export default function StudentManagement({
                                                 {student.school?.name}
                                             </td>
                                             <td className="text-center">
-                                                {student.child?.user?.name ??
+                                                {student.child?.user?.username ??
+                                                    student.child?.user?.name ??
                                                     'Unlinked'}
                                             </td>
                                             <td className="text-center">
-                                                {student.child?.user?.phone ??
+                                                {formatPhoneNumber(student.guardian_phone_number) ||
                                                     '—'}
                                             </td>
                                             <td className="text-center">

@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\School;
 use App\Models\Student;
+use App\Rules\MalaysianPhoneNumber;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -26,6 +28,7 @@ class StudentController extends Controller
                     $query->where(function ($query) use ($search): void {
                         $query->where('name', 'like', $search)
                             ->orWhere('class', 'like', $search)
+                            ->orWhere('guardian_phone_number', 'like', $search)
                             ->orWhereHas('child.user', fn ($query) => $query
                                 ->where('name', 'like', $search)
                                 ->orWhere('phone_number', 'like', $search));
@@ -38,7 +41,7 @@ class StudentController extends Controller
             'students' => Student::query()
                 ->with([
                     'school',
-                    'child.user' => fn ($query) => $query->select('id', 'name', 'phone_number as phone'),
+                    'child.user' => fn ($query) => $query->select('id', 'name', 'username'),
                 ])
                 ->tap($applyFilters)
                 ->latest()
@@ -72,9 +75,23 @@ class StudentController extends Controller
         $this->authorizeManager($request);
         $this->authorizeStudentAccess($request, $student);
 
-        $student->update($this->validateStudent($request));
+        $validated = $this->validateStudent($request);
+        $phoneChanged = $this->normalizePhoneNumber($student->guardian_phone_number)
+            !== $validated['guardian_phone_number'];
 
-        return redirect()->route('owner.student')->with('success', 'Student updated successfully.');
+        DB::transaction(function () use ($student, $validated, $phoneChanged): void {
+            if ($phoneChanged) {
+                $student->child()->delete();
+            }
+
+            $student->update($validated);
+        });
+
+        $message = $phoneChanged
+            ? 'Student updated. The previous parent link was removed because the guardian phone changed.'
+            : 'Student updated successfully.';
+
+        return redirect()->route('owner.student')->with('success', $message);
     }
 
     public function destroy(Request $request, Student $student): RedirectResponse
@@ -112,19 +129,37 @@ class StudentController extends Controller
     }
 
     /**
-     * @return array{school_id: int, name: string, class: string}
+     * @return array{school_id: int, name: string, class: string, guardian_phone_number: ?string}
      */
     private function validateStudent(Request $request): array
     {
+        $request->merge([
+            'guardian_phone_number' => MalaysianPhoneNumber::normalize($request->input('guardian_phone_number')),
+        ]);
+
         $validated = $request->validate([
             'school_id' => ['required', 'integer', Rule::exists('schools', 'id')->where('is_active', true)],
             'name' => ['required', 'string', 'max:255'],
             'class' => ['required', 'string', 'max:100'],
+            'guardian_phone_number' => ['nullable', new MalaysianPhoneNumber],
         ]);
 
         abort_unless((int) $request->user()->school_id === (int) $validated['school_id'], 403);
 
         return $validated;
+    }
+
+    private function normalizePhoneNumber(?string $phoneNumber): ?string
+    {
+        $digits = preg_replace('/\D+/', '', (string) $phoneNumber);
+
+        if ($digits === '') {
+            return null;
+        }
+
+        return str_starts_with($digits, '60')
+            ? '0'.substr($digits, 2)
+            : $digits;
     }
 
     private function authorizeManager(Request $request): void
