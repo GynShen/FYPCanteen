@@ -66,10 +66,8 @@ export default function CustomerMenu({ children, menuItems, cartItems }) {
     const selectedChild = children.find(
         (child) => child.student_id === Number(selectedChildId),
     );
-    const selectedStudentApproved =
-        selectedChild?.student.approval_status === 'approved';
     const canOrderForSelectedChild =
-        selectedStudentApproved && selectedChild?.student.school?.is_active;
+        selectedChild?.student.school?.is_active;
     const visibleMeals = useMemo(() => {
         if (!selectedChild) return [];
         return menuItems.filter((meal) =>
@@ -341,11 +339,7 @@ export default function CustomerMenu({ children, menuItems, cartItems }) {
                                         Meal ordering is temporarily unavailable
                                     </h3>
                                     <p className="mt-2 text-sm text-amber-800">
-                                        {!selectedStudentApproved
-                                            ? selectedChild?.student.approval_status === 'rejected'
-                                                ? `${selectedChild?.student.name}'s registration was rejected: ${selectedChild?.student.rejection_reason} Please correct and resubmit it in Children Management.`
-                                                : `${selectedChild?.student.name}'s registration is awaiting school approval. Ordering will be enabled after approval.`
-                                            : `${selectedChild?.student.school?.name} is currently inactive. We apologize for the inconvenience. Please contact the school for further assistance.`}
+                                        {`${selectedChild?.student.school?.name} is currently inactive. We apologize for the inconvenience. Please contact the school for further assistance.`}
                                     </p>
                                 </section>
                             )}

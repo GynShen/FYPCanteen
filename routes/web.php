@@ -15,7 +15,6 @@ use App\Http\Controllers\SchoolController;
 use App\Http\Controllers\StripePaymentController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\WeeklyMenuController;
-use App\Http\Controllers\StudentApprovalController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -50,8 +49,6 @@ Route::middleware('auth')->group(function () {
     // Manage a customer's children
     Route::get('/customer/children', [ChildrenController::class, 'index'])->name('customer.children');
     Route::post('/customer/children', [ChildrenController::class, 'store'])->name('customer.children.store');
-    Route::post('/customer/children/request-student', [ChildrenController::class, 'requestStudent'])->name('customer.children.request-student');
-    Route::patch('/customer/children/{child}/resubmit', [ChildrenController::class, 'resubmitStudent'])->name('customer.children.resubmit');
     Route::patch('/customer/children/{child}', [ChildrenController::class, 'update'])->name('customer.children.update');
     Route::delete('/customer/children/{child}', [ChildrenController::class, 'destroy'])->name('customer.children.destroy');
     Route::get('/customer/children/{child}/qr-code', [ChildrenController::class, 'qrCode'])->name('customer.children.qr-code');
@@ -104,8 +101,6 @@ Route::middleware('auth')->group(function () {
     Route::patch('/owner/operators/{operator}/password', [OperatorController::class, 'resetPassword'])->name('owner.operators.password');
     Route::delete('/owner/operators/{operator}', [OperatorController::class, 'destroy'])->name('owner.operators.destroy');
 
-    Route::patch('/student-approvals/{student}', [StudentApprovalController::class, 'approve'])->name('student-approvals.approve');
-    Route::patch('/student-approvals/{student}/reject', [StudentApprovalController::class, 'reject'])->name('student-approvals.reject');
 });
 
 require __DIR__.'/auth.php';

@@ -38,10 +38,6 @@ class MealCollectionController extends Controller
 
         $this->authorizeStudentAccess($request, $student);
 
-        if ($student->approval_status !== 'approved') {
-            throw ValidationException::withMessages(['qr_code' => 'This student has not been approved.']);
-        }
-
         $now = Carbon::now('Asia/Kuala_Lumpur');
         $items = OrderItem::query()
             ->where('student_id', $student->id)
@@ -107,7 +103,6 @@ class MealCollectionController extends Controller
         return response()->json([
             'student' => [
                 'id' => $student->id,
-                'student_code' => $student->student_code,
                 'name' => $student->name,
                 'class' => $student->class,
                 'school' => $student->school?->name,

@@ -234,7 +234,7 @@ class DashboardController extends Controller
             ->whereBetween('scheduled_time', [$monthStart, $monthEnd])
             ->whereHas('order.payment', fn ($query) => $query->where('status', 'paid'))
             ->whereHas('student.child', fn ($query) => $query->where('user_id', $userId))
-            ->with(['student:id,name,student_code,school_id', 'student.school:id,name', 'menuItem:id,name,available_end_time', 'collection', 'studentMealEvents'])
+            ->with(['student:id,name,school_id', 'student.school:id,name', 'menuItem:id,name,available_end_time', 'collection', 'studentMealEvents'])
             ->orderBy('scheduled_time')->get();
         $now = Carbon::now('Asia/Kuala_Lumpur');
 
@@ -262,7 +262,7 @@ class DashboardController extends Controller
             ->where('scheduled_time', '>=', $now)
             ->whereHas('order.payment', fn ($query) => $query->where('status', 'paid'))
             ->whereHas('student.child', fn ($query) => $query->where('user_id', $userId))
-            ->with(['student:id,name,student_code,school_id', 'student.school:id,name', 'menuItem:id,name,available_end_time', 'collection', 'studentMealEvents'])
+            ->with(['student:id,name,school_id', 'student.school:id,name', 'menuItem:id,name,available_end_time', 'collection', 'studentMealEvents'])
             ->orderBy('scheduled_time')
             ->get()
             ->map($mapItem)
@@ -376,7 +376,7 @@ class DashboardController extends Controller
             ->whereBetween('scheduled_time', [$start, $end])
             ->whereHas('order.payment', fn ($query) => $query->where('status', 'paid'))
             ->whereHas('student', fn ($query) => $query->where('school_id', $schoolId))
-            ->with(['student:id,student_code,name,class,school_id', 'menuItem:id,name,available_start_time,available_end_time', 'collection'])
+            ->with(['student:id,name,class,school_id', 'menuItem:id,name,available_start_time,available_end_time', 'collection'])
             ->orderBy('scheduled_time')
             ->get()
             ->map(function (OrderItem $item) use ($now): array {
@@ -401,7 +401,6 @@ class DashboardController extends Controller
                     'session_end' => Carbon::parse($date.' '.$endTime, 'Asia/Kuala_Lumpur')->toIso8601String(),
                     'grace_end' => $deadline->toIso8601String(),
                     'student_id' => $item->student_id,
-                    'student_code' => $item->student?->student_code,
                     'student_name' => $item->student?->name,
                     'class' => $item->student?->class,
                     'meal_id' => $item->menu_item_id,
@@ -423,7 +422,6 @@ class DashboardController extends Controller
                     'key' => $item['id'].'-collected',
                     'event_at' => $item['collected_at'],
                     'student_name' => $item['student_name'],
-                    'student_code' => $item['student_code'],
                     'class' => $item['class'],
                     'meal_name' => $item['meal_name'],
                     'status' => 'collected',
@@ -435,7 +433,6 @@ class DashboardController extends Controller
                     'key' => $item['id'].'-missed',
                     'event_at' => $item['missed_at'],
                     'student_name' => $item['student_name'],
-                    'student_code' => $item['student_code'],
                     'class' => $item['class'],
                     'meal_name' => $item['meal_name'],
                     'status' => 'missed',

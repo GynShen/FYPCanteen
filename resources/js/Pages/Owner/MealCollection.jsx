@@ -113,7 +113,7 @@ export default function MealCollection() {
                             <div className="mt-6">
                                 <div className="rounded-lg border border-slate-300 bg-slate-50 p-4">
                                     <p className="text-lg font-bold text-slate-900">{result.student.name}</p>
-                                    <p className="mt-1 text-sm text-slate-700">{result.student.student_code} · Class {result.student.class}</p>
+                                    <p className="mt-1 text-sm text-slate-700">Class {result.student.class} · {result.student.school}</p>
                                     <p className="text-sm text-slate-700">{result.student.school} · {result.date}</p>
                                 </div>
 

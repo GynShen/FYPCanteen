@@ -14,31 +14,10 @@ class Student extends Model
 
     protected $fillable = [
         'school_id',
-        'student_code',
         'name',
         'class',
-        'approval_status',
-        'rejection_reason',
-        'reviewed_by',
-        'reviewed_at',
         'qr_code',
     ];
-
-    protected function casts(): array
-    {
-        return ['reviewed_at' => 'datetime'];
-    }
-
-    protected static function booted(): void
-    {
-        static::created(function (Student $student) {
-            if (! $student->student_code) {
-                $student->updateQuietly([
-                    'student_code' => 'STU'.str_pad((string) $student->id, 6, '0', STR_PAD_LEFT),
-                ]);
-            }
-        });
-    }
 
     public function school(): BelongsTo
     {
@@ -53,11 +32,6 @@ class Student extends Model
     public function child(): HasOne
     {
         return $this->hasOne(Children::class);
-    }
-
-    public function reviewer(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'reviewed_by');
     }
 
     public function mealEvents(): HasMany

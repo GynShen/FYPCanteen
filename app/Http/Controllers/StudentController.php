@@ -18,28 +18,30 @@ class StudentController extends Controller
     {
         $this->authorizeManager($request);
         $operatorSchoolId = $request->user()->school_id;
-        $filters = $request->only(['search', 'class', 'school_id', 'status']);
+        $filters = $request->only(['search', 'class']);
         $applyFilters = function ($query) use ($request, $operatorSchoolId): void {
             $query->when($operatorSchoolId, fn ($query) => $query->where('school_id', $operatorSchoolId))
                 ->when($request->filled('search'), function ($query) use ($request): void {
                     $search = '%'.$request->string('search')->trim().'%';
-                    $query->where(fn ($query) => $query->where('name', 'like', $search)->orWhere('student_code', 'like', $search));
+                    $query->where(function ($query) use ($search): void {
+                        $query->where('name', 'like', $search)
+                            ->orWhere('class', 'like', $search)
+                            ->orWhereHas('child.user', fn ($query) => $query
+                                ->where('name', 'like', $search)
+                                ->orWhere('phone_number', 'like', $search));
+                    });
                 })
-                ->when($request->filled('class'), fn ($query) => $query->where('class', $request->input('class')))
-                ->when($request->filled('status'), fn ($query) => $query->where('approval_status', $request->input('status')));
+                ->when($request->filled('class'), fn ($query) => $query->where('class', $request->input('class')));
         };
 
         return inertia('Owner/StudentManagement', [
             'students' => Student::query()
-                ->with('school')
+                ->with([
+                    'school',
+                    'child.user' => fn ($query) => $query->select('id', 'name', 'phone_number as phone'),
+                ])
                 ->tap($applyFilters)
                 ->latest()
-                ->get(),
-            'pendingStudents' => Student::query()
-                ->where('approval_status', 'pending')
-                ->tap($applyFilters)
-                ->with(['school:id,name', 'child.user:id,name,email'])
-                ->oldest()
                 ->get(),
             'classes' => Student::query()->when($operatorSchoolId, fn ($query) => $query->where('school_id', $operatorSchoolId))->distinct()->orderBy('class')->pluck('class'),
             'filters' => $filters,
@@ -105,7 +107,7 @@ class StudentController extends Controller
         return response((string) $svg, 200, [
             'Content-Type' => 'image/svg+xml',
             'Cache-Control' => 'private, no-store, max-age=0',
-            'Content-Disposition' => 'inline; filename="student-'.$student->student_code.'-qr.svg"',
+            'Content-Disposition' => 'inline; filename="student-'.$student->id.'-qr.svg"',
         ]);
     }
 

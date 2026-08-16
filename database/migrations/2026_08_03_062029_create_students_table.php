@@ -13,16 +13,11 @@ return new class extends Migration
     {
         Schema::create('students', function (Blueprint $table) {
             $table->id();
-            $table->string('student_code')->nullable()->unique();
             $table->foreignId('school_id')
                 ->constrained('schools')->cascadeOnDelete();
-            $table->string('name')->required();
-            $table->string('class')->required();
-            $table->enum('approval_status', ['pending', 'approved', 'rejected'])->default('approved');
-            $table->text('rejection_reason')->nullable();
-            $table->unsignedBigInteger('reviewed_by')->nullable();
-            $table->timestamp('reviewed_at')->nullable();
-            $table->string('qr_code')->unique()->required();
+            $table->string('name');
+            $table->string('class');
+            $table->string('qr_code')->unique();
             $table->timestamps();
         });
     }
