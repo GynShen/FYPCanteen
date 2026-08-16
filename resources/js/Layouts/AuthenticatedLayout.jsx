@@ -50,14 +50,6 @@ export default function AuthenticatedLayout({ header, children }) {
                                             Operator
                                         </NavLink>
                                         <NavLink
-                                            href={route('owner.student')}
-                                            active={route().current(
-                                                'owner.student',
-                                            )}
-                                        >
-                                            Student
-                                        </NavLink>
-                                        <NavLink
                                             href={route(
                                                 'owner.menuCategory',
                                             )}
@@ -77,9 +69,6 @@ export default function AuthenticatedLayout({ header, children }) {
                                         </NavLink>
                                         <NavLink href={route('weekly-menu.index')} active={route().current('weekly-menu.*')}>
                                             Weekly Menu
-                                        </NavLink>
-                                        <NavLink href={route('meal-collection.index')} active={route().current('meal-collection.*')}>
-                                            Meal Collection
                                         </NavLink>
                                     </>
                                 )}
@@ -281,11 +270,6 @@ export default function AuthenticatedLayout({ header, children }) {
                                     </ResponsiveNavLink>
 
                                     <ResponsiveNavLink
-                                        href={route('owner.student')}
-                                    >
-                                        Student
-                                    </ResponsiveNavLink>
-                                    <ResponsiveNavLink
                                         href={route('owner.menuCategory')}
                                     >
                                         Menu Category
@@ -294,9 +278,6 @@ export default function AuthenticatedLayout({ header, children }) {
                                         href={route('owner.menu')}
                                     >
                                         Menu
-                                    </ResponsiveNavLink>
-                                    <ResponsiveNavLink href={route('meal-collection.index')}>
-                                        Meal Collection
                                     </ResponsiveNavLink>
                                     <ResponsiveNavLink href={route('weekly-menu.index')}>
                                         Weekly Menu

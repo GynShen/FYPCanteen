@@ -279,14 +279,11 @@ class MealCollectionController extends Controller
 
     private function authorizeManager(Request $request): void
     {
-        abort_unless(in_array($request->user()?->role, ['owner', 'operator'], true), 403);
-        abort_if($request->user()->hasRole('operator') && ! $request->user()->school_id, 403);
+        abort_unless($request->user()?->role === 'operator' && $request->user()->school_id, 403);
     }
 
     private function authorizeStudentAccess(Request $request, Student $student): void
     {
-        if ($request->user()->hasRole('operator')) {
-            abort_unless((int) $request->user()->school_id === (int) $student->school_id, 403);
-        }
+        abort_unless((int) $request->user()->school_id === (int) $student->school_id, 403);
     }
 }

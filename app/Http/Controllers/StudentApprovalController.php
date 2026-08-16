@@ -13,9 +13,7 @@ class StudentApprovalController extends Controller
         $this->authorizeReviewer($request);
         abort_unless($student->approval_status === 'pending', 422, 'This student has already been reviewed.');
 
-        if ($request->user()->hasRole('operator')) {
-            abort_unless((int) $request->user()->school_id === (int) $student->school_id, 403);
-        }
+        abort_unless((int) $request->user()->school_id === (int) $student->school_id, 403);
 
         $student->update([
             'approval_status' => 'approved',
@@ -32,9 +30,7 @@ class StudentApprovalController extends Controller
         $this->authorizeReviewer($request);
         abort_unless($student->approval_status === 'pending', 422, 'This student has already been reviewed.');
 
-        if ($request->user()->hasRole('operator')) {
-            abort_unless((int) $request->user()->school_id === (int) $student->school_id, 403);
-        }
+        abort_unless((int) $request->user()->school_id === (int) $student->school_id, 403);
 
         $validated = $request->validate([
             'rejection_reason' => ['required', 'string', 'min:5', 'max:1000'],
@@ -52,7 +48,6 @@ class StudentApprovalController extends Controller
 
     private function authorizeReviewer(Request $request): void
     {
-        abort_unless(in_array($request->user()?->role, ['owner', 'operator'], true), 403);
-        abort_if($request->user()->hasRole('operator') && ! $request->user()->school_id, 403);
+        abort_unless($request->user()?->role === 'operator' && $request->user()->school_id, 403);
     }
 }

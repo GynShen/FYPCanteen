@@ -17,9 +17,7 @@ class StudentController extends Controller
     public function index(Request $request)
     {
         $this->authorizeManager($request);
-        $operatorSchoolId = $request->user()->hasRole('operator')
-            ? $request->user()->school_id
-            : null;
+        $operatorSchoolId = $request->user()->school_id;
         $filters = $request->only(['search', 'class', 'school_id', 'status']);
         $applyFilters = function ($query) use ($request, $operatorSchoolId): void {
             $query->when($operatorSchoolId, fn ($query) => $query->where('school_id', $operatorSchoolId))
@@ -28,7 +26,6 @@ class StudentController extends Controller
                     $query->where(fn ($query) => $query->where('name', 'like', $search)->orWhere('student_code', 'like', $search));
                 })
                 ->when($request->filled('class'), fn ($query) => $query->where('class', $request->input('class')))
-                ->when($request->filled('school_id') && ! $operatorSchoolId, fn ($query) => $query->where('school_id', $request->integer('school_id')))
                 ->when($request->filled('status'), fn ($query) => $query->where('approval_status', $request->input('status')));
         };
 
@@ -123,23 +120,18 @@ class StudentController extends Controller
             'class' => ['required', 'string', 'max:100'],
         ]);
 
-        if ($request->user()->hasRole('operator')) {
-            abort_unless((int) $request->user()->school_id === (int) $validated['school_id'], 403);
-        }
+        abort_unless((int) $request->user()->school_id === (int) $validated['school_id'], 403);
 
         return $validated;
     }
 
     private function authorizeManager(Request $request): void
     {
-        abort_unless(in_array($request->user()?->role, ['owner', 'operator'], true), 403);
-        abort_if($request->user()->hasRole('operator') && ! $request->user()->school_id, 403);
+        abort_unless($request->user()?->role === 'operator' && $request->user()->school_id, 403);
     }
 
     private function authorizeStudentAccess(Request $request, Student $student): void
     {
-        if ($request->user()->hasRole('operator')) {
-            abort_unless((int) $request->user()->school_id === (int) $student->school_id, 403);
-        }
+        abort_unless((int) $request->user()->school_id === (int) $student->school_id, 403);
     }
 }
