@@ -70,6 +70,9 @@ export default function AuthenticatedLayout({ header, children }) {
                                         <NavLink href={route('weekly-menu.index')} active={route().current('weekly-menu.*')}>
                                             Weekly Menu
                                         </NavLink>
+                                        <NavLink href={route('owner.preparation-overview')} active={route().current('owner.preparation-overview')}>
+                                            Preparation
+                                        </NavLink>
                                     </>
                                 )}
                                 {user.role === 'customer' && (
@@ -281,6 +284,9 @@ export default function AuthenticatedLayout({ header, children }) {
                                     </ResponsiveNavLink>
                                     <ResponsiveNavLink href={route('weekly-menu.index')}>
                                         Weekly Menu
+                                    </ResponsiveNavLink>
+                                    <ResponsiveNavLink href={route('owner.preparation-overview')}>
+                                        Preparation
                                     </ResponsiveNavLink>
                                 </>
                             )}

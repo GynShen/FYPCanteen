@@ -1,5 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, router, usePage } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 
 const money = (value) => `RM ${Number(value).toFixed(2)}`;
@@ -244,35 +244,7 @@ export default function Dashboard({ report, schools = [], filters = {} }) {
                             ].map(([label, value, accent]) => <div key={label} className="rounded-2xl border border-slate-700 border-t-4 bg-slate-800 p-5 shadow-lg" style={{ borderTopColor: accent }}><p className="text-sm font-semibold text-slate-300">{label}</p><p className="mt-2 text-3xl font-bold" style={{ color: accent }}>{value}</p></div>)}
                         </div>
 
-                        <section className="overflow-hidden rounded-2xl border border-slate-700 bg-slate-800 shadow-lg">
-                            <div className="border-b border-slate-700 px-5 py-4">
-                                <h3 className="text-lg font-bold text-white">Meals to prepare for next week</h3>
-                                <p className="mt-1 text-sm text-slate-400">{report.next_week_start} – {report.next_week_end} · Paid orders grouped by school, meal, and size.</p>
-                            </div>
-                            <div className="max-h-[420px] overflow-auto"><table className="w-full min-w-[900px]">
-                                <thead className="sticky top-0 z-10 bg-slate-700 text-xs uppercase tracking-wide text-slate-200"><tr><th className="px-5 py-3 text-left">School</th><th className="px-5 py-3 text-left">Date</th><th className="px-5 py-3 text-left">Collection time</th><th className="px-5 py-3 text-left">Meal</th><th className="px-5 py-3 text-right">Small</th><th className="px-5 py-3 text-right">Medium</th><th className="px-5 py-3 text-right">Large</th><th className="px-5 py-3 text-right">Total</th></tr></thead>
-                                <tbody className="divide-y divide-slate-700">{report.next_week_preparation.map((meal) => <tr key={meal.key} className="text-sm text-slate-200 hover:bg-slate-700/50"><td className="px-5 py-4 font-semibold text-white">{meal.school}</td><td className="px-5 py-4">{meal.day}<br /><span className="text-xs text-slate-400">{meal.date}</span></td><td className="px-5 py-4">{meal.time}</td><td className="px-5 py-4 font-semibold text-white">{meal.meal}</td><td className="px-5 py-4 text-right">{meal.S}</td><td className="px-5 py-4 text-right">{meal.M}</td><td className="px-5 py-4 text-right">{meal.L}</td><td className="px-5 py-4 text-right font-bold text-indigo-300">{meal.total}</td></tr>)}{report.next_week_preparation.length === 0 && <tr><td colSpan="8" className="px-5 py-10 text-center text-sm text-slate-400">No paid meals need preparation next week.</td></tr>}</tbody>
-                            </table></div>
-                        </section>
-
-                        <section className="overflow-hidden rounded-2xl border border-slate-700 bg-slate-800 shadow-lg">
-                            <div className="border-b border-slate-700 px-5 py-4">
-                                <h3 className="text-lg font-bold text-white">Today&apos;s preparation status by school</h3>
-                                <p className="mt-1 text-sm text-slate-400">{report.preparation_date} · Operators update preparation from their own dashboard.</p>
-                            </div>
-                            <div className="overflow-x-auto"><table className="w-full min-w-[720px]">
-                                <thead className="bg-slate-700 text-xs uppercase tracking-wide text-slate-200"><tr><th className="px-5 py-3 text-left">School</th><th className="px-5 py-3 text-right">Portions</th><th className="px-5 py-3 text-right">Meal batches</th><th className="px-5 py-3 text-right">Prepared</th><th className="px-5 py-3 text-right">Remaining</th><th className="px-5 py-3 text-center">Status</th></tr></thead>
-                                <tbody className="divide-y divide-slate-700">{report.preparation_status.map((school) => {
-                                    const status = {
-                                        completed: ['Completed', '#34d399', '#064e3b'],
-                                        in_progress: ['In progress', '#fbbf24', '#78350f'],
-                                        not_started: ['Not started', '#f87171', '#7f1d1d'],
-                                        no_meals: ['No meals today', '#94a3b8', '#334155'],
-                                    }[school.status];
-                                    return <tr key={school.id} className="text-sm text-slate-200 hover:bg-slate-700/50"><td className="px-5 py-4 font-semibold text-white">{school.name}</td><td className="px-5 py-4 text-right font-bold text-indigo-300">{school.portions}</td><td className="px-5 py-4 text-right">{school.batches}</td><td className="px-5 py-4 text-right" style={{ color: '#34d399' }}>{school.prepared}</td><td className="px-5 py-4 text-right" style={{ color: school.remaining ? '#f87171' : '#94a3b8' }}>{school.remaining}</td><td className="px-5 py-4 text-center"><span className="inline-flex rounded-full border px-3 py-1 text-xs font-bold" style={{ color: status[1], backgroundColor: status[2], borderColor: status[1] }}>{status[0]}</span></td></tr>;
-                                })}{report.preparation_status.length === 0 && <tr><td colSpan="6" className="px-5 py-10 text-center text-sm text-slate-400">No schools found.</td></tr>}</tbody>
-                            </table></div>
-                        </section>
+                        <section className="flex flex-wrap items-center justify-between gap-5 rounded-2xl border border-indigo-500/40 bg-slate-800 p-5 shadow-lg"><div><h3 className="text-lg font-bold text-white">Preparation overview</h3><p className="mt-1 text-sm text-slate-400">Next week: <span className="font-bold text-indigo-300">{report.next_week_preparation.reduce((total, meal) => total + meal.total, 0)} portions</span> across {new Set(report.next_week_preparation.map((meal) => meal.school)).size} schools.</p></div><Link href={route('owner.preparation-overview')} className="rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-indigo-500">View Preparation Overview →</Link></section>
 
                         <div className="grid gap-6 lg:grid-cols-3">
                             <section className="rounded-2xl border border-slate-700 bg-slate-800 p-5 shadow-lg lg:col-span-2">
