@@ -9,6 +9,7 @@ use App\Http\Controllers\MenuController;
 use App\Http\Controllers\MealCollectionController;
 use App\Http\Controllers\OperatorController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\PreparationPlanController;
 use App\Http\Controllers\SchoolController;
 use App\Http\Controllers\StripePaymentController;
 use App\Http\Controllers\StudentController;
@@ -38,6 +39,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/meal-collection/{orderItem}', [MealCollectionController::class, 'collect'])->name('meal-collection.collect');
     Route::post('/meal-collection/{orderItem}/still-hungry', [MealCollectionController::class, 'stillHungry'])->name('meal-collection.still-hungry');
     Route::get('/weekly-menu', [WeeklyMenuController::class, 'index'])->name('weekly-menu.index');
+    Route::get('/operator/preparation-plan', [PreparationPlanController::class, 'index'])->name('operator.preparation-plan');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');

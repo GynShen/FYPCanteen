@@ -325,7 +325,11 @@ class DashboardController extends Controller
     private function operatorDashboard(Request $request)
     {
         $validated = $request->validate([
-            'week_date' => ['nullable', 'date'],
+            'week_date' => ['nullable', function ($attribute, $value, $fail): void {
+                if ($value !== 'custom' && strtotime((string) $value) === false) $fail('The selected week date is invalid.');
+            }],
+            'start_date' => ['nullable', 'date'],
+            'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
         ]);
         $period = 'week';
         $weekStart = Carbon::now('Asia/Kuala_Lumpur')->startOfWeek();
@@ -333,7 +337,11 @@ class DashboardController extends Controller
         $start = $weekStart->copy()->startOfDay();
         $end = $weekEnd->copy()->endOfDay();
         $weekDate = null;
-        if (! empty($validated['week_date'])) {
+        if (($validated['week_date'] ?? null) === 'custom') {
+            $weekDate = 'custom';
+            $start = isset($validated['start_date']) ? Carbon::parse($validated['start_date'], 'Asia/Kuala_Lumpur')->startOfDay() : $weekStart->copy()->startOfDay();
+            $end = isset($validated['end_date']) ? Carbon::parse($validated['end_date'], 'Asia/Kuala_Lumpur')->endOfDay() : $weekEnd->copy()->endOfDay();
+        } elseif (! empty($validated['week_date'])) {
             $selectedDate = Carbon::parse($validated['week_date'], 'Asia/Kuala_Lumpur');
             if ($selectedDate->betweenIncluded($weekStart, $weekEnd)) {
             $weekDate = $selectedDate->toDateString();
@@ -345,7 +353,7 @@ class DashboardController extends Controller
 
         if (! $schoolId) {
             return inertia('Dashboard', [
-                'filters' => ['period' => $period, 'week_date' => $weekDate],
+                'filters' => ['period' => $period, 'week_date' => $weekDate, 'start_date' => $start->toDateString(), 'end_date' => $end->toDateString()],
                 'report' => [
                     'type' => 'operator',
                     'school' => null,
@@ -358,9 +366,7 @@ class DashboardController extends Controller
                     'meal_workload' => [],
                     'size_preparation' => [],
                     'student_workload' => [],
-                    'next_week_preparation' => [],
-                    'next_week_start' => null,
-                    'next_week_end' => null,
+                    'latest_collection_status' => [],
                 ],
             ]);
         }
@@ -405,8 +411,40 @@ class DashboardController extends Controller
                     'collected' => $collected,
                     'remaining' => $now->lte($deadline) ? $uncollected : 0,
                     'missed' => $missed,
+                    'collected_at' => $item->collection?->collected_at?->copy()->timezone('Asia/Kuala_Lumpur')->toIso8601String(),
+                    'missed_at' => $missed > 0 ? $deadline->toIso8601String() : null,
                 ];
             });
+
+        $latestCollectionStatus = $items->flatMap(function ($item): array {
+            $events = [];
+            if ($item['collected'] > 0 && $item['collected_at']) {
+                $events[] = [
+                    'key' => $item['id'].'-collected',
+                    'event_at' => $item['collected_at'],
+                    'student_name' => $item['student_name'],
+                    'student_code' => $item['student_code'],
+                    'class' => $item['class'],
+                    'meal_name' => $item['meal_name'],
+                    'status' => 'collected',
+                    'quantity' => $item['collected'],
+                ];
+            }
+            if ($item['missed'] > 0 && $item['missed_at']) {
+                $events[] = [
+                    'key' => $item['id'].'-missed',
+                    'event_at' => $item['missed_at'],
+                    'student_name' => $item['student_name'],
+                    'student_code' => $item['student_code'],
+                    'class' => $item['class'],
+                    'meal_name' => $item['meal_name'],
+                    'status' => 'missed',
+                    'quantity' => $item['missed'],
+                ];
+            }
+
+            return $events;
+        })->sortByDesc('event_at')->take(50)->values();
 
         $aggregate = fn ($rows) => [
             'ordered' => $rows->sum('ordered'),
@@ -477,44 +515,8 @@ class DashboardController extends Controller
             return $meal;
         });
 
-        $nextWeekStart = $now->copy()->addWeek()->startOfWeek()->startOfDay();
-        $nextWeekEnd = $nextWeekStart->copy()->endOfWeek()->endOfDay();
-        $nextWeekPreparation = DB::table('order_items as oi')
-            ->join('orders as o', 'o.id', '=', 'oi.order_id')
-            ->join('payments as p', 'p.order_id', '=', 'o.id')
-            ->join('students as s', 's.id', '=', 'oi.student_id')
-            ->join('menu_items as mi', 'mi.id', '=', 'oi.menu_item_id')
-            ->where('p.status', 'paid')
-            ->where('s.school_id', $schoolId)
-            ->whereBetween('oi.scheduled_time', [$nextWeekStart, $nextWeekEnd])
-            ->get(['oi.menu_item_id', 'mi.name as meal_name', 'mi.available_start_time', 'mi.available_end_time', 'oi.scheduled_time', 'oi.size', 'oi.quantity'])
-            ->groupBy(function ($item): string {
-                $date = Carbon::parse($item->scheduled_time, 'Asia/Kuala_Lumpur')->toDateString();
-
-                return $date.'-'.$item->menu_item_id;
-            })
-            ->map(function ($rows): array {
-                $first = $rows->first();
-                $date = Carbon::parse($first->scheduled_time, 'Asia/Kuala_Lumpur');
-                $formatTime = fn ($time) => $time ? Carbon::parse($time)->format('g:i A') : '-';
-
-                return [
-                    'key' => $date->toDateString().'-'.$first->menu_item_id,
-                    'date' => $date->toDateString(),
-                    'day' => $date->format('l'),
-                    'time' => $formatTime($first->available_start_time).' – '.$formatTime($first->available_end_time),
-                    'meal' => $first->meal_name,
-                    'S' => (int) $rows->where('size', 'S')->sum('quantity'),
-                    'M' => (int) $rows->where('size', 'M')->sum('quantity'),
-                    'L' => (int) $rows->where('size', 'L')->sum('quantity'),
-                    'total' => (int) $rows->sum('quantity'),
-                ];
-            })
-            ->sortBy(fn ($item) => $item['date'].'-'.$item['time'].'-'.$item['meal'])
-            ->values();
-
         return inertia('Dashboard', [
-            'filters' => ['period' => $period, 'week_date' => $weekDate],
+            'filters' => ['period' => $period, 'week_date' => $weekDate, 'start_date' => $start->toDateString(), 'end_date' => $end->toDateString()],
             'report' => array_merge([
                 'type' => 'operator',
                 'school' => School::query()->find($schoolId, ['id', 'name']),
@@ -523,9 +525,7 @@ class DashboardController extends Controller
                 'meal_workload' => $meals,
                 'size_preparation' => $sizePreparation,
                 'student_workload' => $items->values(),
-                'next_week_preparation' => $nextWeekPreparation,
-                'next_week_start' => $nextWeekStart->toDateString(),
-                'next_week_end' => $nextWeekEnd->toDateString(),
+                'latest_collection_status' => $latestCollectionStatus,
             ], $aggregate($items)),
         ]);
     }

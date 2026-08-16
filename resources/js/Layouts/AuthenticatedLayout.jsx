@@ -114,6 +114,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                 {user.role === 'operator' && (<>
                                     <NavLink href={route('owner.student')} active={route().current('owner.student*')}>Student</NavLink>
                                     <NavLink href={route('weekly-menu.index')} active={route().current('weekly-menu.*')}>Weekly Menu</NavLink>
+                                    <NavLink href={route('operator.preparation-plan')} active={route().current('operator.preparation-plan')}>Preparation Plan</NavLink>
                                     <NavLink href={route('meal-collection.index')} active={route().current('meal-collection.*')}>Meal Collection</NavLink>
                                 </>)}
                             </div>
@@ -324,6 +325,7 @@ export default function AuthenticatedLayout({ header, children }) {
                             {user.role === 'operator' && (<>
                                 <ResponsiveNavLink href={route('owner.student')}>Student</ResponsiveNavLink>
                                 <ResponsiveNavLink href={route('weekly-menu.index')}>Weekly Menu</ResponsiveNavLink>
+                                <ResponsiveNavLink href={route('operator.preparation-plan')}>Preparation Plan</ResponsiveNavLink>
                                 <ResponsiveNavLink href={route('meal-collection.index')}>Meal Collection</ResponsiveNavLink>
                             </>)}
                             <ResponsiveNavLink href={route('profile.edit')}>

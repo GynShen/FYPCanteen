@@ -19,38 +19,7 @@ function MealTable({ title, rows }) {
     );
 }
 
-function OperatorReport({ report, weekDate, update }) {
-    const [now, setNow] = useState(Date.now());
-    const [preparationStates, setPreparationStates] = useState({});
-    const [savingPreparation, setSavingPreparation] = useState(null);
-
-    useEffect(() => {
-        const timer = window.setInterval(() => setNow(Date.now()), 1000);
-        return () => window.clearInterval(timer);
-    }, []);
-
-    useEffect(() => {
-        setPreparationStates(Object.fromEntries(report.size_preparation.map((meal) => [meal.key, meal.is_completed])));
-    }, [report.size_preparation]);
-
-    const sessionState = (slot) => {
-        const start = new Date(slot.session_start).getTime();
-        const end = new Date(slot.session_end).getTime();
-        const graceEnd = new Date(slot.grace_end).getTime();
-        if (now < start) return { label: `Starts in ${formatDuration(start - now)}`, color: '#60a5fa' };
-        if (now <= end) return { label: `Open · ${formatDuration(end - now)} remaining`, color: '#34d399' };
-        if (now <= graceEnd) return { label: `Grace period · ${formatDuration(graceEnd - now)} remaining`, color: '#fbbf24' };
-        return { label: 'Closed', color: '#f87171' };
-    };
-
-    const formatDuration = (milliseconds) => {
-        const seconds = Math.max(0, Math.floor(milliseconds / 1000));
-        const hours = Math.floor(seconds / 3600);
-        const minutes = Math.floor((seconds % 3600) / 60);
-        const remainder = seconds % 60;
-        return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m ${String(remainder).padStart(2, '0')}s`;
-    };
-
+function OperatorReport({ report, weekDate, startDate, endDate, update, updateRange }) {
     const cards = [
         ['Meals to collect', report.ordered, '#818cf8'],
         ['Collected', report.collected, '#34d399'],
@@ -69,75 +38,28 @@ function OperatorReport({ report, weekDate, update }) {
         date.setDate(weekMonday.getDate() + index);
         return { value: localDate(date), label: date.toLocaleDateString('en-MY', { weekday: 'long', day: '2-digit', month: 'short' }) };
     });
-    const togglePreparation = (meal) => {
-        const previous = Boolean(preparationStates[meal.key]);
-        setPreparationStates((current) => ({ ...current, [meal.key]: !previous }));
-        setSavingPreparation(meal.key);
-        router.patch(route('dashboard.meal-preparation'), {
-            menu_item_id: meal.menu_item_id,
-            preparation_date: meal.date,
-        }, {
-            preserveScroll: true,
-            onError: () => setPreparationStates((current) => ({ ...current, [meal.key]: previous })),
-            onFinish: () => setSavingPreparation(null),
-        });
-    };
-
     return <>
         <section className="rounded-2xl border border-slate-700 bg-slate-800 p-5 shadow-lg">
-            <div className="grid items-end gap-4 sm:grid-cols-2">
+            <div className="grid items-end gap-4 lg:grid-cols-[1fr_240px_220px_220px]">
                 <div>
                     <h2 className="text-lg font-bold text-white">Collection workload</h2>
                     <p className="mt-1 text-sm text-slate-400">{report.school ? `${report.school.name} only` : 'No school has been assigned to this operator.'}</p>
                 </div>
-                <label className="text-sm font-semibold text-slate-200 sm:w-72 sm:justify-self-end">Week date
+                <label className="text-sm font-semibold text-slate-200">Week date
                     <select value={weekDate} onChange={(event) => update('week_date', event.target.value)} className="mt-1 block w-full rounded-md border-slate-300 bg-white text-slate-900">
                         <option value="">Overall — whole week</option>
                         {weekDates.map((date) => <option key={date.value} value={date.value}>{date.label}{date.value === todayValue ? ' (Today)' : ''}</option>)}
+                        <option value="custom">Custom date range</option>
                     </select>
                 </label>
+                <label className="text-sm font-semibold text-slate-200">Start date<input type="date" value={startDate} max={endDate || undefined} onChange={(event) => updateRange('start_date', event.target.value)} className="mt-1 block w-full rounded-md border-slate-300 bg-white text-slate-900" /></label>
+                <label className="text-sm font-semibold text-slate-200">End date<input type="date" value={endDate} min={startDate || undefined} onChange={(event) => updateRange('end_date', event.target.value)} className="mt-1 block w-full rounded-md border-slate-300 bg-white text-slate-900" /></label>
             </div>
-        </section>
-
-        <section className="overflow-hidden rounded-2xl border border-indigo-500/40 bg-slate-800 shadow-lg">
-            <div className="border-b border-slate-700 px-5 py-4">
-                <h3 className="text-lg font-bold text-white">Next week preparation plan</h3>
-                <p className="mt-1 text-sm text-slate-300">{report.next_week_start} – {report.next_week_end} · Review the final paid-order quantities on Sunday after Saturday&apos;s ordering deadline.</p>
-            </div>
-            <div className="max-h-[420px] overflow-auto"><table className="w-full min-w-[800px] [&_td:nth-child(n+4)]:text-center [&_th:nth-child(n+4)]:text-center">
-                <thead className="sticky top-0 z-10 bg-slate-700 text-xs uppercase tracking-wide text-slate-200"><tr><th className="px-5 py-3 text-left">Date</th><th className="px-5 py-3 text-left">Collection time</th><th className="px-5 py-3 text-left">Meal</th><th className="px-5 py-3 text-right">Small</th><th className="px-5 py-3 text-right">Medium</th><th className="px-5 py-3 text-right">Large</th><th className="px-5 py-3 text-right">Total</th></tr></thead>
-                <tbody className="divide-y divide-slate-700">{report.next_week_preparation.map((meal) => <tr key={meal.key} className="text-sm text-slate-200 hover:bg-slate-700/50"><td className="px-5 py-4">{meal.day}<br/><span className="text-xs text-slate-400">{meal.date}</span></td><td className="px-5 py-4">{meal.time}</td><td className="px-5 py-4 font-semibold text-white">{meal.meal}</td><td className="px-5 py-4 text-right">{meal.S}</td><td className="px-5 py-4 text-right">{meal.M}</td><td className="px-5 py-4 text-right">{meal.L}</td><td className="px-5 py-4 text-right font-bold text-indigo-300">{meal.total}</td></tr>)}{report.next_week_preparation.length === 0 && <tr><td colSpan="7" className="px-5 py-10 text-center text-sm text-slate-400">No paid meals have been ordered for next week yet.</td></tr>}</tbody>
-            </table></div>
         </section>
 
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {cards.map(([label, value, accent]) => <div key={label} className="rounded-2xl border border-slate-700 border-t-4 bg-slate-800 p-5 text-center shadow-lg" style={{ borderTopColor: accent }}><p className="text-sm font-semibold text-slate-300">{label}</p><p className="mt-2 text-3xl font-bold" style={{ color: accent }}>{value}</p></div>)}
         </div>
-
-        <section className="overflow-hidden rounded-2xl border border-slate-700 bg-slate-800 shadow-lg">
-            <h3 className="border-b border-slate-700 px-5 py-4 text-lg font-bold text-white">Collection progress by time slot</h3>
-            <div className="grid max-h-[460px] gap-4 overflow-y-auto p-5 md:grid-cols-2 xl:grid-cols-3">
-                {report.time_slots.map((slot) => {
-                    const state = sessionState(slot);
-                    const progress = slot.ordered ? Math.min(100, slot.collected / slot.ordered * 100) : 0;
-                    return <article key={slot.key} className="rounded-xl border border-slate-600 bg-slate-900/40 p-4">
-                        <div className="flex items-start justify-between gap-3"><div><p className="font-bold text-white">{slot.day}, {slot.date}</p><p className="mt-1 text-sm text-slate-300">{slot.start_time} – {slot.end_time}</p></div><span className="rounded-full px-3 py-1 text-xs font-bold" style={{ color: state.color, backgroundColor: `${state.color}20`, border: `1px solid ${state.color}` }}>{state.label}</span></div>
-                        <div className="mt-4 flex justify-between text-sm text-slate-200"><span>{slot.collected} / {slot.ordered} collected</span><span>{Math.round(progress)}%</span></div>
-                        <div className="mt-2 h-3 overflow-hidden rounded-full bg-slate-700"><div className="h-full rounded-full" style={{ width: `${progress}%`, backgroundColor: '#10b981' }} /></div>
-                        <div className="mt-3 flex gap-4 text-xs text-slate-400"><span>{slot.students} students</span><span>{slot.meals} meal types</span><span className="text-red-400">{slot.missed} missed</span></div>
-                    </article>;
-                })}
-                {report.time_slots.length === 0 && <p className="py-6 text-center text-sm text-slate-400 md:col-span-2 xl:col-span-3">No collection sessions in this period.</p>}
-            </div>
-        </section>
-
-        <section className="overflow-hidden rounded-2xl border border-slate-700 bg-slate-800 shadow-lg">
-            <div className="border-b border-slate-700 px-5 py-4"><h3 className="text-lg font-bold text-white">Meal preparation by size</h3><p className="mt-1 text-sm text-slate-400">Mark a meal batch as prepared after all portions are ready. Click the completed status again to undo it.</p></div>
-            <div className="max-h-[420px] overflow-auto"><table className="w-full min-w-[750px] [&_td:nth-child(n+4)]:text-center [&_th:nth-child(n+4)]:text-center">
-                <thead className="sticky top-0 z-10 bg-slate-700 text-xs uppercase tracking-wide text-slate-200"><tr><th className="px-5 py-3 text-left">Date</th><th className="px-5 py-3 text-left">Collection time</th><th className="px-5 py-3 text-left">Meal</th><th className="px-5 py-3 text-right">Small</th><th className="px-5 py-3 text-right">Medium</th><th className="px-5 py-3 text-right">Large</th><th className="px-5 py-3 text-right">Total</th><th className="px-5 py-3 text-center">Preparation</th></tr></thead>
-                <tbody className="divide-y divide-slate-700">{report.size_preparation.map((meal) => { const completed = Boolean(preparationStates[meal.key]); const saving = savingPreparation === meal.key; return <tr key={meal.key} className="text-sm text-slate-200 hover:bg-slate-700/50"><td className="px-5 py-4">{meal.day}<br /><span className="text-xs text-slate-400">{meal.date}</span></td><td className="px-5 py-4">{meal.time}</td><td className="px-5 py-4 font-semibold text-white">{meal.meal_name}</td><td className="px-5 py-4 text-right">{meal.S}</td><td className="px-5 py-4 text-right">{meal.M}</td><td className="px-5 py-4 text-right">{meal.L}</td><td className="px-5 py-4 text-right font-bold text-indigo-300">{meal.total}</td><td className="px-5 py-4 text-center"><button type="button" disabled={saving} onClick={() => togglePreparation(meal)} className="min-w-40 rounded-lg px-4 py-2 text-xs font-bold text-white disabled:cursor-wait disabled:opacity-70" style={{ backgroundColor: completed ? '#059669' : '#4f46e5' }}>{saving ? 'Saving...' : completed ? 'Prepared ✓' : 'Complete Preparation'}</button></td></tr>; })}{report.size_preparation.length === 0 && <tr><td colSpan="8" className="px-5 py-10 text-center text-sm text-slate-400">No meals need preparation in this period.</td></tr>}</tbody>
-            </table></div>
-        </section>
 
         <section className="overflow-hidden rounded-2xl border border-slate-700 bg-slate-800 shadow-lg">
             <h3 className="border-b border-slate-700 px-5 py-4 text-lg font-bold text-white">Daily collection summary</h3>
@@ -148,18 +70,10 @@ function OperatorReport({ report, weekDate, update }) {
         </section>
 
         <section className="overflow-hidden rounded-2xl border border-slate-700 bg-slate-800 shadow-lg">
-            <h3 className="border-b border-slate-700 px-5 py-4 text-lg font-bold text-white">Meals to prepare and collect</h3>
-            <div className="max-h-[420px] overflow-auto"><table className="w-full min-w-[850px] [&_td:nth-child(n+4)]:text-center [&_th:nth-child(n+4)]:text-center">
-                <thead className="sticky top-0 z-10 bg-slate-700 text-xs uppercase tracking-wide text-slate-200"><tr><th className="px-4 py-3 text-left">Date</th><th className="px-4 py-3 text-left">Time</th><th className="px-4 py-3 text-left">Meal</th><th className="px-4 py-3 text-right">Students</th><th className="px-4 py-3 text-right">Required</th><th className="px-4 py-3 text-right">Collected</th><th className="px-4 py-3 text-right">Remaining</th><th className="px-4 py-3 text-right">Missed</th></tr></thead>
-                <tbody className="divide-y divide-slate-700">{report.meal_workload.map((meal) => <tr key={meal.key} className="text-sm text-slate-200 hover:bg-slate-700/50"><td className="px-4 py-4">{meal.day}<br /><span className="text-xs text-slate-400">{meal.date}</span></td><td className="px-4 py-4">{meal.time}</td><td className="px-4 py-4 font-semibold text-white">{meal.meal_name}</td><td className="px-4 py-4 text-right">{meal.students}</td><td className="px-4 py-4 text-right">{meal.ordered}</td><td className="px-4 py-4 text-right text-emerald-400">{meal.collected}</td><td className="px-4 py-4 text-right text-amber-400">{meal.remaining}</td><td className="px-4 py-4 text-right text-red-400">{meal.missed}</td></tr>)}{report.meal_workload.length === 0 && <tr><td colSpan="8" className="px-5 py-10 text-center text-sm text-slate-400">No meal workload in this period.</td></tr>}</tbody>
-            </table></div>
-        </section>
-
-        <section className="overflow-hidden rounded-2xl border border-slate-700 bg-slate-800 shadow-lg">
-            <h3 className="border-b border-slate-700 px-5 py-4 text-lg font-bold text-white">Collection by student</h3>
-            <div className="max-h-[420px] overflow-auto"><table className="w-full min-w-[950px] [&_td:nth-child(n+5)]:text-center [&_th:nth-child(n+5)]:text-center">
-                <thead className="sticky top-0 bg-slate-700 text-xs uppercase tracking-wide text-slate-200"><tr><th className="px-4 py-3 text-left">Date / Time</th><th className="px-4 py-3 text-left">Student</th><th className="px-4 py-3 text-left">Class</th><th className="px-4 py-3 text-left">Meal</th><th className="px-4 py-3 text-right">Required</th><th className="px-4 py-3 text-right">Collected</th><th className="px-4 py-3 text-right">Remaining</th><th className="px-4 py-3 text-right">Missed</th></tr></thead>
-                <tbody className="divide-y divide-slate-700">{report.student_workload.map((item) => <tr key={item.id} className="text-sm text-slate-200 hover:bg-slate-700/50"><td className="px-4 py-4">{item.date}<br /><span className="text-xs text-slate-400">{item.time}</span></td><td className="px-4 py-4 font-semibold text-white">{item.student_name}<br /><span className="text-xs font-normal text-slate-400">{item.student_code}</span></td><td className="px-4 py-4">{item.class}</td><td className="px-4 py-4">{item.meal_name}</td><td className="px-4 py-4 text-right">{item.ordered}</td><td className="px-4 py-4 text-right text-emerald-400">{item.collected}</td><td className="px-4 py-4 text-right text-amber-400">{item.remaining}</td><td className="px-4 py-4 text-right text-red-400">{item.missed}</td></tr>)}{report.student_workload.length === 0 && <tr><td colSpan="8" className="px-5 py-10 text-center text-sm text-slate-400">No students require meal collection in this period.</td></tr>}</tbody>
+            <div className="border-b border-slate-700 px-5 py-4"><h3 className="text-lg font-bold text-white">Latest collection status</h3><p className="mt-1 text-sm text-slate-400">Latest collected and missed meal updates for the selected day or week.</p></div>
+            <div className="max-h-[420px] overflow-auto"><table className="w-full min-w-[760px]">
+                <thead className="sticky top-0 z-10 bg-slate-700 text-xs uppercase tracking-wide text-slate-200"><tr><th className="px-4 py-3 text-left">Updated</th><th className="px-4 py-3 text-left">Student</th><th className="px-4 py-3 text-left">Class</th><th className="px-4 py-3 text-left">Meal</th><th className="px-4 py-3 text-center">Status</th><th className="px-4 py-3 text-center">Quantity</th></tr></thead>
+                <tbody className="divide-y divide-slate-700">{report.latest_collection_status.map((item) => { const event = new Date(item.event_at); const collected = item.status === 'collected'; return <tr key={item.key} className="text-sm text-slate-200 hover:bg-slate-700/50"><td className="px-4 py-4">{event.toLocaleDateString('en-MY')}<br/><span className="text-xs text-slate-400">{event.toLocaleTimeString('en-MY', { hour: 'numeric', minute: '2-digit' })}</span></td><td className="px-4 py-4 font-semibold text-white">{item.student_name}<br/><span className="text-xs font-normal text-slate-400">{item.student_code}</span></td><td className="px-4 py-4">{item.class}</td><td className="px-4 py-4 font-medium text-white">{item.meal_name}</td><td className="px-4 py-4 text-center"><span className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${collected ? 'border-emerald-500 bg-emerald-500/15 text-emerald-300' : 'border-red-500 bg-red-500/15 text-red-300'}`}>{collected ? 'Collected' : 'Missed'}</span></td><td className="px-4 py-4 text-center font-bold">{item.quantity}</td></tr>; })}{report.latest_collection_status.length === 0 && <tr><td colSpan="6" className="px-5 py-10 text-center text-sm text-slate-400">No collected or missed meal updates in this period.</td></tr>}</tbody>
             </table></div>
         </section>
     </>;
@@ -253,6 +167,7 @@ export default function Dashboard({ report, schools = [], filters = {} }) {
     });
 
     const update = (name, value) => setForm((current) => ({ ...current, [name]: value }));
+    const updateOperatorRange = (name, value) => setForm((current) => ({ ...current, week_date: 'custom', [name]: value }));
     const updateExactPeriod = (name, value) => setForm((current) => ({
         ...current,
         period: 'custom',
@@ -260,7 +175,9 @@ export default function Dashboard({ report, schools = [], filters = {} }) {
     }));
 
     useEffect(() => {
-        if (report?.type !== 'owner' || form.period === 'custom') return;
+        const shouldSyncOwner = report?.type === 'owner' && form.period !== 'custom';
+        const shouldSyncOperator = report?.type === 'operator' && form.week_date !== 'custom';
+        if (!shouldSyncOwner && !shouldSyncOperator) return;
         setForm((current) => ({
             ...current,
             start_date: filters.start_date ?? current.start_date,
@@ -301,7 +218,7 @@ export default function Dashboard({ report, schools = [], filters = {} }) {
                         <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{report ? 'Review canteen performance and meal activity.' : 'You are logged in to FYPCanteen.'}</p>
                     </div>
 
-                    {report?.type === 'operator' && <OperatorReport report={report} weekDate={form.week_date} update={update} />}
+                    {report?.type === 'operator' && <OperatorReport report={report} weekDate={form.week_date} startDate={form.start_date} endDate={form.end_date} update={update} updateRange={updateOperatorRange} />}
                     {report?.type === 'customer' && <CustomerReport report={report} month={form.month} childId={form.child_id} update={update} />}
 
                     {isOwnerReport && <>
