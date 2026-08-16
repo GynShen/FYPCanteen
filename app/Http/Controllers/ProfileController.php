@@ -17,6 +17,8 @@ class ProfileController extends Controller
      */
     public function edit(Request $request): Response
     {
+        abort_if($request->user()->hasRole('operator'), 403);
+
         return Inertia::render('Profile/Edit', [
             'status' => session('status'),
         ]);
@@ -27,6 +29,8 @@ class ProfileController extends Controller
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
+        abort_if($request->user()->hasRole('operator'), 403);
+
         $request->user()->fill($request->validated());
         $request->user()->save();
 

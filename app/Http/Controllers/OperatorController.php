@@ -23,13 +23,13 @@ class OperatorController extends Controller
                 ->where('role', 'operator')
                 ->when($request->filled('search'), function ($query) use ($request): void {
                     $search = '%'.$request->string('search')->trim().'%';
-                    $query->where(fn ($query) => $query->where('name', 'like', $search)->orWhere('email', 'like', $search)->orWhere('phone_number', 'like', $search)->orWhere('id', $request->input('search')));
+                    $query->where(fn ($query) => $query->where('name', 'like', $search)->orWhere('username', 'like', $search)->orWhere('phone_number', 'like', $search)->orWhere('id', $request->input('search')));
                 })
                 ->when($request->filled('school_id'), fn ($query) => $query->where('school_id', $request->integer('school_id')))
                 ->when($request->filled('status'), fn ($query) => $query->where('is_active', $request->input('status') === 'active'))
                 ->orderBy('name')
                 ->with('school:id,name')
-                ->get(['id', 'name', 'email', 'phone_number', 'school_id', 'is_active', 'created_at']),
+                ->get(['id', 'name', 'username', 'phone_number', 'school_id', 'is_active', 'created_at']),
             'schools' => School::where('is_active', true)->orderBy('name')->get(['id', 'name']),
             'filters' => $filters,
         ]);
@@ -40,7 +40,7 @@ class OperatorController extends Controller
         $this->authorizeOwner($request);
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', Rule::unique(User::class)],
+            'username' => ['required', 'string', 'min:3', 'max:50', 'alpha_dash', Rule::unique(User::class)],
             'phone_number' => ['required', 'string', 'max:255', Rule::unique(User::class)],
             'password' => ['required', 'confirmed', Password::defaults()],
             'school_id' => ['required', 'integer', Rule::exists('schools', 'id')->where('is_active', true)],
@@ -48,6 +48,7 @@ class OperatorController extends Controller
 
         User::create([
             ...$validated,
+            'email' => null,
             'role' => 'operator',
             'is_active' => true,
         ]);
@@ -61,10 +62,10 @@ class OperatorController extends Controller
         $this->ensureOperator($operator);
         $operator->update($request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', Rule::unique(User::class)->ignore($operator->id)],
+            'username' => ['required', 'string', 'min:3', 'max:50', 'alpha_dash', Rule::unique(User::class)->ignore($operator->id)],
             'phone_number' => ['required', 'string', 'max:255', Rule::unique(User::class)->ignore($operator->id)],
             'school_id' => ['required', 'integer', Rule::exists('schools', 'id')->where('is_active', true)],
-        ]));
+        ]) + ['email' => null]);
         $this->clearSessions($operator);
 
         return back()->with('success', 'Operator account updated. The operator must sign in again.');
