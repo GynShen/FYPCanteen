@@ -2,19 +2,16 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class MenuItemSize extends Model
+class MenuItemComponent extends Model
 {
-    use HasFactory;
-
-    protected $fillable = ['menu_item_id', 'size', 'price_adjustment'];
+    protected $fillable = ['component_type', 'name', 'amount_g', 'sort_order'];
 
     protected function casts(): array
     {
-        return ['price_adjustment' => 'decimal:2'];
+        return ['amount_g' => 'decimal:2'];
     }
 
     public function menuItem(): BelongsTo

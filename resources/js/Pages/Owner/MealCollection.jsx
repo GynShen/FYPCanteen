@@ -130,7 +130,6 @@ export default function MealCollection() {
                                                             <h3 className="text-lg font-bold text-slate-900">{item.meal}</h3>
                                                             <span className={`rounded-full px-3 py-1 text-xs font-bold ${statusStyles[item.status]}`}>{statusLabels[item.status]}</span>
                                                         </div>
-                                                        <p className="mt-1 text-sm text-slate-700">Size: {item.size || 'M'}</p>
                                                         <p className="text-sm text-slate-700">Collection: {item.start_time && item.end_time ? `${item.start_time} – ${item.end_time}` : 'Any time today'}</p>
                                                         <p className="mt-1 text-sm font-semibold text-slate-900">Collected {item.collected_quantity} of {item.ordered_quantity} · Remaining {item.remaining_quantity}</p>
                                                         {item.late_reason && <p className="mt-1 text-sm text-purple-700">Late reason: {item.late_reason}</p>}

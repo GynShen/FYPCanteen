@@ -94,7 +94,7 @@ export default function MealTimeline({ menuItems, onMealClick, getSelection, day
                                             >
                                                 <span className="block truncate text-xs font-bold text-slate-900">{meal.name}</span>
                                                 <span className="block truncate text-[10px] font-medium text-slate-600">{meal.available_start_time.slice(0, 5)}–{meal.available_end_time.slice(0, 5)}</span>
-                                                {selection && <span className="block truncate text-[10px] font-bold text-indigo-700">Qty {selection.quantity} · {selection.size ?? 'M'}</span>}
+                                                {selection && <span className="block truncate text-[10px] font-bold text-indigo-700">Qty {selection.quantity}</span>}
                                             </button>
                                         );
                                     })}

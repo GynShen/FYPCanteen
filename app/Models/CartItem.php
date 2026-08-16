@@ -14,7 +14,6 @@ class CartItem extends Model
         'cart_id',
         'student_id',
         'menu_item_id',
-        'size',
         'quantity',
         'scheduled_time',
     ];

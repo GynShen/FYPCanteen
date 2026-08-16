@@ -17,6 +17,7 @@ return new class extends Migration
                 ->constrained('schools')->cascadeOnDelete();
             $table->string('name');
             $table->string('class');
+            $table->string('guardian_phone_number')->nullable()->index();
             $table->string('qr_code')->unique();
             $table->timestamps();
         });

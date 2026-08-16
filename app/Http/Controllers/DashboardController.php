@@ -145,7 +145,7 @@ class DashboardController extends Controller
             ->when($schoolId, fn ($query) => $query->where('s.school_id', $schoolId))
             ->get([
                 's.school_id', 'sc.name as school_name', 'oi.menu_item_id', 'mi.name as meal_name',
-                'mi.available_start_time', 'mi.available_end_time', 'oi.scheduled_time', 'oi.size', 'oi.quantity',
+                'mi.available_start_time', 'mi.available_end_time', 'oi.scheduled_time', 'oi.quantity',
             ])
             ->groupBy(function ($item): string {
                 $date = Carbon::parse($item->scheduled_time, 'Asia/Kuala_Lumpur')->toDateString();
@@ -164,9 +164,6 @@ class DashboardController extends Controller
                     'day' => $date->format('l'),
                     'time' => $formatTime($first->available_start_time).' – '.$formatTime($first->available_end_time),
                     'meal' => $first->meal_name,
-                    'S' => (int) $items->where('size', 'S')->sum('quantity'),
-                    'M' => (int) $items->where('size', 'M')->sum('quantity'),
-                    'L' => (int) $items->where('size', 'L')->sum('quantity'),
                     'total' => (int) $items->sum('quantity'),
                 ];
             })
@@ -251,7 +248,7 @@ class DashboardController extends Controller
                 'meal_id' => $item->menu_item_id, 'meal_name' => $item->menuItem?->name,
                 'date' => $date, 'time' => $item->scheduled_time->copy()->timezone('Asia/Kuala_Lumpur')->format('g:i A'),
                 'scheduled_at' => $item->scheduled_time->toIso8601String(), 'quantity' => $quantity,
-                'size' => strtoupper($item->size ?: 'M'), 'spent' => round((float) $item->unit_price * $quantity, 2),
+                'spent' => round((float) $item->unit_price * $quantity, 2),
                 'collected' => $collected, 'missed' => $missed,
                 'upcoming' => $now->lte($deadline) ? max(0, $quantity - $collected) : 0,
                 'still_hungry' => $item->studentMealEvents->contains('event_type', 'still_hungry'),
@@ -298,10 +295,6 @@ class DashboardController extends Controller
                         'id' => $mealRows->first()['meal_id'],
                         'name' => $mealRows->first()['meal_name'],
                         'quantity' => $mealRows->sum('quantity'),
-                        'sizes' => $mealRows->groupBy('size')->map(fn ($sizeRows, $size) => [
-                            'size' => $size,
-                            'quantity' => $sizeRows->sum('quantity'),
-                        ])->values(),
                     ];
                 })->values(),
             ];
@@ -405,7 +398,6 @@ class DashboardController extends Controller
                     'class' => $item->student?->class,
                     'meal_id' => $item->menu_item_id,
                     'meal_name' => $item->menuItem?->name,
-                    'size' => strtoupper($item->size ?: 'M'),
                     'ordered' => $quantity,
                     'collected' => $collected,
                     'remaining' => $now->lte($deadline) ? $uncollected : 0,
@@ -495,9 +487,6 @@ class DashboardController extends Controller
                 'day' => $first['day'],
                 'time' => $first['start_time'].' – '.$first['end_time'],
                 'meal_name' => $first['meal_name'],
-                'S' => $rows->where('size', 'S')->sum('ordered'),
-                'M' => $rows->where('size', 'M')->sum('ordered'),
-                'L' => $rows->where('size', 'L')->sum('ordered'),
                 'total' => $rows->sum('ordered'),
             ];
         })->values();

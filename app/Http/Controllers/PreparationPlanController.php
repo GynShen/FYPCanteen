@@ -47,7 +47,7 @@ class PreparationPlanController extends Controller
                 $graceEnd = $sessionEnd->copy()->addMinutes(15);
                 $uncollected = max(0, $quantity - $collected);
                 return ['date' => $date, 'day' => $item->scheduled_time->format('l'), 'menu_item_id' => $item->menu_item_id,
-                    'meal' => $item->menuItem?->name, 'size' => strtoupper($item->size ?: 'M'), 'quantity' => $quantity,
+                    'meal' => $item->menuItem?->name, 'quantity' => $quantity,
                     'collected' => $collected, 'remaining' => $now->lte($graceEnd) ? $uncollected : 0,
                     'missed' => $now->gt($graceEnd) ? $uncollected : 0, 'student_id' => $item->student_id,
                     'start_time' => $sessionStart->format('g:i A'), 'end_time' => $sessionEnd->format('g:i A'),
@@ -62,8 +62,7 @@ class PreparationPlanController extends Controller
             $first = $rows->first(); $key = $first['date'].'-'.$first['menu_item_id'];
             return ['key' => $key, 'menu_item_id' => $first['menu_item_id'], 'date' => $first['date'], 'day' => $first['day'],
                 'time' => $first['start_time'].' – '.$first['end_time'], 'meal' => $first['meal'],
-                'S' => $rows->where('size', 'S')->sum('quantity'), 'M' => $rows->where('size', 'M')->sum('quantity'),
-                'L' => $rows->where('size', 'L')->sum('quantity'), 'total' => $rows->sum('quantity'),
+                'total' => $rows->sum('quantity'),
                 'students' => $rows->unique('student_id')->count(), 'collected' => $rows->sum('collected'),
                 'remaining' => $rows->sum('remaining'), 'missed' => $rows->sum('missed'), 'is_completed' => $completed->has($key)];
         })->sortBy(fn ($item) => $item['date'].'-'.$item['time'].'-'.$item['meal'])->values();

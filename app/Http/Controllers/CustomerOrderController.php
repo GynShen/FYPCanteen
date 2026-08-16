@@ -35,7 +35,6 @@ class CustomerOrderController extends Controller
                 'cartItems.menuItem.days',
                 'cartItems.menuItem.menuCategories',
                 'cartItems.menuItem.schools',
-                'cartItems.menuItem.sizes',
                 'cartItems.student.school',
             ])
             ->first();
@@ -47,7 +46,7 @@ class CustomerOrderController extends Controller
                 ->whereHas('schools', fn ($query) => $query
                     ->where('schools.is_active', true)
                     ->whereIn('schools.id', $schoolIds))
-                ->with(['menuCategories', 'days', 'schools', 'sizes'])
+                ->with(['menuCategories', 'days', 'schools', 'components'])
                 ->orderBy('name')
                 ->get(),
             'cartItems' => $cart?->cartItems ?? [],
@@ -65,7 +64,6 @@ class CustomerOrderController extends Controller
             (int) $validated['menu_item_id'],
             $scheduledTime,
         );
-        $size = $this->validateSize((int) $validated['menu_item_id'], $validated['size']);
 
         $cart = Cart::firstOrCreate(['user_id' => $request->user()->id]);
         $cart->cartItems()->updateOrCreate([
@@ -73,7 +71,6 @@ class CustomerOrderController extends Controller
             'menu_item_id' => $validated['menu_item_id'],
             'scheduled_time' => $scheduledTime,
         ], [
-            'size' => $size,
             'quantity' => (int) $validated['quantity'],
         ]);
 
@@ -87,7 +84,6 @@ class CustomerOrderController extends Controller
 
         $validated = $request->validate([
             'quantity' => ['required', 'integer', 'min:1', 'max:20'],
-            'size' => ['required', Rule::in(['S', 'M', 'L'])],
         ]);
 
         $this->validateMealForChild(
@@ -99,7 +95,6 @@ class CustomerOrderController extends Controller
 
         $cartItem->update([
             'quantity' => $validated['quantity'],
-            'size' => $this->validateSize($cartItem->menu_item_id, $validated['size']),
         ]);
 
         return back()->with('success', 'Cart updated.');
@@ -162,7 +157,7 @@ class CustomerOrderController extends Controller
             }
 
             $items = $cart->cartItems()
-                ->with(['menuItem.days', 'menuItem.schools', 'menuItem.sizes'])
+                ->with(['menuItem.days', 'menuItem.schools'])
                 ->lockForUpdate()
                 ->get();
 
@@ -180,7 +175,7 @@ class CustomerOrderController extends Controller
             }
 
             $total = $items->sum(
-                fn (CartItem $item) => $item->menuItem->priceForSize($item->size) * $item->quantity
+                fn (CartItem $item) => (float) $item->menuItem->price * $item->quantity
             );
             $order = $request->user()->orders()->create([
                 'total_amount' => $total,
@@ -191,8 +186,7 @@ class CustomerOrderController extends Controller
                 $order->orderItems()->create([
                     'student_id' => $item->student_id,
                     'menu_item_id' => $item->menu_item_id,
-                    'size' => $item->size,
-                    'unit_price' => $item->menuItem->priceForSize($item->size),
+                    'unit_price' => $item->menuItem->price,
                     'scheduled_time' => $item->scheduled_time,
                     'quantity' => $item->quantity,
                 ]);
@@ -218,7 +212,7 @@ class CustomerOrderController extends Controller
         $this->authorizeCustomer($request);
         $orders = $request->user()
             ->orders()
-            ->with(['payment', 'orderItems.menuItem', 'orderItems.student.school'])
+            ->with(['payment', 'orderItems.menuItem.components', 'orderItems.student.school'])
             ->latest()
             ->get();
 
@@ -247,7 +241,7 @@ class CustomerOrderController extends Controller
             'menuItems' => MenuItem::query()
                 ->where('is_available', true)
                 ->whereHas('schools.students.child', fn ($query) => $query->where('user_id', $request->user()->id))
-                ->with(['days', 'schools', 'sizes'])
+                ->with(['days', 'schools', 'components'])
                 ->orderBy('name')
                 ->get(),
         ]);
@@ -283,14 +277,14 @@ class CustomerOrderController extends Controller
             ->where('is_available', true)
             ->whereHas('schools.students', fn ($query) => $query->whereKey($orderItem->student_id))
             ->whereHas('days', fn ($query) => $query->where('day_of_week', strtolower($orderItem->scheduled_time->format('l'))))
-            ->with('sizes')
+            ->where('available_start_time', $orderItem->menuItem?->available_start_time)
+            ->where('available_end_time', $orderItem->menuItem?->available_end_time)
             ->get()
-            ->first(fn (MenuItem $menuItem) => $menuItem->supportsSize($orderItem->size)
-                && $menuItem->priceForSize($orderItem->size) === (float) $orderItem->unit_price);
+            ->first(fn (MenuItem $menuItem) => (float) $menuItem->price === (float) $orderItem->unit_price);
 
         if (! $replacement) {
             throw ValidationException::withMessages([
-                'menu_item_id' => 'Choose a same-price meal available for this child on the same weekday.',
+                'menu_item_id' => 'Choose a same-price meal with the same collection time.',
             ]);
         }
 
@@ -307,28 +301,7 @@ class CustomerOrderController extends Controller
             'menu_item_id' => ['required', 'integer', Rule::exists('menu_items', 'id')],
             'collection_date' => ['required', 'date', 'after_or_equal:today'],
             'quantity' => ['required', 'integer', 'min:1', 'max:20'],
-            'size' => ['required', Rule::in(['S', 'M', 'L'])],
         ]);
-    }
-
-    private function validateSize(int $menuItemId, string $size): string
-    {
-        $menuItem = MenuItem::with('sizes')->findOrFail($menuItemId);
-        $size = strtoupper($size);
-
-        if ($menuItem->sizes->isEmpty()) {
-            if ($size !== 'M') {
-                throw ValidationException::withMessages(['size' => 'This meal is only available in Medium size.']);
-            }
-
-            return 'M';
-        }
-
-        if (! $menuItem->sizes->contains('size', $size)) {
-            throw ValidationException::withMessages(['size' => 'Choose an available meal size.']);
-        }
-
-        return $size;
     }
 
     private function validateMealForChild(Request $request, int $studentId, int $menuItemId, Carbon $date): void

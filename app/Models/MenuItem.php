@@ -20,6 +20,12 @@ class MenuItem extends Model
         'image_drive_id',
         'image_url',
         'is_available',
+        'calories_kcal',
+        'protein_g',
+        'carbohydrates_g',
+        'fat_g',
+        'fibre_g',
+        'sodium_mg',
     ];
 
     protected function casts(): array
@@ -27,6 +33,12 @@ class MenuItem extends Model
         return [
             'price' => 'decimal:2',
             'is_available' => 'boolean',
+            'calories_kcal' => 'decimal:2',
+            'protein_g' => 'decimal:2',
+            'carbohydrates_g' => 'decimal:2',
+            'fat_g' => 'decimal:2',
+            'fibre_g' => 'decimal:2',
+            'sodium_mg' => 'decimal:2',
         ];
     }
 
@@ -60,24 +72,9 @@ class MenuItem extends Model
         return $this->hasMany(MenuItemDay::class);
     }
 
-    public function sizes(): HasMany
+    public function components(): HasMany
     {
-        return $this->hasMany(MenuItemSize::class);
+        return $this->hasMany(MenuItemComponent::class)->orderBy('sort_order');
     }
 
-    public function priceForSize(string $size): float
-    {
-        $adjustment = $this->sizes->firstWhere('size', strtoupper($size))?->price_adjustment ?? 0;
-
-        return round((float) $this->price + (float) $adjustment, 2);
-    }
-
-    public function supportsSize(string $size): bool
-    {
-        $size = strtoupper($size);
-
-        return $this->sizes->isEmpty()
-            ? $size === 'M'
-            : $this->sizes->contains('size', $size);
-    }
 }

@@ -19,7 +19,6 @@ return new class extends Migration
                 ->constrained('students')->cascadeOnDelete();                
             $table->foreignId('menu_item_id')
                 ->constrained('menu_items')->cascadeOnDelete();
-            $table->string('size', 1)->default('M');
             $table->decimal('unit_price', 10, 2);
             $table->dateTime('scheduled_time');
             $table->integer('quantity');

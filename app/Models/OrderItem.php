@@ -16,7 +16,6 @@ class OrderItem extends Model
         'order_id',
         'student_id',
         'menu_item_id',
-        'size',
         'unit_price',
         'scheduled_time',
         'quantity',

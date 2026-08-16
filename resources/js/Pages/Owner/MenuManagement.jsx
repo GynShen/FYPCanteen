@@ -18,11 +18,6 @@ const days = [
     'saturday',
     'sunday',
 ];
-const optionalSizes = [
-    { code: 'S', name: 'Small', adjustment: '− RM0.50' },
-    { code: 'L', name: 'Large', adjustment: '+ RM0.50' },
-];
-
 export default function MenuManagement({
     menuItems,
     categories,
@@ -55,9 +50,15 @@ export default function MenuManagement({
         price: '',
         available_start_time: '',
         available_end_time: '',
-        sizes: [],
         image: null,
         is_available: true,
+        calories_kcal: '',
+        protein_g: '',
+        carbohydrates_g: '',
+        fat_g: '',
+        fibre_g: '',
+        sodium_mg: '',
+        components: [{ component_type: 'staple', name: '', amount_g: '' }],
     });
 
     const clearForm = () => {
@@ -85,11 +86,21 @@ export default function MenuManagement({
             price: item.price,
             available_start_time: item.available_start_time?.slice(0, 5) ?? '',
             available_end_time: item.available_end_time?.slice(0, 5) ?? '',
-            sizes: item.sizes
-                .map((size) => size.size)
-                .filter((size) => size !== 'M'),
             image: null,
             is_available: Boolean(item.is_available),
+            calories_kcal: item.calories_kcal ?? '',
+            protein_g: item.protein_g ?? '',
+            carbohydrates_g: item.carbohydrates_g ?? '',
+            fat_g: item.fat_g ?? '',
+            fibre_g: item.fibre_g ?? '',
+            sodium_mg: item.sodium_mg ?? '',
+            components: item.components?.length
+                ? item.components.map((component) => ({
+                      component_type: component.component_type,
+                      name: component.name,
+                      amount_g: component.amount_g,
+                  }))
+                : [{ component_type: 'staple', name: '', amount_g: '' }],
         });
 
         if (fileInput.current) {
@@ -138,15 +149,6 @@ export default function MenuManagement({
         );
     };
 
-    const toggleSize = (size) => {
-        setData(
-            'sizes',
-            data.sizes.includes(size)
-                ? data.sizes.filter((selectedSize) => selectedSize !== size)
-                : [...data.sizes, size],
-        );
-    };
-
     const toggleSchool = (schoolId) => {
         setData(
             'school_ids',
@@ -179,9 +181,6 @@ export default function MenuManagement({
     const allSchoolsSelected =
         schools.length > 0 &&
         schools.every((school) => data.school_ids.includes(school.id));
-    const allSizesSelected = optionalSizes.every((size) =>
-        data.sizes.includes(size.code),
-    );
 
     const toggleAllDays = () => {
         setData('days', allDaysSelected ? [] : [...days]);
@@ -203,12 +202,22 @@ export default function MenuManagement({
         );
     };
 
-    const toggleAllSizes = () => {
-        setData(
-            'sizes',
-            allSizesSelected ? [] : optionalSizes.map((size) => size.code),
-        );
-    };
+    const addComponent = () => setData('components', [
+        ...data.components,
+        { component_type: 'other', name: '', amount_g: '' },
+    ]);
+
+    const updateComponent = (index, field, value) => setData(
+        'components',
+        data.components.map((component, componentIndex) =>
+            componentIndex === index ? { ...component, [field]: value } : component,
+        ),
+    );
+
+    const removeComponent = (index) => setData(
+        'components',
+        data.components.filter((_, componentIndex) => componentIndex !== index),
+    );
 
     const remove = (item) => {
         if (
@@ -417,6 +426,47 @@ export default function MenuManagement({
                                 />
                             </div>
 
+                            <section className="space-y-4 rounded-lg border border-slate-600 bg-slate-900/30 p-4 md:col-span-2">
+                                <div>
+                                    <h4 className="font-semibold text-white">Set meal nutrition (per serving)</h4>
+                                    <p className="text-xs text-slate-400">Enter estimated totals for one serving. Customer quantities multiply these values automatically.</p>
+                                </div>
+                                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                                    {[
+                                        ['calories_kcal', 'Energy (kcal)'],
+                                        ['protein_g', 'Protein (g)'],
+                                        ['carbohydrates_g', 'Carbohydrates (g)'],
+                                        ['fat_g', 'Fat (g)'],
+                                        ['fibre_g', 'Fibre (g)'],
+                                        ['sodium_mg', 'Sodium (mg)'],
+                                    ].map(([field, label]) => (
+                                        <div key={field}>
+                                            <InputLabel value={label} />
+                                            <TextInput type="number" min="0" step="0.01" value={data[field]} onChange={(event) => setData(field, event.target.value)} className="mt-1 w-full" required />
+                                            <InputError message={errors[field]} className="mt-1" />
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <div className="flex items-center justify-between">
+                                    <div><h4 className="font-semibold text-white">Portion components</h4><p className="text-xs text-slate-400">Example: Rice — staple — 150 g.</p></div>
+                                    <button type="button" onClick={addComponent} className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white">Add component</button>
+                                </div>
+                                <div className="space-y-2">
+                                    {data.components.map((component, index) => (
+                                        <div key={index} className="grid gap-2 sm:grid-cols-[1fr_2fr_1fr_auto]">
+                                            <select value={component.component_type} onChange={(event) => updateComponent(index, 'component_type', event.target.value)} className="rounded-md border-gray-300 text-slate-900">
+                                                <option value="staple">Staple</option><option value="protein">Protein</option><option value="vegetable">Vegetable</option><option value="fruit">Fruit</option><option value="other">Other</option>
+                                            </select>
+                                            <TextInput value={component.name} onChange={(event) => updateComponent(index, 'name', event.target.value)} placeholder="Food name" required />
+                                            <TextInput type="number" min="0.01" step="0.01" value={component.amount_g} onChange={(event) => updateComponent(index, 'amount_g', event.target.value)} placeholder="Grams" required />
+                                            <button type="button" onClick={() => removeComponent(index)} disabled={data.components.length === 1} className="rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white disabled:opacity-40">Remove</button>
+                                        </div>
+                                    ))}
+                                    <InputError message={errors.components} />
+                                </div>
+                            </section>
+
                             <div>
                                 <InputLabel
                                     htmlFor="price"
@@ -438,40 +488,6 @@ export default function MenuManagement({
                                     message={errors.price}
                                     className="mt-2"
                                 />
-                                <p className="mt-1 text-xs text-gray-500">This is the Medium size price.</p>
-                            </div>
-
-                            <div>
-                                <div className="flex items-center gap-2">
-                                    <InputLabel value="Additional Sizes" />
-                                    <button
-                                        type="button"
-                                        onClick={toggleAllSizes}
-                                        className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 hover:underline dark:text-indigo-400 dark:hover:text-indigo-300"
-                                    >
-                                        {allSizesSelected ? 'Clear all' : 'Select all'}
-                                    </button>
-                                </div>
-
-                                <div className="mt-2 grid grid-cols-2 gap-2">
-                                    {optionalSizes.map((size) => (
-                                        <label
-                                            key={size.code}
-                                            className="inline-flex items-center gap-2 rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-700 dark:text-gray-200"
-                                        >
-                                            <input
-                                                type="checkbox"
-                                                checked={data.sizes.includes(size.code)}
-                                                onChange={() => toggleSize(size.code)}
-                                                className="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500"
-                                            />
-                                            <span>{size.name} ({size.code})</span>
-                                            <span className="ml-auto text-xs text-gray-500">{size.adjustment}</span>
-                                        </label>
-                                    ))}
-                                </div>
-                                <p className="mt-1 text-xs text-gray-500">Medium is always available at the original price.</p>
-                                <InputError message={errors.sizes} className="mt-2" />
                             </div>
 
                             <div>
@@ -677,11 +693,6 @@ export default function MenuManagement({
                                             <td className="px-4 py-3 text-center text-sm text-gray-900">
                                                 RM{' '}
                                                 {Number(item.price).toFixed(2)}
-                                                <span className="block text-xs text-gray-500">
-                                                    {item.sizes.length > 0
-                                                        ? item.sizes.map((size) => size.size).join(' / ')
-                                                        : 'M only'}
-                                                </span>
                                                 <span className="block text-xs text-gray-500">
                                                     {item.available_start_time && item.available_end_time
                                                         ? `${item.available_start_time.slice(0, 5)}–${item.available_end_time.slice(0, 5)}`

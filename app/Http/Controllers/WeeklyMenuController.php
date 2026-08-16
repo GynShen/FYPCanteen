@@ -16,7 +16,7 @@ class WeeklyMenuController extends Controller
 
         return inertia('Owner/WeeklyMenu', [
             'menuItems' => MenuItem::query()
-                ->with(['menuCategories', 'days', 'schools', 'sizes'])
+                ->with(['menuCategories', 'days', 'schools'])
                 ->when($operatorSchoolId, fn ($query) => $query->whereHas('schools', fn ($query) => $query->whereKey($operatorSchoolId)))
                 ->latest()
                 ->get(),

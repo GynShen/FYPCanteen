@@ -123,17 +123,14 @@ export default function PreparationOverview({
           </div>
           <section className="overflow-hidden rounded-2xl border border-slate-700 bg-slate-800 shadow-lg">
             <div className="max-h-[65vh] overflow-auto">
-              <table className="w-full min-w-[1050px]">
+              <table className="w-full min-w-[800px]">
                 <thead className="sticky top-0 z-10 bg-slate-700 text-xs uppercase text-slate-200">
                   <tr>
                     <th className="px-5 py-3 text-left">School</th>
                     <th className="px-5 py-3 text-left">Date</th>
                     <th className="px-5 py-3 text-left">Collection time</th>
                     <th className="px-5 py-3 text-left">Meal</th>
-                    <th>Small</th>
-                    <th>Medium</th>
-                    <th>Large</th>
-                    <th>Total</th>
+                    <th>Total portions</th>
                     <th>Preparation</th>
                   </tr>
                 </thead>
@@ -154,9 +151,6 @@ export default function PreparationOverview({
                       <td className="px-5 py-4 font-semibold text-white">
                         {batch.meal}
                       </td>
-                      <td className="text-center">{batch.S}</td>
-                      <td className="text-center">{batch.M}</td>
-                      <td className="text-center">{batch.L}</td>
                       <td className="text-center font-bold text-indigo-300">
                         {batch.total}
                       </td>
@@ -172,7 +166,7 @@ export default function PreparationOverview({
                   {!batches.length && (
                     <tr>
                       <td
-                        colSpan="9"
+                        colSpan="6"
                         className="px-5 py-12 text-center text-slate-400"
                       >
                         No paid meals require preparation in this period.

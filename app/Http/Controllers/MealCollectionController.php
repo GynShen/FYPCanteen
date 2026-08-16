@@ -204,7 +204,7 @@ class MealCollectionController extends Controller
         $orderItem->student->child?->user?->notify(new CustomerEventNotification([
             'event' => 'still_hungry',
             'title' => 'Still hungry feedback',
-            'message' => $orderItem->student->name.' reported still being hungry after '.$orderItem->menuItem->name.' (size '.$orderItem->size.', quantity '.$orderItem->quantity.'). Consider a larger portion next time.',
+            'message' => $orderItem->student->name.' reported still being hungry after '.$orderItem->menuItem->name.' (quantity '.$orderItem->quantity.'). Consider ordering an additional serving next time.',
             'student_id' => $orderItem->student_id,
             'order_item_id' => $orderItem->id,
             'meal_collection_id' => $orderItem->collection->id,
@@ -229,7 +229,6 @@ class MealCollectionController extends Controller
             'id' => $item->id,
             'meal' => $item->menuItem?->name,
             'image_url' => $item->menuItem?->image_url,
-            'size' => $item->size,
             'ordered_quantity' => (int) $item->quantity,
             'collected_quantity' => $collected,
             'remaining_quantity' => max(0, (int) $item->quantity - $collected),

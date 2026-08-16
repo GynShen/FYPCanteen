@@ -16,6 +16,7 @@ class Student extends Model
         'school_id',
         'name',
         'class',
+        'guardian_phone_number',
         'qr_code',
     ];
 

@@ -29,7 +29,7 @@ class StripePaymentController extends Controller
 
         $cart = Cart::query()
             ->where('user_id', $request->user()->id)
-            ->with(['cartItems.menuItem.days', 'cartItems.menuItem.schools', 'cartItems.menuItem.sizes', 'cartItems.student.school'])
+            ->with(['cartItems.menuItem.days', 'cartItems.menuItem.schools', 'cartItems.student.school'])
             ->first();
 
         if (! $cart || $cart->cartItems->isEmpty()) {
@@ -41,7 +41,7 @@ class StripePaymentController extends Controller
         }
 
         $total = $cart->cartItems->sum(
-            fn (CartItem $item) => $item->menuItem->priceForSize($item->size) * $item->quantity
+            fn (CartItem $item) => (float) $item->menuItem->price * $item->quantity
         );
 
         $order = DB::transaction(function () use ($request, $cart, $total) {
@@ -54,8 +54,7 @@ class StripePaymentController extends Controller
                 $order->orderItems()->create([
                     'student_id' => $item->student_id,
                     'menu_item_id' => $item->menu_item_id,
-                    'size' => $item->size,
-                    'unit_price' => $item->menuItem->priceForSize($item->size),
+                    'unit_price' => $item->menuItem->price,
                     'scheduled_time' => $item->scheduled_time,
                     'quantity' => $item->quantity,
                 ]);
@@ -85,9 +84,9 @@ class StripePaymentController extends Controller
                 'line_items' => $cart->cartItems->map(fn (CartItem $item) => [
                     'price_data' => [
                         'currency' => config('services.stripe.currency', 'myr'),
-                        'unit_amount' => (int) round($item->menuItem->priceForSize($item->size) * 100),
+                        'unit_amount' => (int) round((float) $item->menuItem->price * 100),
                         'product_data' => [
-                            'name' => $item->menuItem->name.' ('.$item->size.') for '.$item->student->name,
+                            'name' => $item->menuItem->name.' for '.$item->student->name,
                             'description' => 'Meal collection: '.$item->scheduled_time->format('d/m/Y'),
                         ],
                     ],

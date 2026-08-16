@@ -24,7 +24,7 @@ class MenuController extends Controller
 
         return inertia('Owner/MenuManagement', [
             'menuItems' => MenuItem::query()
-                ->with(['menuCategories', 'days', 'schools', 'sizes'])
+                ->with(['menuCategories', 'days', 'schools', 'components'])
                 ->when($request->filled('search'), function ($query) use ($request): void {
                     $search = '%'.$request->string('search')->trim().'%';
                     $query->where(fn ($query) => $query->where('name', 'like', $search)->orWhere('description', 'like', $search)->orWhere('id', $request->input('search')));
@@ -59,7 +59,7 @@ class MenuController extends Controller
                 $menuItem->menuCategories()->sync($validated['menu_category_ids']);
                 $menuItem->schools()->sync($validated['school_ids']);
                 $menuItem->days()->createMany($this->dayRecords($validated['days']));
-                $this->syncSizes($menuItem, $validated['sizes'] ?? []);
+                $this->syncComponents($menuItem, $validated['components']);
             });
         } catch (Throwable $exception) {
             $this->deleteDriveImageQuietly($driveImage['id']);
@@ -91,7 +91,7 @@ class MenuController extends Controller
                 $menu->schools()->sync($validated['school_ids']);
                 $menu->days()->delete();
                 $menu->days()->createMany($this->dayRecords($validated['days']));
-                $this->syncSizes($menu, $validated['sizes'] ?? []);
+                $this->syncComponents($menu, $validated['components']);
             });
         } catch (Throwable $exception) {
             $this->deleteDriveImageQuietly($newDriveImage['id'] ?? null);
@@ -126,9 +126,6 @@ class MenuController extends Controller
      */
     private function validateMenu(Request $request, bool $imageRequired): array
     {
-        $requestedSizes = $request->input('sizes', []);
-        $hasSmallSize = is_array($requestedSizes) && in_array('S', $requestedSizes, true);
-
         return $request->validate([
             'menu_category_ids' => ['required', 'array', 'min:1'],
             'menu_category_ids.*' => ['required', 'integer', 'distinct', Rule::exists('menu_categories', 'id')],
@@ -140,13 +137,21 @@ class MenuController extends Controller
             'days.*' => ['required', 'distinct', Rule::in([
                 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday',
             ])],
-            'price' => ['required', 'numeric', 'decimal:0,2', 'min:'.($hasSmallSize ? '0.51' : '0.01'), 'max:99999999.99'],
+            'price' => ['required', 'numeric', 'decimal:0,2', 'min:0.01', 'max:99999999.99'],
             'available_start_time' => ['nullable', 'date_format:H:i', 'required_with:available_end_time'],
             'available_end_time' => ['nullable', 'date_format:H:i', 'required_with:available_start_time', 'after:available_start_time'],
-            'sizes' => ['nullable', 'array'],
-            'sizes.*' => ['required', 'distinct', Rule::in(['S', 'L'])],
             'image' => [$imageRequired ? 'required' : 'nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:5120'],
             'is_available' => ['required', 'boolean'],
+            'calories_kcal' => ['required', 'numeric', 'min:0', 'max:99999.99'],
+            'protein_g' => ['required', 'numeric', 'min:0', 'max:99999.99'],
+            'carbohydrates_g' => ['required', 'numeric', 'min:0', 'max:99999.99'],
+            'fat_g' => ['required', 'numeric', 'min:0', 'max:99999.99'],
+            'fibre_g' => ['required', 'numeric', 'min:0', 'max:99999.99'],
+            'sodium_mg' => ['required', 'numeric', 'min:0', 'max:99999.99'],
+            'components' => ['required', 'array', 'min:1'],
+            'components.*.component_type' => ['required', Rule::in(['staple', 'protein', 'vegetable', 'fruit', 'other'])],
+            'components.*.name' => ['required', 'string', 'max:255'],
+            'components.*.amount_g' => ['required', 'numeric', 'min:0.01', 'max:99999.99'],
         ]);
     }
 
@@ -163,7 +168,24 @@ class MenuController extends Controller
             'available_start_time' => $validated['available_start_time'] ?? null,
             'available_end_time' => $validated['available_end_time'] ?? null,
             'is_available' => $validated['is_available'],
+            'calories_kcal' => $validated['calories_kcal'],
+            'protein_g' => $validated['protein_g'],
+            'carbohydrates_g' => $validated['carbohydrates_g'],
+            'fat_g' => $validated['fat_g'],
+            'fibre_g' => $validated['fibre_g'],
+            'sodium_mg' => $validated['sodium_mg'],
         ];
+    }
+
+    /** @param list<array{component_type: string, name: string, amount_g: numeric-string|float|int}> $components */
+    private function syncComponents(MenuItem $menuItem, array $components): void
+    {
+        $menuItem->components()->delete();
+        $menuItem->components()->createMany(array_map(
+            fn (array $component, int $index): array => [...$component, 'sort_order' => $index],
+            $components,
+            array_keys($components),
+        ));
     }
 
     /**
@@ -176,26 +198,6 @@ class MenuController extends Controller
             fn (string $day): array => ['day_of_week' => $day],
             $days,
         );
-    }
-
-    /** @param list<string> $sizes */
-    private function syncSizes(MenuItem $menuItem, array $sizes): void
-    {
-        $menuItem->sizes()->delete();
-
-        if ($sizes !== []) {
-            $records = [['size' => 'M', 'price_adjustment' => 0.00]];
-
-            if (in_array('S', $sizes, true)) {
-                $records[] = ['size' => 'S', 'price_adjustment' => -0.50];
-            }
-
-            if (in_array('L', $sizes, true)) {
-                $records[] = ['size' => 'L', 'price_adjustment' => 0.50];
-            }
-
-            $menuItem->sizes()->createMany($records);
-        }
     }
 
     /**
