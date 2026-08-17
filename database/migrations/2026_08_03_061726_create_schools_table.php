@@ -15,6 +15,10 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('address');
+            $table->enum('ordering_deadline_day', [
+                'monday', 'tuesday', 'wednesday', 'thursday',
+                'friday', 'saturday', 'sunday',
+            ])->default('saturday');
             $table->boolean('is_active')->default(true);
             $table->timestamps();
         });

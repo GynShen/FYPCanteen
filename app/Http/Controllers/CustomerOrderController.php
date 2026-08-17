@@ -7,6 +7,7 @@ use App\Models\CartItem;
 use App\Models\Children;
 use App\Models\MenuItem;
 use App\Models\OrderItem;
+use App\Support\SchoolOrderingSchedule;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -24,6 +25,12 @@ class CustomerOrderController extends Controller
             ->children()
             ->with('student.school')
             ->get();
+        $children->each(function (Children $child): void {
+            $child->setAttribute(
+                'ordering_deadline_day',
+                SchoolOrderingSchedule::deadlineDay($child->student?->school),
+            );
+        });
         $schoolIds = $children
             ->filter(fn ($child) => $child->student?->school?->is_active)
             ->pluck('student.school_id')
@@ -219,14 +226,15 @@ class CustomerOrderController extends Controller
         $today = now()->startOfDay();
         $orders->each(function ($order) use ($today) {
             $order->orderItems->each(function ($item) use ($order, $today) {
-                $deadline = $item->scheduled_time->copy()
-                    ->startOfWeek(Carbon::MONDAY)
-                    ->subDays(2)
-                    ->endOfDay();
+                $school = $item->student?->school;
+                $deadline = $school
+                    ? SchoolOrderingSchedule::deadlineForCollection($item->scheduled_time, $school)
+                    : $item->scheduled_time->copy()->startOfDay();
                 $isPaidFutureMeal = $order->order_status === 'paid'
                     && $item->scheduled_time->gte($today);
 
                 $item->setAttribute('deadline_locked', $isPaidFutureMeal && now()->gt($deadline));
+                $item->setAttribute('ordering_deadline_day', SchoolOrderingSchedule::deadlineDay($school));
                 $item->setAttribute(
                     'can_edit',
                     $isPaidFutureMeal
@@ -259,13 +267,13 @@ class CustomerOrderController extends Controller
             ]);
         }
 
-        $deadline = $orderItem->scheduled_time->copy()
-            ->startOfWeek(Carbon::MONDAY)
-            ->subDays(2)
-            ->endOfDay();
+        $orderItem->loadMissing('student.school');
+        $school = $orderItem->student?->school;
+        abort_unless($school, 422, 'The student school could not be found.');
+        $deadline = SchoolOrderingSchedule::deadlineForCollection($orderItem->scheduled_time, $school);
         if ($orderItem->scheduled_time->lt(now()->startOfDay()) || now()->gt($deadline)) {
             throw ValidationException::withMessages([
-                'order_item' => 'This order can no longer be changed. Saturday is the deadline for next week.',
+                'order_item' => 'This order can no longer be changed. '.ucfirst(SchoolOrderingSchedule::deadlineDay($school)).' is this school\'s deadline for the following week.',
             ]);
         }
 
@@ -306,22 +314,24 @@ class CustomerOrderController extends Controller
 
     private function validateMealForChild(Request $request, int $studentId, int $menuItemId, Carbon $date): void
     {
-        [$weekStart, $weekEnd] = $this->orderingWindow();
-        if ($date->lt($weekStart) || $date->gt($weekEnd)) {
-            throw ValidationException::withMessages([
-                'collection_date' => 'Meals can only be ordered for the next eligible week (Monday to Sunday). Saturday is the deadline.',
-            ]);
-        }
-
-        $childExists = Children::query()
+        $child = Children::query()
             ->where('user_id', $request->user()->id)
             ->where('student_id', $studentId)
             ->whereHas('student.school', fn ($query) => $query->where('is_active', true))
-            ->exists();
+            ->with('student.school')
+            ->first();
 
-        if (! $childExists) {
+        if (! $child) {
             throw ValidationException::withMessages([
                 'student_id' => 'Meal ordering is unavailable because this student’s school is currently inactive.',
+            ]);
+        }
+
+        [$weekStart, $weekEnd] = SchoolOrderingSchedule::orderingWindow($child->student->school);
+        if ($date->lt($weekStart) || $date->gt($weekEnd)) {
+            $deadlineDay = ucfirst(SchoolOrderingSchedule::deadlineDay($child->student->school));
+            throw ValidationException::withMessages([
+                'collection_date' => "Meals can only be ordered for the next eligible week (Monday to Sunday). {$deadlineDay} is this school's deadline.",
             ]);
         }
 
@@ -337,16 +347,6 @@ class CustomerOrderController extends Controller
                 'menu_item_id' => 'This meal is not available for the selected child on that date.',
             ]);
         }
-    }
-
-    /** @return array{Carbon, Carbon} */
-    private function orderingWindow(): array
-    {
-        $today = now();
-        $weeksAhead = $today->dayOfWeekIso === 7 ? 2 : 1;
-        $start = $today->copy()->startOfWeek()->addWeeks($weeksAhead)->startOfDay();
-
-        return [$start, $start->copy()->endOfWeek()->endOfDay()];
     }
 
     private function authorizeCustomer(Request $request): void

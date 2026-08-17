@@ -7,6 +7,7 @@ use App\Models\CartItem;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Notifications\CustomerEventNotification;
+use App\Support\SchoolOrderingSchedule;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -211,10 +212,11 @@ class StripePaymentController extends Controller
 
     private function validateCartItem(Request $request, CartItem $item): void
     {
-        $today = now();
-        $weeksAhead = $today->dayOfWeekIso === 7 ? 2 : 1;
-        $weekStart = $today->copy()->startOfWeek()->addWeeks($weeksAhead)->startOfDay();
-        $weekEnd = $weekStart->copy()->endOfWeek()->endOfDay();
+        if (! $item->student?->school) {
+            throw ValidationException::withMessages(['cart' => 'A cart student is no longer assigned to a school.']);
+        }
+
+        [$weekStart, $weekEnd] = SchoolOrderingSchedule::orderingWindow($item->student->school);
         $valid = $request->user()->children()->where('student_id', $item->student_id)->exists()
             && $item->student->school?->is_active
             && $item->menuItem->is_available

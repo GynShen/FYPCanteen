@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\MealPreparation;
 use App\Models\OrderItem;
+use App\Support\SchoolOrderingSchedule;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -75,7 +76,10 @@ class PreparationPlanController extends Controller
                 'students' => $rows->unique('student_id')->count(), 'meals' => $rows->unique('menu_item_id')->count()];
         })->values();
 
-        return inertia('Operator/PreparationPlan', ['school' => $request->user()->school?->only(['id', 'name']),
+        $school = $request->user()->school;
+
+        return inertia('Operator/PreparationPlan', ['school' => $school?->only(['id', 'name', 'ordering_deadline_day']),
+            'preparationStartDay' => $school ? SchoolOrderingSchedule::preparationStartDay($school) : null,
             'week' => $week, 'weekStart' => $start->toDateString(), 'weekEnd' => $end->toDateString(),
             'startDate' => $start->toDateString(), 'endDate' => $end->toDateString(), 'meals' => $meals, 'sessions' => $sessions]);
     }

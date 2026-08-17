@@ -14,6 +14,7 @@ class School extends Model
     protected $fillable = [
         'name',
         'address',
+        'ordering_deadline_day',
         'is_active',
     ];
 

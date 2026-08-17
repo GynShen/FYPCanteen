@@ -9,6 +9,17 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, router, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 
+const weekDays = [
+    'monday',
+    'tuesday',
+    'wednesday',
+    'thursday',
+    'friday',
+    'saturday',
+    'sunday',
+];
+const dayName = (day) => day.charAt(0).toUpperCase() + day.slice(1);
+
 export default function SchoolManagement({ schools, filters }) {
     const [editingId, setEditingId] = useState(null);
     const [showForm, setShowForm] = useState(false);
@@ -27,6 +38,7 @@ export default function SchoolManagement({ schools, filters }) {
     } = useForm({
         name: '',
         address: '',
+        ordering_deadline_day: 'saturday',
     });
 
     const startEdit = (school) => {
@@ -36,6 +48,8 @@ export default function SchoolManagement({ schools, filters }) {
         setData({
             name: school.name,
             address: school.address,
+            ordering_deadline_day:
+                school.ordering_deadline_day ?? 'saturday',
         });
         window.setTimeout(() => document.getElementById('school-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
     };
@@ -176,6 +190,40 @@ export default function SchoolManagement({ schools, filters }) {
                                 />
                             </div>
 
+                            <div>
+                                <InputLabel
+                                    htmlFor="ordering_deadline_day"
+                                    value="Last ordering day"
+                                    className="text-gray-800 dark:text-gray-200"
+                                />
+                                <select
+                                    id="ordering_deadline_day"
+                                    value={data.ordering_deadline_day}
+                                    onChange={(event) =>
+                                        setData(
+                                            'ordering_deadline_day',
+                                            event.target.value,
+                                        )
+                                    }
+                                    className="mt-1 block w-full rounded-md border-gray-300 text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    required
+                                >
+                                    {weekDays.map((day) => (
+                                        <option key={day} value={day}>
+                                            {dayName(day)}
+                                        </option>
+                                    ))}
+                                </select>
+                                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                    Customers may place and change orders until
+                                    the end of this day for the following week.
+                                </p>
+                                <InputError
+                                    message={errors.ordering_deadline_day}
+                                    className="mt-2"
+                                />
+                            </div>
+
                             <div className="space-y-3">
                                 {editingId && (
                                     <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
@@ -219,6 +267,9 @@ export default function SchoolManagement({ schools, filters }) {
                                             Address
                                         </th>
                                         <th className="px-6 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-700">
+                                            Last ordering day
+                                        </th>
+                                        <th className="px-6 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-700">
                                             Created At
                                         </th>
                                         <th className="px-6 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-700">
@@ -244,20 +295,24 @@ export default function SchoolManagement({ schools, filters }) {
                                             <td className="px-6 py-4 text-center text-sm text-gray-900">
                                                 {school.address}
                                             </td>
+                                            <td className="px-6 py-4 text-center text-sm font-semibold capitalize text-gray-900">
+                                                {school.ordering_deadline_day ??
+                                                    'saturday'}
+                                            </td>
                                             <td className="px-6 py-4 text-center text-sm text-gray-900">
                                                 {new Date(
                                                     school.created_at,
+                                                ).toLocaleString('en-SG')}
+                                            </td>
+                                            <td className="px-6 py-4 text-center text-sm text-gray-900">
+                                                {new Date(
+                                                    school.updated_at,
                                                 ).toLocaleString('en-SG')}
                                             </td>
                                             <td className="px-6 py-4 text-center">
                                                 <span className={`rounded-full px-3 py-1 text-xs font-semibold ${school.is_active ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}`}>
                                                     {school.is_active ? 'Active' : 'Inactive'}
                                                 </span>
-                                            </td>
-                                            <td className="px-6 py-4 text-center text-sm text-gray-900">
-                                                {new Date(
-                                                    school.updated_at,
-                                                ).toLocaleString('en-SG')}
                                             </td>
                       <td className="px-6 py-4 text-center">
                                                 <div className="flex items-center justify-center gap-2">

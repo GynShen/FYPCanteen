@@ -94,7 +94,7 @@ function CustomerReport({ report, month, childId, update }) {
     return <>
         <section className="rounded-2xl border border-slate-700 bg-slate-800 p-5 shadow-lg">
             <h3 className="text-lg font-bold text-white">Upcoming meals by child</h3>
-            <p className="mt-1 text-sm text-slate-400">The next paid meal for each child, independent of the monthly report filter.</p>
+            <p className="mt-1 text-sm text-slate-400">The next paid meal for each child.</p>
             {report.upcoming_meals.length > 0 ? <div className="mt-4 space-y-3">{report.upcoming_meals.map((meal) => <article key={meal.id} className="grid gap-4 rounded-xl border border-indigo-500/50 bg-indigo-500/10 p-4 sm:grid-cols-2 lg:grid-cols-4 lg:items-center"><div><p className="text-xs uppercase text-slate-400">Child</p><p className="text-lg font-bold text-white">{meal.student_name}</p><p className="text-xs text-slate-400">{meal.school_name}</p></div><div><p className="text-xs uppercase text-slate-400">Meal</p><p className="font-bold text-white">{meal.meal_name}</p></div><div><p className="text-xs uppercase text-slate-400">Collection</p><p className="font-bold text-white">{meal.date}</p><p className="text-xs text-slate-300">{meal.time}</p></div><div><p className="text-xs uppercase text-slate-400">Order</p><p className="font-bold text-white">Qty {meal.quantity}</p></div></article>)}</div> : <p className="mt-4 rounded-xl bg-slate-700/50 p-6 text-center text-sm text-slate-400">No upcoming paid meals.</p>}
         </section>
         <section className="rounded-2xl border border-slate-700 bg-slate-800 p-5 shadow-lg">

@@ -31,6 +31,24 @@ export default function Orders({ orders, menuItems }) {
     const [expandedOrders, setExpandedOrders] = useState({});
     const { currentPage, setCurrentPage, paginatedItems } =
         useTablePagination(orders);
+    const orderingDeadlineDay = useMemo(() => {
+        const deadlines = [];
+
+        orders.forEach((order) =>
+            order.order_items.forEach((item) => {
+                const school = item.student?.school;
+                if (school) {
+                    deadlines.push(
+                        school.ordering_deadline_day ??
+                            item.ordering_deadline_day ??
+                            'saturday',
+                    );
+                }
+            }),
+        );
+
+        return deadlines[0] ?? 'saturday';
+    }, [orders]);
 
     const replacements = useMemo(() => {
         if (!editingItem) return [];
@@ -73,7 +91,8 @@ export default function Orders({ orders, menuItems }) {
             <div className="py-12">
                 <div className="mx-auto max-w-7xl space-y-6 sm:px-6 lg:px-8">
                     <div className="rounded-lg border border-emerald-300 bg-emerald-50 p-4 text-sm text-emerald-800">
-                        Meal changes are allowed until Saturday. A replacement keeps the same child, date, collection time, quantity and paid price.
+                        Ordered meals for the selected school can be modified
+                        until {dayName(orderingDeadlineDay)}.
                     </div>
 
                     {paginatedItems.map((order) => {
@@ -132,7 +151,7 @@ export default function Orders({ orders, menuItems }) {
                                                                             <span className="block text-xs font-semibold text-slate-700">Quantity: {item.quantity}</span>
                                                                             {item.deadline_locked && (
                                                                                 <span className="mt-2 block rounded border border-amber-300 bg-amber-50 px-2 py-1 text-xs font-medium text-amber-800">
-                                                                                    Saturday deadline passed. This meal cannot be changed.
+                                                                                    {dayName(item.ordering_deadline_day ?? 'saturday')} deadline passed. This meal cannot be changed.
                                                                                 </span>
                                                                             )}
                                                                         </button>

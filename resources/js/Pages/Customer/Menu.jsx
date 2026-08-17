@@ -22,25 +22,27 @@ const localDate = (date) => {
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
 };
-const orderingWeekStart = () => {
+const orderingWeekStart = (deadlineDay = 'saturday') => {
     const today = new Date();
     const isoDay = today.getDay() === 0 ? 7 : today.getDay();
+    const cutoffIsoDay = weekDays.indexOf(deadlineDay) + 1 || 6;
+    const weeksAhead = isoDay <= cutoffIsoDay ? 1 : 2;
     const monday = new Date(today);
     monday.setHours(0, 0, 0, 0);
-    monday.setDate(today.getDate() - isoDay + 1 + (isoDay === 7 ? 14 : 7));
+    monday.setDate(today.getDate() - isoDay + 1 + weeksAhead * 7);
     return monday;
 };
-const nextDateForDay = (day) => {
-    const date = orderingWeekStart();
+const nextDateForDay = (day, deadlineDay) => {
+    const date = orderingWeekStart(deadlineDay);
     date.setDate(date.getDate() + weekDays.indexOf(day));
     return localDate(date);
 };
-const nextDateForDays = (availableDays) => {
+const nextDateForDays = (availableDays, deadlineDay) => {
     const firstDay = weekDays.find((day) => availableDays.includes(day));
-    return firstDay ? nextDateForDay(firstDay) : '';
+    return firstDay ? nextDateForDay(firstDay, deadlineDay) : '';
 };
-const shortDate = (day) =>
-    new Date(`${nextDateForDay(day)}T00:00:00`).toLocaleDateString('en-MY', {
+const shortDate = (day, deadlineDay) =>
+    new Date(`${nextDateForDay(day, deadlineDay)}T00:00:00`).toLocaleDateString('en-MY', {
         day: '2-digit',
         month: '2-digit',
     });
@@ -61,8 +63,12 @@ export default function CustomerMenu({ children, menuItems, cartItems }) {
     const [cartPages, setCartPages] = useState({});
 
     const selectedChild = children.find(
-        (child) => child.student_id === Number(selectedChildId),
+        (child) => String(child.student_id) === String(selectedChildId),
     );
+    const selectedOrderingDeadlineDay =
+        selectedChild?.ordering_deadline_day ??
+        selectedChild?.student.school?.ordering_deadline_day;
+    const orderingDeadlineDay = selectedOrderingDeadlineDay ?? 'saturday';
     const canOrderForSelectedChild =
         selectedChild?.student.school?.is_active;
     const visibleMeals = useMemo(() => {
@@ -118,9 +124,9 @@ export default function CustomerMenu({ children, menuItems, cartItems }) {
     };
 
     const quantityKey = (mealId, day) =>
-        `${selectedChildId}-${mealId}-${nextDateForDay(day)}`;
+        `${selectedChildId}-${mealId}-${nextDateForDay(day, orderingDeadlineDay)}`;
     const cartItemFor = (meal, day) => {
-        const date = nextDateForDay(day);
+        const date = nextDateForDay(day, orderingDeadlineDay);
 
         return cartItems.find(
             (item) =>
@@ -130,7 +136,7 @@ export default function CustomerMenu({ children, menuItems, cartItems }) {
         );
     };
     const quantityFor = (meal, day) => {
-        const date = nextDateForDay(day);
+        const date = nextDateForDay(day, orderingDeadlineDay);
         const key = quantityKey(meal.id, day);
         if (draftQuantities[key]) return draftQuantities[key].quantity;
         return (
@@ -139,7 +145,7 @@ export default function CustomerMenu({ children, menuItems, cartItems }) {
     };
     const changeTimetableQuantity = (meal, day, value) => {
         const quantity = Math.max(0, Math.min(20, Number(value) || 0));
-        const date = nextDateForDay(day);
+        const date = nextDateForDay(day, orderingDeadlineDay);
         const key = quantityKey(meal.id, day);
         const savedItem = cartItemFor(meal, day);
         setDraftQuantities((current) => ({
@@ -160,7 +166,7 @@ export default function CustomerMenu({ children, menuItems, cartItems }) {
             {
                 student_id: Number(selectedChildId),
                 menu_item_id: meal.id,
-                collection_date: nextDateForDay(day),
+                collection_date: nextDateForDay(day, orderingDeadlineDay),
                 quantity,
             },
             { preserveScroll: true },
@@ -169,8 +175,11 @@ export default function CustomerMenu({ children, menuItems, cartItems }) {
 
     const openMeal = (meal, selectedDay = null) => {
         const date = selectedDay
-            ? nextDateForDay(selectedDay)
-            : nextDateForDays(meal.days.map((day) => day.day_of_week));
+            ? nextDateForDay(selectedDay, orderingDeadlineDay)
+            : nextDateForDays(
+                  meal.days.map((day) => day.day_of_week),
+                  orderingDeadlineDay,
+              );
         const draft = draftQuantities[`${selectedChildId}-${meal.id}-${date}`];
         const existingItem = cartItems.find(
             (item) =>
@@ -262,9 +271,14 @@ export default function CustomerMenu({ children, menuItems, cartItems }) {
             <Head title="Menu" />
             <div className="py-12">
                 <div className="mx-auto max-w-7xl space-y-6 sm:px-6 lg:px-8">
-                    <div className="rounded-lg border border-emerald-300 bg-emerald-50 p-4 text-sm text-emerald-800 shadow-sm">
-                        Meal orders for the following week must be placed by Saturday. Please review and complete your children&apos;s meal selections before the weekly deadline.
-                    </div>
+                    {selectedChild && (
+                        <div className="rounded-lg border border-emerald-300 bg-emerald-50 p-4 text-sm text-emerald-800 shadow-sm">
+                            Meal orders for the selected school must be placed
+                            by {dayName(orderingDeadlineDay)}. Please review and
+                            complete your children&apos;s meal selections before
+                            the weekly deadline.
+                        </div>
+                    )}
 
                     {children.length === 0 ? (
                         <div className="rounded-lg bg-amber-50 p-6 text-amber-800 shadow">
@@ -347,7 +361,7 @@ export default function CustomerMenu({ children, menuItems, cartItems }) {
                                             onMealClick={openMeal}
                                             getSelection={cartItemFor}
                                             dayDates={Object.fromEntries(
-                                                weekDays.map((day) => [day, shortDate(day)]),
+                                                weekDays.map((day) => [day, shortDate(day, orderingDeadlineDay)]),
                                             )}
                                         />
                                     ) : (
@@ -368,7 +382,7 @@ export default function CustomerMenu({ children, menuItems, cartItems }) {
                                                         className="border border-slate-300 bg-slate-200 px-1 py-2 text-center text-xs font-semibold uppercase text-gray-700"
                                                     >
                                                         {dayName(day)}
-                                                        <span className="mt-0.5 block text-[10px] font-normal">{shortDate(day)}</span>
+                                                        <span className="mt-0.5 block text-[10px] font-normal">{shortDate(day, orderingDeadlineDay)}</span>
                                                     </th>
                                                 ))}
                                             </tr>
@@ -495,7 +509,7 @@ export default function CustomerMenu({ children, menuItems, cartItems }) {
                                         {expanded && (
                                             <div className="max-h-[52vh] overflow-auto p-3">
                                                 <table className="w-full min-w-[800px] table-fixed border-collapse border border-slate-300">
-                                                    <thead className="sticky top-0 z-20 shadow-sm"><tr><th className="border border-slate-400 bg-slate-200 px-3 py-3 text-left text-xs font-bold uppercase text-slate-800">Meal</th>{weekDays.map((day) => <th key={day} className="min-w-28 border border-slate-400 bg-slate-200 px-2 py-3 text-center text-xs font-bold uppercase text-slate-800">{dayName(day)}<span className="mt-0.5 block text-[10px] font-normal">{shortDate(day)}</span></th>)}</tr></thead>
+                                                    <thead className="sticky top-0 z-20 shadow-sm"><tr><th className="border border-slate-400 bg-slate-200 px-3 py-3 text-left text-xs font-bold uppercase text-slate-800">Meal</th>{weekDays.map((day) => <th key={day} className="min-w-28 border border-slate-400 bg-slate-200 px-2 py-3 text-center text-xs font-bold uppercase text-slate-800">{dayName(day)}<span className="mt-0.5 block text-[10px] font-normal">{shortDate(day, orderingDeadlineDay)}</span></th>)}</tr></thead>
                                                     <tbody>
                                                         {paginatedCartMeals.map((meal, mealIndex) => (
                                                             <tr key={meal.id} className={mealIndex % 2 ? 'bg-slate-50' : 'bg-white'}>
@@ -549,44 +563,51 @@ export default function CustomerMenu({ children, menuItems, cartItems }) {
 
             <Modal
                 show={selectedMeal !== null}
-                maxWidth="2xl"
+                maxWidth="lg"
                 onClose={closeMeal}
             >
                 {selectedMeal && (
-                    <div className="p-6">
-                        <div className="flex flex-col gap-5 sm:flex-row">
+                    <div className="max-h-[calc(100vh-2rem)] overflow-y-auto p-3">
+                        <div className="flex flex-col gap-3 sm:flex-row">
                             {selectedMeal.image_url ? (
                                 <img
                                     src={selectedMeal.image_url}
                                     alt={selectedMeal.name}
-                                    className="h-48 w-full rounded-lg object-cover sm:w-48"
+                                    className="h-28 w-full rounded-lg object-cover sm:w-28"
                                 />
                             ) : (
-                                <div className="flex h-48 w-full items-center justify-center rounded-lg bg-gray-100 text-gray-500 sm:w-48">
+                                <div className="flex h-28 w-full items-center justify-center rounded-lg bg-gray-100 text-xs text-gray-500 sm:w-28">
                                     No photo
                                 </div>
                             )}
                             <div className="flex-1">
-                                <h3 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+                                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                                     {selectedMeal.name}
                                 </h3>
                                 <p className="text-sm text-gray-500">
                                     Menu item ID: {selectedMeal.id}
                                 </p>
-                                <p className="mt-3 text-sm text-gray-600 dark:text-gray-300">
+                                <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
                                     {selectedMeal.description ||
                                         'No description provided.'}
                                 </p>
-                                <p className="mt-3 text-lg font-semibold text-gray-900 dark:text-gray-100">
-                                    RM {priceForMeal(selectedMeal).toFixed(2)}
-                                </p>
-                                <p className="mt-3 text-sm text-gray-500">
+                                <div className="mt-2 flex flex-wrap items-baseline gap-x-2">
+                                    <p className="font-semibold text-gray-900 dark:text-gray-100">
+                                        RM {(priceForMeal(selectedMeal) * (Number(selection.quantity) || 1)).toFixed(2)}
+                                    </p>
+                                    {(Number(selection.quantity) || 1) > 1 && (
+                                        <span className="text-xs text-slate-400">
+                                            {Number(selection.quantity) || 1} sets × RM {priceForMeal(selectedMeal).toFixed(2)}
+                                        </span>
+                                    )}
+                                </div>
+                                <p className="mt-2 text-xs text-gray-500">
                                     Categories:{' '}
                                     {selectedMeal.menu_categories
                                         ?.map((category) => category.name)
                                         .join(', ') || '-'}
                                 </p>
-                                <p className="mt-2 text-sm font-medium text-slate-300">
+                                <p className="mt-1.5 text-xs font-medium text-slate-300">
                                     Collection time:{' '}
                                     {selectedMeal.available_start_time && selectedMeal.available_end_time
                                         ? `${selectedMeal.available_start_time.slice(0, 5)}–${selectedMeal.available_end_time.slice(0, 5)}`
@@ -594,20 +615,20 @@ export default function CustomerMenu({ children, menuItems, cartItems }) {
                                 </p>
                             </div>
                         </div>
-                        {selectedMeal.components?.length > 0 && <section className="mt-6 rounded-lg border border-slate-600 bg-slate-800 p-4 text-slate-100">
+                        {selectedMeal.components?.length > 0 && <section className="mt-3 rounded-lg border border-slate-600 bg-slate-800 p-2.5 text-slate-100">
                             <div className="flex flex-wrap items-end justify-between gap-2">
-                                <div><h4 className="font-semibold">Set meal portion and estimated nutrition</h4><p className="text-xs text-slate-400">Values shown for quantity {Number(selection.quantity) || 1}.</p></div>
-                                <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800">Estimated values</span>
+                                <div><h4 className="text-sm font-semibold">Set meal portion and estimated nutrition</h4><p className="text-[11px] text-slate-400">Values shown for quantity {Number(selection.quantity) || 1}.</p></div>
+                                <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800">Estimated values</span>
                             </div>
-                            <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                            <div className="mt-2 grid gap-1.5 sm:grid-cols-2">
                                 {selectedMeal.components?.map((component) => (
-                                    <div key={component.id} className="rounded-md bg-slate-700 px-3 py-2 text-sm">
+                                    <div key={component.id} className="flex items-center justify-between gap-2 rounded-md bg-slate-700 px-2.5 py-2 text-xs">
                                         <span className="font-semibold">{component.name}</span>
                                         <span className="ml-2 text-slate-300">{component.component_type} · {(Number(component.amount_g) * (Number(selection.quantity) || 1)).toFixed(0)} g</span>
                                     </div>
                                 ))}
                             </div>
-                            <div className="mt-3 grid grid-cols-2 gap-2 text-center text-sm sm:grid-cols-3 lg:grid-cols-6">
+                            <div className="mt-2 grid grid-cols-3 gap-1.5 text-center text-xs sm:grid-cols-6">
                                 {[
                                     ['Energy', selectedMeal.calories_kcal, 'kcal'],
                                     ['Protein', selectedMeal.protein_g, 'g'],
@@ -615,10 +636,10 @@ export default function CustomerMenu({ children, menuItems, cartItems }) {
                                     ['Fat', selectedMeal.fat_g, 'g'],
                                     ['Fibre', selectedMeal.fibre_g, 'g'],
                                     ['Sodium', selectedMeal.sodium_mg, 'mg'],
-                                ].map(([label, value, unit]) => <div key={label} className="rounded-md bg-slate-700 p-2"><span className="block text-xs text-slate-400">{label}</span><strong>{(Number(value || 0) * (Number(selection.quantity) || 1)).toFixed(1)} {unit}</strong></div>)}
+                                ].map(([label, value, unit]) => <div key={label} className="rounded-md bg-slate-700 p-1.5"><span className="block text-[10px] text-slate-400">{label}</span><strong>{(Number(value || 0) * (Number(selection.quantity) || 1)).toFixed(1)} {unit}</strong></div>)}
                             </div>
                         </section>}
-                        <div className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
+                        <div className="mt-3 grid grid-cols-4 gap-1 sm:grid-cols-7">
                             {weekDays.map((day) => {
                                 const active = selectedMeal.days.some(
                                     (mealDay) => mealDay.day_of_week === day,
@@ -626,10 +647,10 @@ export default function CustomerMenu({ children, menuItems, cartItems }) {
                                 return (
                                     <div
                                         key={day}
-                                        className={`rounded-md border px-2 py-3 text-center text-sm font-medium ${active ? 'border-green-300 bg-green-50 text-green-700' : 'border-gray-200 bg-gray-50 text-gray-400'}`}
+                                        className={`rounded-md border px-1 py-1.5 text-center text-[11px] font-medium ${active ? 'border-green-300 bg-green-50 text-green-700' : 'border-gray-200 bg-gray-50 text-gray-400'}`}
                                     >
                                         {dayName(day)}
-                                        <span className="mt-1 block text-xs">
+                                        <span className="mt-0.5 block text-[10px]">
                                             {active
                                                 ? 'Available'
                                                 : 'Unavailable'}
@@ -638,12 +659,12 @@ export default function CustomerMenu({ children, menuItems, cartItems }) {
                                 );
                             })}
                         </div>
-                        <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                        <div className="mt-3 grid gap-2 sm:grid-cols-2">
                             <div>
                                 <label className="block text-sm font-semibold text-slate-200">
                                     Child
                                 </label>
-                                <div className="mt-1 min-h-11 rounded-md border border-slate-500 bg-slate-700 px-3 py-2 text-sm text-white">
+                                <div className="mt-1 min-h-10 rounded-md border border-slate-500 bg-slate-700 px-3 py-1.5 text-sm text-white">
                                     <span className="block font-medium">{selectedChild?.student.name}</span>
                                     <span className="block text-xs text-slate-300">{selectedChild?.student.school?.name}</span>
                                 </div>
@@ -652,14 +673,14 @@ export default function CustomerMenu({ children, menuItems, cartItems }) {
                                 <label className="block text-sm font-semibold text-slate-200">
                                     Collection date
                                 </label>
-                                <div className="mt-1 flex min-h-11 items-center rounded-md border border-slate-500 bg-slate-700 px-3 py-2 text-sm font-medium text-white">
+                                <div className="mt-1 flex min-h-10 items-center rounded-md border border-slate-500 bg-slate-700 px-3 py-1.5 text-sm font-medium text-white">
                                     {selection.date
                                         ? new Date(`${selection.date}T00:00:00`).toLocaleDateString('en-MY')
                                         : '-'}
                                 </div>
                             </div>
                         </div>
-                        <div className="mt-4">
+                        <div className="mt-2.5">
                             <div>
                                 <label className="block text-sm font-semibold text-slate-200">
                                     Quantity
@@ -675,11 +696,11 @@ export default function CustomerMenu({ children, menuItems, cartItems }) {
                                             quantity: event.target.value,
                                         })
                                     }
-                                    className="mt-1 block w-full rounded-md border-gray-300 bg-white text-slate-900"
+                                    className="mt-1 block w-full rounded-md border-gray-300 bg-white py-1.5 text-sm text-slate-900"
                                 />
                             </div>
                         </div>
-                        <div className="mt-6 flex justify-end gap-3">
+                        <div className="mt-3 flex justify-end gap-2">
                             <button
                                 type="button"
                                 onClick={closeMeal}
