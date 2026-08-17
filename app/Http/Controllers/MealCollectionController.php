@@ -43,7 +43,7 @@ class MealCollectionController extends Controller
             ->where('student_id', $student->id)
             ->whereDate('scheduled_time', $now->toDateString())
             ->whereHas('order.payment', fn ($query) => $query->where('status', 'paid'))
-            ->with(['menuItem:id,name,image_url,available_start_time,available_end_time', 'collection', 'studentMealEvents:id,order_item_id,event_type'])
+            ->with(['menuItem:id,name,image_url,available_start_time,available_end_time', 'collection.collector:id,name', 'studentMealEvents:id,order_item_id,event_type'])
             ->orderBy('scheduled_time')
             ->get();
 
@@ -82,7 +82,7 @@ class MealCollectionController extends Controller
         });
 
         $items->each(function (OrderItem $item) use ($student, $collectedNow): void {
-            $item->load('collection');
+            $item->load('collection.collector:id,name');
             if (! isset($collectedNow[$item->id])) {
                 return;
             }
@@ -238,6 +238,8 @@ class MealCollectionController extends Controller
             'can_collect' => in_array($availability, ['open', 'grace_period'], true) && $collected < (int) $item->quantity,
             'requires_late_reason' => false,
             'late_reason' => $item->collection?->late_reason,
+            'collected_at' => $item->collection?->collected_at?->timezone('Asia/Kuala_Lumpur')->format('d/m/Y, g:i A'),
+            'collected_by' => $item->collection?->collector?->name,
             'feedback_sent' => $item->studentMealEvents?->contains('event_type', 'still_hungry') ?? false,
         ];
     }

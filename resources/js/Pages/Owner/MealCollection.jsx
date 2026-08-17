@@ -132,6 +132,11 @@ export default function MealCollection() {
                                                         </div>
                                                         <p className="text-sm text-slate-700">Collection: {item.start_time && item.end_time ? `${item.start_time} – ${item.end_time}` : 'Any time today'}</p>
                                                         <p className="mt-1 text-sm font-semibold text-slate-900">Collected {item.collected_quantity} of {item.ordered_quantity} · Remaining {item.remaining_quantity}</p>
+                                                        {item.collected_at && (
+                                                            <p className="mt-1 text-sm font-medium text-emerald-700">
+                                                                Verified {item.collected_at}{item.collected_by ? ` by ${item.collected_by}` : ''}
+                                                            </p>
+                                                        )}
                                                         {item.late_reason && <p className="mt-1 text-sm text-purple-700">Late reason: {item.late_reason}</p>}
                                                     </div>
                                                 </div>
