@@ -1,16 +1,70 @@
 <?php
 
 use App\Models\OrderItem;
+use App\Models\MenuItem;
 use App\Models\StudentMealEvent;
 use App\Notifications\CustomerEventNotification;
+use App\Services\GoogleDriveService;
 use Carbon\Carbon;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
+use Symfony\Component\Console\Command\Command;
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
+
+Artisan::command('drive:purge-menu-images {--force : Delete without asking for confirmation}', function () {
+    $imageCount = MenuItem::query()->whereNotNull('image_drive_id')->count();
+
+    if ($imageCount === 0) {
+        $this->info('No Google Drive menu images were found.');
+
+        return Command::SUCCESS;
+    }
+
+    $this->warn("This will permanently delete {$imageCount} menu image(s) from Google Drive.");
+
+    if (! $this->option('force') && ! $this->confirm('Do you want to continue?')) {
+        $this->info('No images were deleted.');
+
+        return Command::SUCCESS;
+    }
+
+    $googleDrive = app(GoogleDriveService::class);
+    $deleted = 0;
+    $failed = 0;
+
+    MenuItem::query()
+        ->whereNotNull('image_drive_id')
+        ->select(['id', 'image_drive_id'])
+        ->chunkById(50, function ($menuItems) use ($googleDrive, &$deleted, &$failed): void {
+            foreach ($menuItems as $menuItem) {
+                try {
+                    $googleDrive->delete($menuItem->image_drive_id);
+                    $menuItem->forceFill([
+                        'image_drive_id' => null,
+                        'image_url' => null,
+                    ])->save();
+                    $deleted++;
+                } catch (Throwable $exception) {
+                    $failed++;
+                    $this->error("Menu item {$menuItem->id}: {$exception->getMessage()}");
+                }
+            }
+        });
+
+    $this->info("Deleted {$deleted} Google Drive menu image(s).");
+
+    if ($failed > 0) {
+        $this->warn("Failed to delete {$failed} image(s). Their database references were kept.");
+
+        return Command::FAILURE;
+    }
+
+    return Command::SUCCESS;
+})->purpose('Delete all Google Drive images referenced by menu items');
 
 Artisan::command('meals:notify-missed', function () {
     $now = Carbon::now('Asia/Kuala_Lumpur');
