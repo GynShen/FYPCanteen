@@ -12,9 +12,9 @@ return new class extends Migration
             $table->id();
             $table->foreignId('school_id')->constrained('schools')->cascadeOnDelete();
             $table->foreignId('menu_item_id')->constrained('menu_items')->cascadeOnDelete();
+            $table->foreignId('completed_by')->nullable()->constrained('users')->nullOnDelete();
             $table->date('preparation_date');
             $table->timestamp('completed_at')->nullable();
-            $table->foreignId('completed_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
             $table->unique(['school_id', 'menu_item_id', 'preparation_date']);
         });

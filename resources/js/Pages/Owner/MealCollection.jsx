@@ -137,7 +137,6 @@ export default function MealCollection() {
                                                                 Verified {item.collected_at}{item.collected_by ? ` by ${item.collected_by}` : ''}
                                                             </p>
                                                         )}
-                                                        {item.late_reason && <p className="mt-1 text-sm text-purple-700">Late reason: {item.late_reason}</p>}
                                                     </div>
                                                 </div>
 

@@ -11,13 +11,11 @@ return new class extends Migration
         Schema::create('meal_collections', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('order_item_id')->unique()->constrained('order_items')->cascadeOnDelete();
+            $table->foreignId('collected_by')->nullable()->constrained('users')->nullOnDelete();
             $table->unsignedInteger('collected_quantity')->default(0);
             $table->enum('status', ['pending', 'partially_collected', 'collected'])->default('pending');
             $table->boolean('is_late_collection')->default(false);
-            $table->text('late_reason')->nullable();
             $table->timestamp('collected_at')->nullable();
-            $table->foreignId('collected_by')->nullable()->constrained('users')->nullOnDelete();
-            $table->text('notes')->nullable();
             $table->timestamps();
         });
     }

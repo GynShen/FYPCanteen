@@ -15,10 +15,8 @@ class MealCollection extends Model
         'collected_quantity',
         'status',
         'is_late_collection',
-        'late_reason',
         'collected_at',
         'collected_by',
-        'notes',
     ];
 
     protected function casts(): array

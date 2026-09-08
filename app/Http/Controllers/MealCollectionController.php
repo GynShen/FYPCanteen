@@ -69,7 +69,6 @@ class MealCollectionController extends Controller
                     'collected_quantity' => (int) $lockedItem->quantity,
                     'status' => 'collected',
                     'is_late_collection' => $collection->is_late_collection || $availability === 'grace_period',
-                    'late_reason' => $collection->late_reason,
                     'collected_at' => $now,
                     'collected_by' => $request->user()->id,
                 ])->save();
@@ -153,7 +152,6 @@ class MealCollectionController extends Controller
                 'collected_quantity' => $newQuantity,
                 'status' => $newQuantity === (int) $lockedItem->quantity ? 'collected' : 'partially_collected',
                 'is_late_collection' => $collection->is_late_collection || $availability === 'grace_period',
-                'late_reason' => $collection->late_reason,
                 'collected_at' => $now,
                 'collected_by' => $request->user()->id,
             ])->save();
@@ -236,8 +234,6 @@ class MealCollectionController extends Controller
             'end_time' => $this->formatTime($item->menuItem?->available_end_time),
             'status' => $status,
             'can_collect' => in_array($availability, ['open', 'grace_period'], true) && $collected < (int) $item->quantity,
-            'requires_late_reason' => false,
-            'late_reason' => $item->collection?->late_reason,
             'collected_at' => $item->collection?->collected_at?->timezone('Asia/Kuala_Lumpur')->format('d/m/Y, g:i A'),
             'collected_by' => $item->collection?->collector?->name,
             'feedback_sent' => $item->studentMealEvents?->contains('event_type', 'still_hungry') ?? false,
