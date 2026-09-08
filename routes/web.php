@@ -15,18 +15,9 @@ use App\Http\Controllers\SchoolController;
 use App\Http\Controllers\StripePaymentController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\WeeklyMenuController;
-use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
 
-Route::get('/', function () {
-    return Inertia::render('Welcome', [
-        'canLogin' => Route::has('login'),
-        'canRegister' => Route::has('register'),
-        'laravelVersion' => Application::VERSION,
-        'phpVersion' => PHP_VERSION,
-    ]);
-});
+Route::redirect('/', '/login');
 
 Route::get('/dashboard', [DashboardController::class, 'index'])->middleware(['auth', 'verified'])->name('dashboard');
 Route::patch('/dashboard/meal-preparation', [DashboardController::class, 'togglePreparation'])->middleware(['auth', 'verified'])->name('dashboard.meal-preparation');
