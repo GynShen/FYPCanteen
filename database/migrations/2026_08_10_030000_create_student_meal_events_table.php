@@ -13,8 +13,8 @@ return new class extends Migration
             $table->foreignId('student_id')->constrained('students')->cascadeOnDelete();
             $table->foreignId('order_item_id')->constrained('order_items')->cascadeOnDelete();
             $table->foreignId('meal_collection_id')->nullable()->constrained('meal_collections')->nullOnDelete();
-            $table->enum('event_type', ['still_hungry', 'missed_collection']);
             $table->foreignId('reported_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->enum('event_type', ['still_hungry', 'missed_collection']);
             $table->timestamp('reported_at');
             $table->timestamps();
 

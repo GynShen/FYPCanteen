@@ -12,6 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('users', function (Blueprint $table) {
+            $table->unsignedBigInteger('school_id')->nullable();
             $table->id();
             $table->string('name');
             $table->string('username')->nullable()->unique();
@@ -19,7 +20,6 @@ return new class extends Migration
             $table->string('password');
             $table->string('phone_number')->unique();
             $table->enum('role', ['customer', 'operator', 'owner']);
-            $table->unsignedBigInteger('school_id')->nullable();
             $table->boolean('is_active')->default(true);
             $table->rememberToken();
             $table->timestamps();
