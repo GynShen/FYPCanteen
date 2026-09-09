@@ -45,6 +45,13 @@ class CustomerOrderController extends Controller
                 'cartItems.student.school',
             ])
             ->first();
+        $cartItems = $cart?->cartItems ?? collect();
+        $cartItems->each(function (CartItem $item): void {
+            $item->setAttribute(
+                'collection_date',
+                $item->scheduled_time->copy()->timezone('Asia/Kuala_Lumpur')->toDateString(),
+            );
+        });
 
         return inertia('Customer/Menu', [
             'children' => $children,
@@ -56,7 +63,7 @@ class CustomerOrderController extends Controller
                 ->with(['menuCategories', 'days', 'schools', 'components'])
                 ->orderBy('name')
                 ->get(),
-            'cartItems' => $cart?->cartItems ?? [],
+            'cartItems' => $cartItems,
         ]);
     }
 

@@ -47,6 +47,8 @@ const shortDate = (day, deadlineDay) =>
         month: '2-digit',
     });
 const priceForMeal = (meal) => Number(meal.price);
+const collectionDateFor = (item) =>
+    item.collection_date ?? item.scheduled_time.slice(0, 10);
 
 export default function CustomerMenu({ children, menuItems, cartItems }) {
     const errors = usePage().props.errors;
@@ -94,7 +96,7 @@ export default function CustomerMenu({ children, menuItems, cartItems }) {
             (item) =>
                 item.student_id === draft.studentId &&
                 item.menu_item_id === draft.mealId &&
-                item.scheduled_time.slice(0, 10) === draft.date,
+                collectionDateFor(item) === draft.date,
         );
         return sum + (draft.quantity - (saved?.quantity ?? 0)) * draft.price;
     }, savedTotal);
@@ -104,7 +106,7 @@ export default function CustomerMenu({ children, menuItems, cartItems }) {
                 (item) =>
                     item.student_id === draft.studentId &&
                     item.menu_item_id === draft.mealId &&
-                    item.scheduled_time.slice(0, 10) === draft.date,
+                    collectionDateFor(item) === draft.date,
             );
             return sum + draft.quantity - (saved?.quantity ?? 0);
         },
@@ -130,9 +132,9 @@ export default function CustomerMenu({ children, menuItems, cartItems }) {
 
         return cartItems.find(
             (item) =>
-                item.student_id === Number(selectedChildId) &&
-                item.menu_item_id === meal.id &&
-                item.scheduled_time.slice(0, 10) === date,
+                Number(item.student_id) === Number(selectedChildId) &&
+                Number(item.menu_item_id) === Number(meal.id) &&
+                collectionDateFor(item) === date,
         );
     };
     const quantityFor = (meal, day) => {
@@ -184,8 +186,8 @@ export default function CustomerMenu({ children, menuItems, cartItems }) {
         const existingItem = cartItems.find(
             (item) =>
                 String(item.student_id) === String(selectedChildId) &&
-                item.menu_item_id === meal.id &&
-                item.scheduled_time.slice(0, 10) === date,
+                Number(item.menu_item_id) === Number(meal.id) &&
+                collectionDateFor(item) === date,
         );
 
         setEditingCartItem(null);
@@ -201,7 +203,7 @@ export default function CustomerMenu({ children, menuItems, cartItems }) {
         setEditingCartItem(item);
         setSelectedMeal(item.menu_item);
         setSelection({
-            date: item.scheduled_time.slice(0, 10),
+            date: collectionDateFor(item),
             quantity: item.quantity,
         });
     };
@@ -515,8 +517,8 @@ export default function CustomerMenu({ children, menuItems, cartItems }) {
                                                             <tr key={meal.id} className={mealIndex % 2 ? 'bg-slate-50' : 'bg-white'}>
                                                                 <td className="border border-slate-300 px-3 py-3"><button type="button" onClick={() => openMeal(meal)} className="font-medium text-indigo-700 hover:underline">{meal.name}</button><span className="block text-xs text-slate-500">RM {Number(meal.price).toFixed(2)}</span></td>
                                                                 {weekDays.map((day) => {
-                                                                    const item = items.find((entry) => entry.menu_item_id === meal.id && weekDays[new Date(entry.scheduled_time).getDay() === 0 ? 6 : new Date(entry.scheduled_time).getDay() - 1] === day);
-                                                                    return <td key={day} className={`border border-slate-300 px-2 py-3 text-center ${item ? 'bg-emerald-50' : 'bg-slate-100'}`}>{item ? <div><button type="button" onClick={() => editCartItem(item)} className="rounded bg-emerald-600 px-3 py-1 text-sm font-semibold text-white hover:bg-emerald-700">Qty {item.quantity}</button><span className="mt-1 block text-xs text-slate-600">{new Date(item.scheduled_time).toLocaleDateString('en-MY')}</span><button type="button" onClick={() => removeItem(item)} className="mt-1 text-xs text-red-600 hover:underline">Remove</button></div> : <span className="text-sm font-medium text-slate-400">Not set</span>}</td>;
+                                                                    const item = items.find((entry) => Number(entry.menu_item_id) === Number(meal.id) && weekDays[new Date(`${collectionDateFor(entry)}T00:00:00`).getDay() === 0 ? 6 : new Date(`${collectionDateFor(entry)}T00:00:00`).getDay() - 1] === day);
+                                                                    return <td key={day} className={`border border-slate-300 px-2 py-3 text-center ${item ? 'bg-emerald-50' : 'bg-slate-100'}`}>{item ? <div><button type="button" onClick={() => editCartItem(item)} className="rounded bg-emerald-600 px-3 py-1 text-sm font-semibold text-white hover:bg-emerald-700">Qty {item.quantity}</button><span className="mt-1 block text-xs text-slate-600">{new Date(`${collectionDateFor(item)}T00:00:00`).toLocaleDateString('en-MY')}</span><button type="button" onClick={() => removeItem(item)} className="mt-1 text-xs text-red-600 hover:underline">Remove</button></div> : <span className="text-sm font-medium text-slate-400">Not set</span>}</td>;
                                                                 })}
                                                             </tr>
                                                         ))}
