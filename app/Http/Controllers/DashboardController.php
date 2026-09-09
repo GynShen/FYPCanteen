@@ -221,8 +221,11 @@ class DashboardController extends Controller
             ->where('p.status', 'paid');
 
         $availableMonths = (clone $base)
-            ->selectRaw("DATE_FORMAT(oi.scheduled_time, '%Y-%m') as value")
-            ->distinct()->orderByDesc('value')->pluck('value');
+            ->orderByDesc('oi.scheduled_time')
+            ->pluck('oi.scheduled_time')
+            ->map(fn ($scheduledTime) => Carbon::parse($scheduledTime, 'Asia/Kuala_Lumpur')->format('Y-m'))
+            ->unique()
+            ->values();
         $currentMonth = Carbon::now('Asia/Kuala_Lumpur')->format('Y-m');
         $month = $validated['month'] ?? ($availableMonths->contains($currentMonth) ? $currentMonth : ($availableMonths->first() ?? $currentMonth));
         $monthStart = Carbon::createFromFormat('Y-m', $month, 'Asia/Kuala_Lumpur')->startOfMonth();
