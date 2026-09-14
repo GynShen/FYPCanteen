@@ -5,10 +5,10 @@ namespace Database\Seeders;
 use App\Models\MenuCategory;
 use App\Models\MenuItem;
 use App\Models\School;
+use App\Services\GoogleDriveService;
 use Illuminate\Database\Seeder;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 use RuntimeException;
 
 class MenuSeeder extends Seeder
@@ -40,10 +40,10 @@ class MenuSeeder extends Seeder
         }
 
         foreach ($this->meals() as $meal) {
-            $imageUrl = $this->storeImage($meal['name'], $meal['image']);
+            $driveImage = $this->driveImage($meal['name'], $meal['image']);
 
             foreach (self::PERIODS as [$startTime, $endTime]) {
-                DB::transaction(function () use ($meal, $imageUrl, $startTime, $endTime, $schoolIds, $categoryIds): void {
+                DB::transaction(function () use ($meal, $driveImage, $startTime, $endTime, $schoolIds, $categoryIds): void {
                     $periodLabel = $startTime === '09:00:00' ? 'Morning' : 'Afternoon';
                     $seededName = $meal['name'].' ('.$periodLabel.')';
                     $menuItem = MenuItem::query()
@@ -58,8 +58,8 @@ class MenuSeeder extends Seeder
                         'available_start_time' => $startTime,
                         'available_end_time' => $endTime,
                         'price' => self::PRICE,
-                        'image_drive_id' => null,
-                        'image_url' => $imageUrl,
+                        'image_drive_id' => $driveImage['id'],
+                        'image_url' => $driveImage['url'],
                         'is_available' => true,
                         'calories_kcal' => $meal['nutrition']['calories_kcal'],
                         'protein_g' => $meal['nutrition']['protein_g'],
@@ -90,18 +90,45 @@ class MenuSeeder extends Seeder
         }
     }
 
-    private function storeImage(string $mealName, string $filename): string
+    /**
+     * Reuse an existing seeded Drive image, or upload it once for both periods.
+     *
+     * @return array{id: string, url: string}
+     */
+    private function driveImage(string $mealName, string $filename): array
     {
+        $existing = MenuItem::query()
+            ->whereIn('name', [
+                $mealName,
+                $mealName.' (Morning)',
+                $mealName.' (Afternoon)',
+            ])
+            ->whereNotNull('image_drive_id')
+            ->whereNotNull('image_url')
+            ->first(['image_drive_id', 'image_url']);
+
+        if ($existing) {
+            return [
+                'id' => $existing->image_drive_id,
+                'url' => $existing->image_url,
+            ];
+        }
+
         $source = database_path('seeders/images/set-meal/'.$filename);
 
         if (! is_file($source)) {
             throw new RuntimeException("Seeder image not found: {$source}");
         }
 
-        $target = 'seeders/set-meals/'.Str::slug($mealName).'.jpg';
-        Storage::disk('public')->put($target, file_get_contents($source));
+        $image = new UploadedFile(
+            $source,
+            $filename,
+            mime_content_type($source) ?: 'image/jpeg',
+            null,
+            true,
+        );
 
-        return '/storage/'.$target;
+        return app(GoogleDriveService::class)->uploadPublicImage($image);
     }
 
     /**
