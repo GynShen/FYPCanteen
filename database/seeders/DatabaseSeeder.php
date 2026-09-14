@@ -22,6 +22,7 @@ class DatabaseSeeder extends Seeder
             UnlinkedStudentsSeeder::class,
             MenuCategorySeeder::class,
             MenuSeeder::class,
+            DashboardReportSeeder::class,
         ]);
     }
 }
