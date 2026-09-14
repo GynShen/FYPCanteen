@@ -14,6 +14,10 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // Add the project's final demonstration seeders here.
+        $this->call([
+            OwnerSeeder::class,
+            SchoolSeeder::class,
+            OperatorSeeder::class,
+        ]);
     }
 }
