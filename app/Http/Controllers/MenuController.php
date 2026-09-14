@@ -35,7 +35,7 @@ class MenuController extends Controller
                 ->when($request->filled('is_available'), fn ($query) => $query->where('is_available', $request->input('is_available') === 'yes'))
                 ->latest()->get(),
             'categories' => MenuCategory::orderBy('name')->get(),
-            'schools' => School::where('is_active', true)->orderBy('name')->get(),
+            'schools' => School::orderBy('name')->get(),
             'filters' => $filters,
             'editMenuId' => $request->filled('edit') ? $request->integer('edit') : null,
         ]);
@@ -130,7 +130,7 @@ class MenuController extends Controller
             'menu_category_ids' => ['required', 'array', 'min:1'],
             'menu_category_ids.*' => ['required', 'integer', 'distinct', Rule::exists('menu_categories', 'id')],
             'school_ids' => ['required', 'array', 'min:1'],
-            'school_ids.*' => ['required', 'integer', 'distinct', Rule::exists('schools', 'id')->where('is_active', true)],
+            'school_ids.*' => ['required', 'integer', 'distinct', Rule::exists('schools', 'id')],
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
             'days' => ['required', 'array', 'min:1'],

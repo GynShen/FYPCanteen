@@ -31,7 +31,7 @@ class OperatorController extends Controller
                 ->orderBy('name')
                 ->with('school:id,name')
                 ->get(['id', 'name', 'username', 'phone_number', 'school_id', 'is_active', 'created_at']),
-            'schools' => School::where('is_active', true)->orderBy('name')->get(['id', 'name']),
+            'schools' => School::orderBy('name')->get(['id', 'name', 'is_active']),
             'filters' => $filters,
         ]);
     }
@@ -47,7 +47,7 @@ class OperatorController extends Controller
             'username' => ['required', 'string', 'min:3', 'max:50', 'alpha_dash', Rule::unique(User::class)],
             'phone_number' => ['required', new MalaysianPhoneNumber, Rule::unique(User::class)],
             'password' => ['required', 'confirmed', Password::defaults()],
-            'school_id' => ['required', 'integer', Rule::exists('schools', 'id')->where('is_active', true)],
+            'school_id' => ['required', 'integer', Rule::exists('schools', 'id')],
         ]);
 
         User::create([
@@ -71,7 +71,7 @@ class OperatorController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'username' => ['required', 'string', 'min:3', 'max:50', 'alpha_dash', Rule::unique(User::class)->ignore($operator->id)],
             'phone_number' => ['required', new MalaysianPhoneNumber, Rule::unique(User::class)->ignore($operator->id)],
-            'school_id' => ['required', 'integer', Rule::exists('schools', 'id')->where('is_active', true)],
+            'school_id' => ['required', 'integer', Rule::exists('schools', 'id')],
         ]) + ['email' => null]);
         $this->clearSessions($operator);
 

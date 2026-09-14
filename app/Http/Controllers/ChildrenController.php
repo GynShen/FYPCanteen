@@ -22,7 +22,7 @@ class ChildrenController extends Controller
 
         return inertia('Customer/ChildrenManagement', [
             'children' => $request->user()->children()->with('student.school')->latest()->get(),
-            'schools' => School::where('is_active', true)->orderBy('name')->get(['id', 'name']),
+            'schools' => School::orderBy('name')->get(['id', 'name', 'is_active']),
         ]);
     }
 
@@ -74,7 +74,7 @@ class ChildrenController extends Controller
         return $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'class' => ['required', 'string', 'max:100'],
-            'school_id' => ['required', 'integer', Rule::exists('schools', 'id')->where('is_active', true)],
+            'school_id' => ['required', 'integer', Rule::exists('schools', 'id')],
         ]);
     }
 

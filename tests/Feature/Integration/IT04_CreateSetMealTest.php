@@ -9,7 +9,7 @@ require_once __DIR__.'/Support/IntegrationFixtures.php';
 
 test('IT04 creates a set meal and all of its relationships', function () {
     $owner = F::user('owner');
-    $school = F::school();
+    $school = F::school(['is_active' => false]);
     $category = MenuCategory::create(['name' => 'Protein']);
     $drive = Mockery::mock(GoogleDriveService::class);
     $drive->shouldReceive('uploadPublicImage')->once()->andReturn(['id' => 'drive-test', 'url' => 'https://example.test/drive-test.png']);

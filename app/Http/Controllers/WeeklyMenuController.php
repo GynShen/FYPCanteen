@@ -21,7 +21,6 @@ class WeeklyMenuController extends Controller
                 ->latest()
                 ->get(),
             'schools' => School::query()
-                ->where('is_active', true)
                 ->when($operatorSchoolId, fn ($query) => $query->whereKey($operatorSchoolId))
                 ->orderBy('name')
                 ->get(),

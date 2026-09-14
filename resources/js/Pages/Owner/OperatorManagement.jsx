@@ -140,7 +140,7 @@ export default function OperatorManagement({ operators, schools, filters }) {
                 type: "select",
                 options: schools.map((school) => ({
                   value: school.id,
-                  label: school.name,
+                  label: `${school.name}${school.is_active ? '' : ' (Inactive)'}`,
                 })),
               },
               {
@@ -233,7 +233,7 @@ export default function OperatorManagement({ operators, schools, filters }) {
                   <option value="">Select a school</option>
                   {schools.map((school) => (
                     <option key={school.id} value={school.id}>
-                      {school.name}
+                      {school.name}{school.is_active ? '' : ' (Inactive)'}
                     </option>
                   ))}
                 </select>

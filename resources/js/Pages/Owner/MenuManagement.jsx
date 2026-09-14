@@ -253,7 +253,7 @@ export default function MenuManagement({
                     <ManagementFilters routeName="owner.menu" filters={filters} fields={[
                         { name: 'search', label: 'Search', placeholder: 'Menu ID, meal name or description' },
                         { name: 'category_id', label: 'Category', type: 'select', options: categories.map((category) => ({ value: category.id, label: category.name })) },
-                        { name: 'filter_school_id', label: 'Available school', type: 'select', options: schools.map((school) => ({ value: school.id, label: school.name })) },
+                        { name: 'filter_school_id', label: 'Available school', type: 'select', options: schools.map((school) => ({ value: school.id, label: `${school.name}${school.is_active ? '' : ' (Inactive)'}` })) },
                         { name: 'day', label: 'Available day', type: 'select', options: days.map((day) => ({ value: day, label: day.charAt(0).toUpperCase() + day.slice(1) })) },
                         { name: 'is_available', label: 'Availability', type: 'select', options: [{ value: 'yes', label: 'Available' }, { value: 'no', label: 'Unavailable' }] },
                     ]} />
@@ -416,7 +416,7 @@ export default function MenuManagement({
                                                 }
                                                 className="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500"
                                             />
-                                            {school.name}
+                                            {school.name}{school.is_active ? '' : ' (Inactive)'}
                                         </label>
                                     ))}
                                 </div>

@@ -8,7 +8,7 @@ require_once __DIR__.'/Support/IntegrationFixtures.php';
 
 test('IT05 updates and deletes a set meal with its related records', function () {
     $owner = F::user('owner');
-    $school = F::school();
+    $school = F::school(['is_active' => false]);
     $menu = F::menu($school);
     $category = MenuCategory::create(['name' => 'Updated Category']);
     $drive = Mockery::mock(GoogleDriveService::class);

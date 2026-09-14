@@ -6,9 +6,9 @@ use Tests\Feature\Integration\Support\IntegrationFixtures as F;
 
 require_once __DIR__.'/Support/IntegrationFixtures.php';
 
-test('IT03 allows an owner to manage an operator assigned to an active school', function () {
+test('IT03 allows an owner to manage an operator assigned to an inactive school', function () {
     $owner = F::user('owner');
-    $school = F::school();
+    $school = F::school(['is_active' => false]);
 
     $this->actingAs($owner)->post(route('owner.operators.store'), [
         'name' => 'Operator Integration',

@@ -49,8 +49,7 @@ class StudentController extends Controller
             'classes' => Student::query()->when($operatorSchoolId, fn ($query) => $query->where('school_id', $operatorSchoolId))->distinct()->orderBy('class')->pluck('class'),
             'filters' => $filters,
             'schools' => School::query()
-                ->where('is_active', true)
-                ->when($operatorSchoolId, fn ($query) => $query->whereKey($operatorSchoolId))
+                ->whereKey($operatorSchoolId)
                 ->orderBy('name')
                 ->get(),
         ]);
@@ -138,7 +137,7 @@ class StudentController extends Controller
         ]);
 
         $validated = $request->validate([
-            'school_id' => ['required', 'integer', Rule::exists('schools', 'id')->where('is_active', true)],
+            'school_id' => ['required', 'integer', Rule::exists('schools', 'id')],
             'name' => ['required', 'string', 'max:255'],
             'class' => ['required', 'string', 'max:100'],
             'guardian_phone_number' => ['nullable', new MalaysianPhoneNumber],

@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Student;
+use Inertia\Testing\AssertableInertia as Assert;
 use Tests\Feature\Integration\Support\IntegrationFixtures as F;
 
 require_once __DIR__.'/Support/IntegrationFixtures.php';
@@ -32,6 +33,32 @@ test('IT07 restricts operator student management to the assigned school', functi
         'guardian_phone_number' => null,
     ])->assertForbidden();
 
+    $assignedSchool->update(['is_active' => false]);
+    $menu = F::menu($assignedSchool);
+
+    $this->actingAs($operator)->post(route('owner.student.store'), [
+        'school_id' => $assignedSchool->id,
+        'name' => 'Inactive School Student',
+        'class' => '4 Bestari',
+        'guardian_phone_number' => '0123456799',
+    ])->assertRedirect(route('owner.student'));
+
+    $this->actingAs($operator)->get(route('weekly-menu.index'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Owner/WeeklyMenu')
+            ->where('schools.0.id', $assignedSchool->id)
+            ->where('menuItems.0.id', $menu->id));
+
+    $owner = F::user('owner');
+    $this->actingAs($owner)->get(route('weekly-menu.index'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Owner/WeeklyMenu')
+            ->has('schools', 2)
+            ->where('menuItems.0.id', $menu->id));
+
     $this->assertDatabaseHas('students', ['id' => $student->id, 'name' => 'Student Updated', 'school_id' => $assignedSchool->id]);
+    $this->assertDatabaseHas('students', ['name' => 'Inactive School Student', 'school_id' => $assignedSchool->id]);
     $this->assertDatabaseMissing('students', ['name' => 'Forbidden Student']);
 });

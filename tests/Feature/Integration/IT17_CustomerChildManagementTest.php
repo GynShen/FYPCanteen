@@ -18,6 +18,8 @@ test('IT17 allows customers to manage only their own child links', function () {
         'school_id' => $school->id,
     ])->assertForbidden();
 
+    $school->update(['is_active' => false]);
+
     $this->actingAs($customer)->post(route('customer.children.store'), [
         'name' => 'Customer Child',
         'class' => '1 Bestari',
