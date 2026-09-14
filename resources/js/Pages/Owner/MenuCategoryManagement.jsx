@@ -168,6 +168,16 @@ export default function MenuCategoriesManagement({ menuCategories, filters }) {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 bg-white">
+                  {paginatedItems.length === 0 && (
+                    <tr>
+                      <td
+                        colSpan="3"
+                        className="px-6 py-10 text-center text-sm text-gray-500"
+                      >
+                        No menu categories have been created.
+                      </td>
+                    </tr>
+                  )}
                   {paginatedItems.map((menuCategories) => (
                     <tr key={menuCategories.id}>
                       <td className="px-6 py-4 text-center text-sm text-gray-900">

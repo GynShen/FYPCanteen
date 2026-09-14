@@ -284,6 +284,16 @@ export default function SchoolManagement({ schools, filters }) {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200 bg-white">
+                                    {paginatedItems.length === 0 && (
+                                        <tr>
+                                            <td
+                                                colSpan="8"
+                                                className="px-6 py-10 text-center text-sm text-gray-500"
+                                            >
+                                                No schools have been added.
+                                            </td>
+                                        </tr>
+                                    )}
                                     {paginatedItems.map((school) => (
                                         <tr key={school.id}>
                                             <td className="px-6 py-4 text-center text-sm text-gray-900">
