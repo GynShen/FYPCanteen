@@ -23,6 +23,7 @@ class DatabaseSeeder extends Seeder
             MenuCategorySeeder::class,
             MenuSeeder::class,
             DashboardReportSeeder::class,
+            MealCollectionSeeder::class,
         ]);
     }
 }
