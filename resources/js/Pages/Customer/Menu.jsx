@@ -359,7 +359,7 @@ export default function CustomerMenu({ children, menuItems, cartItems }) {
                                 <div className="p-4">
                                     {visibleMeals.length > 0 ? (
                                         <MealTimeline
-                                            menuItems={paginatedItems}
+                                            menuItems={visibleMeals}
                                             onMealClick={openMeal}
                                             getSelection={cartItemFor}
                                             dayDates={Object.fromEntries(
@@ -369,7 +369,6 @@ export default function CustomerMenu({ children, menuItems, cartItems }) {
                                     ) : (
                                         <div className="p-10 text-center text-sm text-gray-500">No meals are assigned to this child's school.</div>
                                     )}
-                                    <TablePagination totalItems={visibleMeals.length} currentPage={currentPage} onPageChange={setCurrentPage} />
                                 </div>
                                 <div className="hidden">
                                     <table className="w-full min-w-[820px] table-fixed border-collapse border border-slate-300">
