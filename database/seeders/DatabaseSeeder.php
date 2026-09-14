@@ -18,6 +18,8 @@ class DatabaseSeeder extends Seeder
             OwnerSeeder::class,
             SchoolSeeder::class,
             OperatorSeeder::class,
+            LinkedStudentsParentsSeeder::class,
+            UnlinkedStudentsSeeder::class,
             MenuCategorySeeder::class,
             MenuSeeder::class,
         ]);
