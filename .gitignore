@@ -25,3 +25,4 @@ Thumbs.db
 .artifacts/
 .codex-review/
 docs/
+tmp/
