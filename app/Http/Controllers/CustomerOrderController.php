@@ -338,7 +338,7 @@ class CustomerOrderController extends Controller
         if ($date->lt($weekStart) || $date->gt($weekEnd)) {
             $deadlineDay = ucfirst(SchoolOrderingSchedule::deadlineDay($child->student->school));
             throw ValidationException::withMessages([
-                'collection_date' => "Meals can only be ordered for the next eligible week (Monday to Sunday). {$deadlineDay} is this school's deadline.",
+                'collection_date' => "Meals can only be ordered within the displayed seven-day period. {$deadlineDay} is this school's deadline.",
             ]);
         }
 

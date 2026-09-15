@@ -22,23 +22,31 @@ const localDate = (date) => {
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
 };
+const daysForDeadline = (deadlineDay = 'saturday') => {
+    const deadlineIndex = weekDays.indexOf(deadlineDay);
+    const startIndex = deadlineIndex >= 0 ? (deadlineIndex + 1) % 7 : 6;
+
+    return [...weekDays.slice(startIndex), ...weekDays.slice(0, startIndex)];
+};
 const orderingWeekStart = (deadlineDay = 'saturday') => {
     const today = new Date();
     const isoDay = today.getDay() === 0 ? 7 : today.getDay();
-    const cutoffIsoDay = weekDays.indexOf(deadlineDay) + 1 || 6;
-    const weeksAhead = isoDay <= cutoffIsoDay ? 1 : 2;
-    const monday = new Date(today);
-    monday.setHours(0, 0, 0, 0);
-    monday.setDate(today.getDate() - isoDay + 1 + weeksAhead * 7);
-    return monday;
+    const deadlineIndex = weekDays.indexOf(deadlineDay);
+    const cutoffIsoDay = deadlineIndex >= 0 ? deadlineIndex + 1 : 6;
+    const daysUntilCutoff = (cutoffIsoDay - isoDay + 7) % 7;
+    const start = new Date(today);
+    start.setHours(0, 0, 0, 0);
+    start.setDate(today.getDate() + daysUntilCutoff + 1);
+
+    return start;
 };
 const nextDateForDay = (day, deadlineDay) => {
     const date = orderingWeekStart(deadlineDay);
-    date.setDate(date.getDate() + weekDays.indexOf(day));
+    date.setDate(date.getDate() + daysForDeadline(deadlineDay).indexOf(day));
     return localDate(date);
 };
 const nextDateForDays = (availableDays, deadlineDay) => {
-    const firstDay = weekDays.find((day) => availableDays.includes(day));
+    const firstDay = daysForDeadline(deadlineDay).find((day) => availableDays.includes(day));
     return firstDay ? nextDateForDay(firstDay, deadlineDay) : '';
 };
 const shortDate = (day, deadlineDay) =>
@@ -71,6 +79,7 @@ export default function CustomerMenu({ children, menuItems, cartItems }) {
         selectedChild?.ordering_deadline_day ??
         selectedChild?.student.school?.ordering_deadline_day;
     const orderingDeadlineDay = selectedOrderingDeadlineDay ?? 'saturday';
+    const displayWeekDays = daysForDeadline(orderingDeadlineDay);
     const canOrderForSelectedChild =
         selectedChild?.student.school?.is_active;
     const visibleMeals = useMemo(() => {
@@ -360,10 +369,11 @@ export default function CustomerMenu({ children, menuItems, cartItems }) {
                                     {visibleMeals.length > 0 ? (
                                         <MealTimeline
                                             menuItems={visibleMeals}
+                                            days={displayWeekDays}
                                             onMealClick={openMeal}
                                             getSelection={cartItemFor}
                                             dayDates={Object.fromEntries(
-                                                weekDays.map((day) => [day, shortDate(day, orderingDeadlineDay)]),
+                                                displayWeekDays.map((day) => [day, shortDate(day, orderingDeadlineDay)]),
                                             )}
                                         />
                                     ) : (
@@ -377,7 +387,7 @@ export default function CustomerMenu({ children, menuItems, cartItems }) {
                                                 <th className="sticky left-0 z-10 w-48 border border-slate-300 bg-slate-200 px-3 py-2 text-left text-xs font-semibold uppercase text-gray-700">
                                                     Meal
                                                 </th>
-                                                {weekDays.map((day) => (
+                                                {displayWeekDays.map((day) => (
                                                     <th
                                                         key={day}
                                                         className="border border-slate-300 bg-slate-200 px-1 py-2 text-center text-xs font-semibold uppercase text-gray-700"
@@ -442,7 +452,7 @@ export default function CustomerMenu({ children, menuItems, cartItems }) {
                                                                 </span>
                                                             </button>
                                                         </td>
-                                                        {weekDays.map((day) => (
+                                                        {displayWeekDays.map((day) => (
                                                             <td
                                                                 key={day}
                                                                 className={`border border-slate-300 px-1 py-2 text-center ${days.has(day) ? 'bg-emerald-50' : 'bg-slate-100'}`}
@@ -510,12 +520,12 @@ export default function CustomerMenu({ children, menuItems, cartItems }) {
                                         {expanded && (
                                             <div className="max-h-[52vh] overflow-auto p-3">
                                                 <table className="w-full min-w-[800px] table-fixed border-collapse border border-slate-300">
-                                                    <thead className="sticky top-0 z-20 shadow-sm"><tr><th className="border border-slate-400 bg-slate-200 px-3 py-3 text-left text-xs font-bold uppercase text-slate-800">Meal</th>{weekDays.map((day) => <th key={day} className="min-w-28 border border-slate-400 bg-slate-200 px-2 py-3 text-center text-xs font-bold uppercase text-slate-800">{dayName(day)}<span className="mt-0.5 block text-[10px] font-normal">{shortDate(day, orderingDeadlineDay)}</span></th>)}</tr></thead>
+                                                    <thead className="sticky top-0 z-20 shadow-sm"><tr><th className="border border-slate-400 bg-slate-200 px-3 py-3 text-left text-xs font-bold uppercase text-slate-800">Meal</th>{displayWeekDays.map((day) => <th key={day} className="min-w-28 border border-slate-400 bg-slate-200 px-2 py-3 text-center text-xs font-bold uppercase text-slate-800">{dayName(day)}<span className="mt-0.5 block text-[10px] font-normal">{shortDate(day, orderingDeadlineDay)}</span></th>)}</tr></thead>
                                                     <tbody>
                                                         {paginatedCartMeals.map((meal, mealIndex) => (
                                                             <tr key={meal.id} className={mealIndex % 2 ? 'bg-slate-50' : 'bg-white'}>
                                                                 <td className="border border-slate-300 px-3 py-3"><button type="button" onClick={() => openMeal(meal)} className="font-medium text-indigo-700 hover:underline">{meal.name}</button><span className="block text-xs text-slate-500">RM {Number(meal.price).toFixed(2)}</span></td>
-                                                                {weekDays.map((day) => {
+                                                                {displayWeekDays.map((day) => {
                                                                     const item = items.find((entry) => Number(entry.menu_item_id) === Number(meal.id) && weekDays[new Date(`${collectionDateFor(entry)}T00:00:00`).getDay() === 0 ? 6 : new Date(`${collectionDateFor(entry)}T00:00:00`).getDay() - 1] === day);
                                                                     return <td key={day} className={`border border-slate-300 px-2 py-3 text-center ${item ? 'bg-emerald-50' : 'bg-slate-100'}`}>{item ? <div><button type="button" onClick={() => editCartItem(item)} className="rounded bg-emerald-600 px-3 py-1 text-sm font-semibold text-white hover:bg-emerald-700">Qty {item.quantity}</button><span className="mt-1 block text-xs text-slate-600">{new Date(`${collectionDateFor(item)}T00:00:00`).toLocaleDateString('en-MY')}</span><button type="button" onClick={() => removeItem(item)} className="mt-1 text-xs text-red-600 hover:underline">Remove</button></div> : <span className="text-sm font-medium text-slate-400">Not set</span>}</td>;
                                                                 })}
@@ -641,7 +651,7 @@ export default function CustomerMenu({ children, menuItems, cartItems }) {
                             </div>
                         </section>}
                         <div className="mt-3 grid grid-cols-4 gap-1 sm:grid-cols-7">
-                            {weekDays.map((day) => {
+                            {displayWeekDays.map((day) => {
                                 const active = selectedMeal.days.some(
                                     (mealDay) => mealDay.day_of_week === day,
                                 );

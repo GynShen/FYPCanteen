@@ -29,7 +29,7 @@ const layoutMeals = (meals) => {
         });
 };
 
-export default function MealTimeline({ menuItems, onMealClick, getSelection, dayDates = {} }) {
+export default function MealTimeline({ menuItems, onMealClick, getSelection, dayDates = {}, days = weekDays }) {
     const configuredMeals = menuItems.filter(
         (meal) => meal.available_start_time && meal.available_end_time,
     );
@@ -65,7 +65,7 @@ export default function MealTimeline({ menuItems, onMealClick, getSelection, day
                             ))}
                         </div>
                     </div>
-                    {weekDays.map((day) => {
+                    {days.map((day) => {
                         const entries = layoutMeals(configuredMeals
                             .filter((meal) => meal.days.some((item) => item.day_of_week === day))
                             .map((meal) => ({ meal, start: minutesFor(meal.available_start_time), end: minutesFor(meal.available_end_time) })));

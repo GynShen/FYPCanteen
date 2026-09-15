@@ -29,19 +29,20 @@ class SchoolOrderingSchedule
     {
         $now ??= Carbon::now('Asia/Kuala_Lumpur');
         $cutoffIsoDay = self::DAYS[self::deadlineDay($school)];
-        $weeksAhead = $now->dayOfWeekIso <= $cutoffIsoDay ? 1 : 2;
-        $start = $now->copy()->startOfWeek(Carbon::MONDAY)->addWeeks($weeksAhead)->startOfDay();
+        $daysUntilCutoff = ($cutoffIsoDay - $now->dayOfWeekIso + 7) % 7;
+        $start = $now->copy()->startOfDay()->addDays($daysUntilCutoff + 1);
 
-        return [$start, $start->copy()->endOfWeek(Carbon::SUNDAY)->endOfDay()];
+        return [$start, $start->copy()->addDays(6)->endOfDay()];
     }
 
     public static function deadlineForCollection(Carbon $collectionDate, School $school): Carbon
     {
         $cutoffIsoDay = self::DAYS[self::deadlineDay($school)];
+        $daysSinceCutoff = ($collectionDate->dayOfWeekIso - $cutoffIsoDay + 7) % 7;
 
         return $collectionDate->copy()
-            ->startOfWeek(Carbon::MONDAY)
-            ->subDays(8 - $cutoffIsoDay)
+            ->startOfDay()
+            ->subDays($daysSinceCutoff === 0 ? 7 : $daysSinceCutoff)
             ->endOfDay();
     }
 
