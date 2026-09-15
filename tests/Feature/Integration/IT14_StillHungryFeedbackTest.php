@@ -19,6 +19,7 @@ test('IT14 accepts still-hungry feedback only once after full collection', funct
     $menu = F::menu($school, [], ['tuesday']);
     [, $item] = F::orderItem($customer, $student, $menu, now(), 1);
 
+    // Confirms that feedback is rejected before full collection.
     $this->actingAs($operator)->postJson(route('meal-collection.still-hungry', $item))->assertUnprocessable();
 
     MealCollection::create([
@@ -29,10 +30,14 @@ test('IT14 accepts still-hungry feedback only once after full collection', funct
         'collected_by' => $operator->id,
     ]);
 
+    // Confirms that feedback is accepted after full collection.
     $this->actingAs($operator)->postJson(route('meal-collection.still-hungry', $item))
         ->assertOk()->assertJsonPath('feedback_sent', true);
+    // Confirms that duplicate feedback is rejected.
     $this->actingAs($operator)->postJson(route('meal-collection.still-hungry', $item))->assertUnprocessable();
 
+    // Confirms that the still-hungry event is stored.
     $this->assertDatabaseHas('student_meal_events', ['order_item_id' => $item->id, 'event_type' => 'still_hungry']);
+    // Confirms that the parent receives a feedback notification.
     Notification::assertSentTo($customer, CustomerEventNotification::class);
 });

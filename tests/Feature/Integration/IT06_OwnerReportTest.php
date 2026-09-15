@@ -30,6 +30,7 @@ test('IT06 calculates owner report totals from paid operational records', functi
         'reported_at' => now(),
     ]);
 
+    // Confirms that the owner report displays the calculated operational totals.
     $this->actingAs($owner)->get(route('dashboard').'?period=today')
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page

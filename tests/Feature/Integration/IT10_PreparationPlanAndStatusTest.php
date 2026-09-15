@@ -17,6 +17,7 @@ test('IT10 groups paid quantities and allows an operator to update preparation s
     F::orderItem($customer, $firstStudent, $menu, '2026-08-20 00:00:00', 2);
     F::orderItem($customer, $secondStudent, $menu, '2026-08-20 00:00:00', 3);
 
+    // Confirms that paid orders are grouped into one preparation batch.
     $this->actingAs($operator)->get(route('operator.preparation-plan', [
         'week' => 'custom',
         'start_date' => '2026-08-20',
@@ -27,11 +28,13 @@ test('IT10 groups paid quantities and allows an operator to update preparation s
         ->where('meals.0.total', 5)
         ->where('meals.0.students', 2));
 
+    // Confirms successful preparation-status update and redirection.
     $this->actingAs($operator)->patch(route('dashboard.meal-preparation'), [
         'menu_item_id' => $menu->id,
         'preparation_date' => '2026-08-20',
     ])->assertRedirect();
 
+    // Confirms that the completed preparation is stored with its operator.
     $this->assertDatabaseHas('meal_preparations', [
         'school_id' => $school->id,
         'menu_item_id' => $menu->id,

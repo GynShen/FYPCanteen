@@ -19,6 +19,7 @@ test('IT11 scans a valid QR code and records an eligible paid meal collection', 
     $menu = F::menu($school, [], ['tuesday']);
     [, $item] = F::orderItem($customer, $student, $menu, now(), 2);
 
+    // Confirms that scanning collects the eligible quantity for the student.
     $this->actingAs($operator)->postJson(route('meal-collection.scan'), [
         'qr_code' => $student->qr_code,
     ])->assertOk()
@@ -27,8 +28,10 @@ test('IT11 scans a valid QR code and records an eligible paid meal collection', 
         ->assertJsonPath('items.0.status', 'collected');
 
     $collection = MealCollection::where('order_item_id', $item->id)->firstOrFail();
+    // Confirms the stored quantity, operator and completed status.
     expect($collection->collected_quantity)->toBe(2)
         ->and($collection->collected_by)->toBe($operator->id)
         ->and($collection->status)->toBe('collected');
+    // Confirms that the parent receives a collection notification.
     Notification::assertSentTo($customer, CustomerEventNotification::class);
 });

@@ -21,11 +21,13 @@ test('IT21 replaces an eligible paid meal while preserving the paid order detail
     [, $item] = F::orderItem($customer, $student, $original, '2026-08-17 00:00:00', 2);
     $originalDetails = $item->only(['student_id', 'scheduled_time', 'quantity', 'unit_price']);
 
+    // Confirms that an eligible paid meal can be replaced.
     $this->actingAs($customer)->patch(route('customer.orders.items.update', $item), [
         'menu_item_id' => $replacement->id,
     ])->assertRedirect()->assertSessionHasNoErrors();
 
     $item->refresh();
+    // Confirms the replacement while preserving all paid-order details.
     expect($item->menu_item_id)->toBe($replacement->id)
         ->and($item->student_id)->toBe($originalDetails['student_id'])
         ->and($item->scheduled_time->toDateTimeString())->toBe($originalDetails['scheduled_time']->toDateTimeString())
@@ -33,6 +35,7 @@ test('IT21 replaces an eligible paid meal while preserving the paid order detail
         ->and($item->unit_price)->toBe($originalDetails['unit_price']);
 
     Carbon::setTestNow(Carbon::parse('2026-08-13 00:00:00', 'Asia/Kuala_Lumpur'));
+    // Confirms that replacement is rejected after the deadline.
     $this->actingAs($customer)->from(route('customer.orders'))->patch(route('customer.orders.items.update', $item), [
         'menu_item_id' => $original->id,
     ])->assertRedirect(route('customer.orders'))->assertSessionHasErrors('order_item');

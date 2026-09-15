@@ -15,6 +15,7 @@ test('IT18 returns only available meals assigned to a linked child school', func
     F::menu($school, ['name' => 'Unavailable School Meal', 'is_available' => false]);
     F::menu($otherSchool, ['name' => 'Other School Meal']);
 
+    // Confirms that only the linked school's available meal is displayed.
     $this->actingAs($customer)->get(route('customer.menu'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page

@@ -15,7 +15,7 @@ test('UT06 accepts valid Malaysian mobile-number formats', function () {
     foreach ($validNumbers as $number) {
         $failed = false;
 
-        (new MalaysianPhoneNumber())->validate(
+        (new MalaysianPhoneNumber)->validate(
             'phone_number',
             $number,
             function () use (&$failed): void {
@@ -23,6 +23,7 @@ test('UT06 accepts valid Malaysian mobile-number formats', function () {
             },
         );
 
+        // Confirms that this valid phone format passes validation.
         expect($failed)->toBeFalse("Expected {$number} to be accepted.");
     }
 });

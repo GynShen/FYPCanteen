@@ -12,6 +12,7 @@ test('UT05 moves the ordering window forward after the deadline day', function (
         Carbon::parse('2026-08-13 00:00:00', 'Asia/Kuala_Lumpur'),
     );
 
+    // Confirms that ordering moves to the following eligible week.
     expect($start->toDateString())->toBe('2026-08-24')
         ->and($end->toDateString())->toBe('2026-08-30');
 });

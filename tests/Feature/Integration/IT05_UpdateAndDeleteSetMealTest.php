@@ -12,9 +12,11 @@ test('IT05 updates and deletes a set meal with its related records', function ()
     $menu = F::menu($school);
     $category = MenuCategory::create(['name' => 'Updated Category']);
     $drive = Mockery::mock(GoogleDriveService::class);
+    // Confirms that deleting the meal also removes its Drive image.
     $drive->shouldReceive('delete')->once()->with($menu->image_drive_id);
     app()->instance(GoogleDriveService::class, $drive);
 
+    // Confirms successful set-meal update and redirection.
     $this->actingAs($owner)->patch(route('owner.menu.update', $menu), [
         'menu_category_ids' => [$category->id],
         'school_ids' => [$school->id],
@@ -34,9 +36,13 @@ test('IT05 updates and deletes a set meal with its related records', function ()
         'components' => [['component_type' => 'protein', 'name' => 'Chicken', 'amount_g' => '100']],
     ])->assertRedirect(route('owner.menu'));
 
+    // Confirms that the updated meal information is stored.
     $this->assertDatabaseHas('menu_items', ['id' => $menu->id, 'name' => 'Updated Meal', 'price' => 5.00]);
+    // Confirms that the updated available day is stored.
     $this->assertDatabaseHas('menu_item_days', ['menu_item_id' => $menu->id, 'day_of_week' => 'friday']);
 
+    // Confirms successful meal deletion and redirection.
     $this->actingAs($owner)->delete(route('owner.menu.destroy', $menu))->assertRedirect(route('owner.menu'));
+    // Confirms that the deleted meal no longer exists.
     $this->assertDatabaseMissing('menu_items', ['id' => $menu->id]);
 });

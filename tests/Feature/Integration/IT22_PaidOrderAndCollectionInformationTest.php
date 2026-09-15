@@ -22,6 +22,7 @@ test('IT22 displays paid-order and collection information for the customer', fun
         'collected_at' => now(),
     ]);
 
+    // Confirms that the paid order is displayed on the orders page.
     $this->actingAs($customer)->get(route('customer.orders'))
         ->assertOk()->assertInertia(fn (Assert $page) => $page
         ->component('Customer/Orders')
@@ -29,6 +30,7 @@ test('IT22 displays paid-order and collection information for the customer', fun
         ->where('orders.0.id', $order->id)
         ->where('orders.0.order_status', 'paid'));
 
+    // Confirms the customer's ordered, collected and upcoming totals.
     $this->actingAs($customer)->get(route('dashboard').'?month=2026-08')
         ->assertOk()->assertInertia(fn (Assert $page) => $page
         ->component('Dashboard')

@@ -12,5 +12,6 @@ test('UT09 calculates the paid-meal modification deadline from the school settin
         $school,
     );
 
+    // Confirms the final date and time allowed for meal modification.
     expect($deadline->format('Y-m-d H:i:s'))->toBe('2026-08-12 23:59:59');
 });

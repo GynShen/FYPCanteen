@@ -19,16 +19,20 @@ test('IT12 rejects cross-school scanning and prevents duplicate collection', fun
     $menu = F::menu($school, [], ['tuesday']);
     [, $item] = F::orderItem($customer, $student, $menu, now(), 1);
 
+    // Confirms that an operator cannot scan another school's student.
     $this->actingAs($otherOperator)->postJson(route('meal-collection.scan'), [
         'qr_code' => $student->qr_code,
     ])->assertForbidden();
 
+    // Confirms that the first valid scan collects one meal.
     $this->actingAs($operator)->postJson(route('meal-collection.scan'), [
         'qr_code' => $student->qr_code,
     ])->assertOk()->assertJsonPath('collected_quantity', 1);
+    // Confirms that a repeated scan collects no additional quantity.
     $this->actingAs($operator)->postJson(route('meal-collection.scan'), [
         'qr_code' => $student->qr_code,
     ])->assertOk()->assertJsonPath('collected_quantity', 0);
 
+    // Confirms that only one collected quantity is stored.
     expect(MealCollection::where('order_item_id', $item->id)->value('collected_quantity'))->toBe(1);
 });

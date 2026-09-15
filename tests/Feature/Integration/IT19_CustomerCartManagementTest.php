@@ -16,6 +16,7 @@ test('IT19 adds updates and removes an eligible meal cart selection', function (
     $menu = F::menu($school, [], ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']);
 
     foreach (range(24, 28) as $day) {
+        // Confirms that each eligible weekday selection is added successfully.
         $this->actingAs($customer)->post(route('customer.cart.store'), [
             'student_id' => $student->id,
             'menu_item_id' => $menu->id,
@@ -24,6 +25,7 @@ test('IT19 adds updates and removes an eligible meal cart selection', function (
         ])->assertRedirect()->assertSessionHasNoErrors();
     }
 
+    // Confirms that all five dated cart selections are displayed.
     $this->actingAs($customer)->get(route('customer.menu'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
@@ -35,10 +37,14 @@ test('IT19 adds updates and removes an eligible meal cart selection', function (
             ->where('cartItems.4.collection_date', '2026-08-28'));
 
     $cartItem = CartItem::orderBy('scheduled_time')->firstOrFail();
+    // Confirms successful cart-quantity update and redirection.
     $this->actingAs($customer)->patch(route('customer.cart.update', $cartItem), ['quantity' => 3])
         ->assertRedirect()->assertSessionHasNoErrors();
+    // Confirms that the updated quantity is stored.
     $this->assertDatabaseHas('cart_items', ['id' => $cartItem->id, 'quantity' => 3]);
 
+    // Confirms successful removal of the cart item.
     $this->actingAs($customer)->delete(route('customer.cart.destroy', $cartItem))->assertRedirect();
+    // Confirms that the removed cart item no longer exists.
     $this->assertDatabaseMissing('cart_items', ['id' => $cartItem->id]);
 });

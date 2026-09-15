@@ -7,6 +7,7 @@ test('UT08 normalises local and international forms to the same phone number', f
     $international = MalaysianPhoneNumber::normalize('+60123456789');
     $internationalWithoutPlus = MalaysianPhoneNumber::normalize('60123456789');
 
+    // Confirms that all supported formats produce the same local number.
     expect($local)->toBe('0123456789')
         ->and($international)->toBe($local)
         ->and($internationalWithoutPlus)->toBe($local);

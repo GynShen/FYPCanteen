@@ -38,6 +38,7 @@ test('IT23 displays customer dashboard totals and event notifications', function
         ]));
     }
 
+    // Confirms the dashboard totals and still-hungry history.
     $this->actingAs($customer)->get(route('dashboard').'?month=2026-08')
         ->assertOk()->assertInertia(fn (Assert $page) => $page
         ->component('Dashboard')
@@ -46,12 +47,15 @@ test('IT23 displays customer dashboard totals and event notifications', function
         ->where('report.collected', 1)
         ->has('report.still_hungry', 1));
 
+    // Confirms that all three event notifications are displayed.
     $this->actingAs($customer)->get(route('customer.notifications'))
         ->assertOk()->assertInertia(fn (Assert $page) => $page
         ->component('Customer/Notifications')
         ->has('notifications.data', 3));
 
     $notification = $customer->notifications()->firstOrFail();
+    // Confirms successful notification read-status update.
     $this->actingAs($customer)->patch(route('customer.notifications.read', $notification))->assertRedirect();
+    // Confirms that the notification now has a read timestamp.
     expect($notification->fresh()->read_at)->not->toBeNull();
 });

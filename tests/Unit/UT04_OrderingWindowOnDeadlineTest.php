@@ -12,6 +12,7 @@ test('UT04 returns next week as the ordering window on the deadline day', functi
         Carbon::parse('2026-08-12 12:00:00', 'Asia/Kuala_Lumpur'),
     );
 
+    // Confirms the next Monday-to-Sunday ordering window.
     expect($start->toDateString())->toBe('2026-08-17')
         ->and($end->toDateString())->toBe('2026-08-23');
 });

@@ -13,8 +13,11 @@ test('IT09 returns different permanent QR images for different students', functi
     $firstResponse = $this->actingAs($operator)->get(route('owner.student.qr-code', $first));
     $secondResponse = $this->actingAs($operator)->get(route('owner.student.qr-code', $second));
 
+    // Confirms that the first QR response is a valid SVG image.
     $firstResponse->assertOk()->assertHeader('Content-Type', 'image/svg+xml');
+    // Confirms that the second QR response is a valid SVG image.
     $secondResponse->assertOk()->assertHeader('Content-Type', 'image/svg+xml');
+    // Confirms that each student receives a different permanent QR code.
     expect($first->qr_code)->not->toBe($second->qr_code)
         ->and($firstResponse->getContent())->not->toBe($secondResponse->getContent());
 });
