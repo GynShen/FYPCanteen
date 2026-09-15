@@ -123,8 +123,8 @@ function CustomerReport({ report, month, childId, update }) {
 
         <section className="overflow-hidden rounded-2xl border border-slate-700 bg-slate-800 shadow-lg"><h3 className="border-b border-slate-700 px-5 py-4 text-lg font-bold text-white">Still-hungry history</h3><div className="divide-y divide-slate-700">{report.still_hungry.map((item) => <div key={item.id} className="grid gap-2 px-5 py-4 text-sm sm:grid-cols-4"><span className="font-bold text-white">{item.student_name}</span><span className="text-slate-200">{item.meal_name}</span><span className="text-slate-300">{item.date} · {item.time}</span><span className="font-semibold text-amber-400 sm:text-right">Qty {item.quantity}</span></div>)}{report.still_hungry.length === 0 && <p className="px-5 py-10 text-center text-sm text-slate-400">No still-hungry feedback in this month.</p>}</div></section>
 
-        <div className="grid gap-6 lg:grid-cols-2">
-            <section className="rounded-2xl border border-slate-700 bg-slate-800 p-5 shadow-lg lg:col-span-2">
+        <div className="grid min-w-0 max-w-full gap-6 lg:grid-cols-2">
+            <section className="min-w-0 max-w-full rounded-2xl border border-slate-700 bg-slate-800 p-5 shadow-lg lg:col-span-2">
                 <div className="flex flex-wrap items-start justify-between gap-4">
                     <div><h3 className="text-lg font-bold text-white">Monthly Meal Calendar</h3><p className="mt-1 text-sm text-slate-400">Repeated colours help you notice when the same meal is ordered frequently.</p></div>
                     <div className="flex flex-wrap items-end gap-3">
@@ -137,7 +137,7 @@ function CustomerReport({ report, month, childId, update }) {
                         <span className="mb-1 rounded-full bg-indigo-500/20 px-3 py-1 text-sm font-bold text-indigo-300">{report.month_label}</span>
                     </div>
                 </div>
-                <div className="mt-5 overflow-x-auto"><div className="min-w-[760px] overflow-hidden rounded-xl border border-slate-600">
+                <div className="mt-5 min-w-0 max-w-full overflow-x-auto overscroll-x-contain pb-2"><div className="w-[760px] max-w-none overflow-hidden rounded-xl border border-slate-600">
                     <div className="grid grid-cols-7 bg-slate-700">{['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day) => <div key={day} className="border-r border-slate-600 px-2 py-3 text-center text-xs font-bold uppercase text-slate-200 last:border-r-0">{day}</div>)}</div>
                     <div className="grid grid-cols-7 bg-slate-900/30">{calendarCells.map((day, index) => {
                         if (!day) return <div key={`empty-${index}`} className="min-h-28 border-r border-t border-slate-700 bg-slate-900/20" />;
