@@ -246,21 +246,25 @@ export default function Dashboard({ report, schools = [], filters = {} }) {
 
                         <section className="flex flex-wrap items-center justify-between gap-5 rounded-2xl border border-indigo-500/40 bg-slate-800 p-5 shadow-lg"><div><h3 className="text-lg font-bold text-white">Preparation overview</h3><p className="mt-1 text-sm text-slate-400">Next week: <span className="font-bold text-indigo-300">{report.next_week_preparation.reduce((total, meal) => total + meal.total, 0)} portions</span> across {new Set(report.next_week_preparation.map((meal) => meal.school)).size} schools.</p></div><Link href={route('owner.preparation-overview')} className="rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-indigo-500">View Preparation Overview →</Link></section>
 
-                        <div className="grid gap-6 lg:grid-cols-3">
-                            <section className="rounded-2xl border border-slate-700 bg-slate-800 p-5 shadow-lg lg:col-span-2">
+                        <div className="grid min-w-0 gap-6 lg:grid-cols-3">
+                            <section className="min-w-0 rounded-2xl border border-slate-700 bg-slate-800 p-5 shadow-lg lg:col-span-2">
                                 <h3 className="text-lg font-bold text-white">Revenue trend</h3>
-                                <div className="mt-5 flex h-72 items-end gap-3 overflow-x-auto border-b border-slate-600 px-2 pb-1">
-                                    {report.revenue_trend.map((point) => <div key={point.date} className="flex h-full min-w-16 flex-1 flex-col justify-end text-center"><span className="mb-2 whitespace-nowrap text-[11px] font-bold" style={{ color: '#6ee7b7' }}>{money(point.revenue)}</span><div className="mx-auto w-10 rounded-t-md" style={{ height: `${Math.max(5, Number(point.revenue) / maxRevenue * 205)}px`, minHeight: '5px', background: 'linear-gradient(to top, #059669, #34d399)' }} /><span className="mt-2 text-xs font-medium text-slate-300">{point.date.slice(5)}</span></div>)}
-                                    {report.revenue_trend.length === 0 && <p className="m-auto text-sm text-slate-400">No revenue in this period.</p>}
+                                <div className="mt-5 overflow-x-auto overscroll-x-contain pb-2">
+                                    <div className="flex h-72 w-max min-w-full items-end gap-3 border-b border-slate-600 px-2 pb-1">
+                                        {report.revenue_trend.map((point) => <div key={point.date} className="flex h-full w-16 shrink-0 flex-col justify-end text-center"><span className="mb-2 whitespace-nowrap text-[11px] font-bold" style={{ color: '#6ee7b7' }}>{money(point.revenue)}</span><div className="mx-auto w-10 rounded-t-md" style={{ height: `${Math.max(5, Number(point.revenue) / maxRevenue * 205)}px`, minHeight: '5px', background: 'linear-gradient(to top, #059669, #34d399)' }} /><span className="mt-2 text-xs font-medium text-slate-300">{point.date.slice(5)}</span></div>)}
+                                        {report.revenue_trend.length === 0 && <p className="m-auto text-sm text-slate-400">No revenue in this period.</p>}
+                                    </div>
                                 </div>
                             </section>
 
-                            <section className="rounded-2xl border border-slate-700 bg-slate-800 p-5 shadow-lg">
+                            <section className="min-w-0 rounded-2xl border border-slate-700 bg-slate-800 p-5 shadow-lg">
                                 <h3 className="text-lg font-bold text-white">Collection status</h3>
-                                <div className="mt-8 space-y-6">
-                                    <div><div className="mb-2 flex justify-between text-sm font-semibold text-slate-200"><span>Collected</span><span style={{ color: '#34d399' }}>{report.collected}</span></div><div className="h-5 overflow-hidden rounded-full bg-slate-700"><div className="h-full rounded-full" style={{ width: `${collectionTotal ? report.collected / collectionTotal * 100 : 0}%`, backgroundColor: '#10b981' }} /></div></div>
-                                    <div><div className="mb-2 flex justify-between text-sm font-semibold text-slate-200"><span>Missed</span><span style={{ color: '#f87171' }}>{report.missed}</span></div><div className="h-5 overflow-hidden rounded-full bg-slate-700"><div className="h-full rounded-full" style={{ width: `${collectionTotal ? report.missed / collectionTotal * 100 : 0}%`, backgroundColor: '#ef4444' }} /></div></div>
-                                    <p className="rounded-xl bg-slate-700 p-4 text-center text-2xl font-bold text-white"><span className="text-violet-400">{report.collection_rate}%</span> collected</p>
+                                <div className="mt-8 overflow-x-auto overscroll-x-contain pb-2">
+                                    <div className="w-full space-y-6">
+                                        <div><div className="mb-2 flex justify-between text-sm font-semibold text-slate-200"><span>Collected</span><span style={{ color: '#34d399' }}>{report.collected}</span></div><div className="h-5 overflow-hidden rounded-full bg-slate-700"><div className="h-full rounded-full" style={{ width: `${collectionTotal ? report.collected / collectionTotal * 100 : 0}%`, backgroundColor: '#10b981' }} /></div></div>
+                                        <div><div className="mb-2 flex justify-between text-sm font-semibold text-slate-200"><span>Missed</span><span style={{ color: '#f87171' }}>{report.missed}</span></div><div className="h-5 overflow-hidden rounded-full bg-slate-700"><div className="h-full rounded-full" style={{ width: `${collectionTotal ? report.missed / collectionTotal * 100 : 0}%`, backgroundColor: '#ef4444' }} /></div></div>
+                                        <p className="rounded-xl bg-slate-700 p-4 text-center text-2xl font-bold text-white"><span className="text-violet-400">{report.collection_rate}%</span> collected</p>
+                                    </div>
                                 </div>
                             </section>
                         </div>
