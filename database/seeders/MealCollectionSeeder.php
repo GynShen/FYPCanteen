@@ -80,6 +80,10 @@ class MealCollectionSeeder extends Seeder
                 ->where('name', 'Chicken Bihun (Morning)')
                 ->first(['image_drive_id', 'image_url']);
 
+            // DEMO TIME SETTINGS: Change the setTime(hour, minute) values below if the
+            // presentation is delayed, then rerun only this seeder. The grace period
+            // starts after the second time and ends 15 minutes later. For example,
+            // an end time of 14:40 gives a grace period until 14:55.
             $slots = [
                 ['Missed Demo', $today->copy()->setTime(13, 0), $today->copy()->setTime(14, 0)],
                 ['Grace Period Demo', $today->copy()->setTime(14, 20), $today->copy()->setTime(14, 40)],
