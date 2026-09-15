@@ -268,7 +268,11 @@ class DashboardController extends Controller
             ->map($mapItem)
             ->filter(fn ($row) => $row['upcoming'] > 0)
             ->groupBy('student_id')
-            ->map(fn ($childRows) => $childRows->first())
+            ->flatMap(function ($childRows) {
+                $nearestDate = $childRows->min('date');
+
+                return $childRows->where('date', $nearestDate)->values();
+            })
             ->values();
 
         $children = $rows->groupBy('student_id')->map(function ($childRows): array {

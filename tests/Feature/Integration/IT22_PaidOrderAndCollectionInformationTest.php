@@ -15,6 +15,22 @@ test('IT22 displays paid-order and collection information for the customer', fun
     F::child($customer, $student);
     $menu = F::menu($school, ['name' => 'Collected Meal'], ['tuesday']);
     [$order, $item] = F::orderItem($customer, $student, $menu, now(), 2);
+    $sameDayMenu = F::menu($school, ['name' => 'Same Day Meal'], ['tuesday']);
+    $laterMenu = F::menu($school, ['name' => 'Later Meal'], ['wednesday']);
+    $order->orderItems()->create([
+        'student_id' => $student->id,
+        'menu_item_id' => $sameDayMenu->id,
+        'unit_price' => $sameDayMenu->price,
+        'scheduled_time' => now()->addMinutes(15),
+        'quantity' => 1,
+    ]);
+    $order->orderItems()->create([
+        'student_id' => $student->id,
+        'menu_item_id' => $laterMenu->id,
+        'unit_price' => $laterMenu->price,
+        'scheduled_time' => now()->addDay(),
+        'quantity' => 1,
+    ]);
     MealCollection::create([
         'order_item_id' => $item->id,
         'collected_quantity' => 1,
@@ -30,12 +46,15 @@ test('IT22 displays paid-order and collection information for the customer', fun
         ->where('orders.0.id', $order->id)
         ->where('orders.0.order_status', 'paid'));
 
-    // Confirms the customer's ordered, collected and upcoming totals.
+    // Confirms the totals and all meals on the nearest upcoming date.
     $this->actingAs($customer)->get(route('dashboard').'?month=2026-08')
         ->assertOk()->assertInertia(fn (Assert $page) => $page
         ->component('Dashboard')
         ->where('report.type', 'customer')
-        ->where('report.ordered', 2)
+        ->where('report.ordered', 4)
         ->where('report.collected', 1)
-        ->where('report.upcoming_count', 1));
+        ->where('report.upcoming_count', 3)
+        ->has('report.upcoming_meals', 2)
+        ->where('report.upcoming_meals.0.meal_name', 'Collected Meal')
+        ->where('report.upcoming_meals.1.meal_name', 'Same Day Meal'));
 });
